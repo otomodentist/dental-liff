@@ -1,547 +1,499 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>授業管理パネル</title>
-<script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Kaisei+Tokumin:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet" />
-
-<style>
-:root {
-  --bg: #f5f0e8;
-  --surface: #ffffff;
-  --surface2: #faf7f2;
-  --border: #e0d8cc;
-  --ink: #1a1208;
-  --ink2: #4a3f2f;
-  --ink3: #8a7a68;
-  --accent: #2d5a3d;
-  --accent-light: #e8f2eb;
-  --danger: #8b2020;
-  --danger-light: #fdeaea;
-  --warning: #7a5a10;
-  --warning-light: #fef8e6;
-  --active: #1a3d8b;
-  --active-light: #e8eef8;
-}
-
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: 'Noto Sans JP', sans-serif;
-  min-height: 100vh;
-  padding-bottom: 40px;
-}
-
-.header {
-  background: var(--accent);
-  padding: 20px 20px 16px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-.header-label {
-  font-size: 10px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.6);
-  margin-bottom: 2px;
-}
-.header-title {
-  font-family: 'Kaisei Tokumin', serif;
-  font-size: 22px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.status-bar {
-  margin: 16px 16px 0;
-  background: var(--surface);
-  border-radius: 14px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.status-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.status-dot.active  { background: #2ecc71; box-shadow: 0 0 0 3px rgba(46,204,113,0.2); }
-.status-dot.inactive{ background: var(--ink3); }
-.status-text { font-size: 13px; color: var(--ink2); flex: 1; }
-.status-text strong { color: var(--ink); font-weight: 700; display: block; font-size: 14px; }
-
-.section { margin: 16px 16px 0; }
-.section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.section-num {
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  font-size: 11px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.section-title { font-size: 13px; font-weight: 700; color: var(--ink2); letter-spacing: 0.5px; }
-
-.card {
-  background: var(--surface);
-  border-radius: 16px;
-  border: 1px solid var(--border);
-  overflow: hidden;
-}
-
-/* 曜日グリッド */
-.day-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  padding: 12px;
-}
-.day-btn {
-  aspect-ratio: 1;
-  border-radius: 10px;
-  border: 1.5px solid var(--border);
-  background: var(--surface2);
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--ink2);
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.day-btn.selected {
-  border-color: var(--accent);
-  background: var(--accent-light);
-  color: var(--accent);
-}
-
-/* 授業グリッド */
-.subject-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 12px;
-}
-.subject-btn {
-  padding: 12px 8px;
-  border-radius: 10px;
-  border: 1.5px solid var(--border);
-  background: var(--surface2);
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink2);
-  cursor: pointer;
-  transition: all 0.15s;
-  text-align: center;
-  line-height: 1.3;
-}
-.subject-btn.selected {
-  border-color: var(--accent);
-  background: var(--accent-light);
-  color: var(--accent);
-  font-weight: 700;
-}
-
-/* 回数グリッド */
-.session-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-  padding: 12px;
-}
-.session-btn {
-  aspect-ratio: 1;
-  border-radius: 10px;
-  border: 1.5px solid var(--border);
-  background: var(--surface2);
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--ink2);
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.session-btn.selected {
-  border-color: var(--accent);
-  background: var(--accent-light);
-  color: var(--accent);
-  font-weight: 700;
-}
-
-/* アクションボタン */
-.action-btn {
-  width: 100%;
-  padding: 16px;
-  border-radius: 14px;
-  border: none;
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.action-btn:active { transform: scale(0.98); opacity: 0.9; }
-.action-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-.btn-start { background: var(--accent); color: #fff; }
-.btn-end {
-  background: var(--danger-light);
-  color: var(--danger);
-  border: 1.5px solid #f5c0c0;
-}
-
-/* 出題フォーム */
-.form-field {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-}
-.form-field:last-child { border-bottom: none; }
-.form-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ink3);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.form-textarea {
-  width: 100%;
-  border: none;
-  background: transparent;
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 14px;
-  color: var(--ink);
-  resize: none;
-  outline: none;
-  line-height: 1.6;
-}
-.form-textarea::placeholder { color: var(--ink3); }
-.btn-question {
-  background: var(--active-light);
-  color: var(--active);
-  border: 1.5px solid #c0ccf0;
-}
-
-/* ローディング */
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 80vh;
-  gap: 14px;
-}
-.spinner {
-  width: 36px; height: 36px;
-  border: 3px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* トースト */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: var(--ink);
-  color: #fff;
-  padding: 12px 20px;
-  border-radius: 24px;
-  font-size: 13px;
-  font-weight: 500;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  z-index: 999;
-  white-space: nowrap;
-}
-.toast.show { transform: translateX(-50%) translateY(0); }
-
-.disabled-section { opacity: 0.4; pointer-events: none; }
-.divider { height: 1px; background: var(--border); margin: 0 14px; }
-</style>
-</head>
-<body>
-
-<div id="app">
-  <div class="loading">
-    <div class="spinner"></div>
-    <div style="font-size:13px;color:var(--ink3)">読み込み中...</div>
-  </div>
-</div>
-<div class="toast" id="toast"></div>
-
-<script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec';
-const LIFF_ID = '2009739219-9qVGb0Xm';
-
-let SUBJECTS = [];          // { name, day }[] の配列
-let selectedDay     = null;
-let selectedSubject = null;
-let selectedSession = null;
-let isSessionActive  = false;
-let activeSessionInfo = null;
-
-// ===== 初期化 =====
-async function init() {
-  try {
-    await liff.init({ liffId: LIFF_ID });
-    if (!liff.isLoggedIn()) { liff.login(); return; }
-
-    const [subjectsRes, statusRes] = await Promise.all([
-      fetch(`${GAS_URL}?action=getSubjectMaster`),
-      fetch(`${GAS_URL}?action=getActiveSession`),
-    ]);
-
-    SUBJECTS = (await subjectsRes.json()).subjects || [];
-    const status = await statusRes.json();
-    isSessionActive   = status.isActive;
-    activeSessionInfo = status.session;
-
-    renderApp();
-  } catch (err) {
-    showError(err.message);
-  }
-}
-
-// ===== レンダリング =====
-function renderApp() {
-  document.getElementById('app').innerHTML = `
-    <div class="header">
-      <div class="header-label">Admin Panel</div>
-      <div class="header-title">授業管理パネル</div>
-    </div>
-
-    <!-- ステータス -->
-    <div class="status-bar">
-      <div class="status-dot ${isSessionActive ? 'active' : 'inactive'}"></div>
-      <div class="status-text">
-        ${isSessionActive
-          ? `<strong>${activeSessionInfo.subject} 第${activeSessionInfo.sessionNumber}回</strong>授業進行中`
-          : '<strong>授業なし</strong>待機中'}
-      </div>
-      ${isSessionActive ? `
-        <button class="action-btn btn-end"
-          style="width:auto;padding:8px 14px;font-size:12px;border-radius:10px"
-          onclick="endSession()">終了</button>
-      ` : ''}
-    </div>
-
-    <!-- STEP1: 曜日選択 -->
-    <div class="section ${isSessionActive ? 'disabled-section' : ''}" id="step1">
-      <div class="section-header">
-        <div class="section-num">1</div>
-        <div class="section-title">曜日を選択</div>
-      </div>
-      <div class="card">
-        <div class="day-grid" id="dayGrid">
-          ${['月','火','水','木','金'].map(d => `
-            <button class="day-btn ${d === selectedDay ? 'selected' : ''}"
-              onclick="selectDay('${d}')">${d}</button>
-          `).join('')}
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP2: 授業選択（曜日選択後に表示） -->
-    <div class="section ${isSessionActive ? 'disabled-section' : ''}" id="step2"
-      style="${selectedDay ? '' : 'display:none'}">
-      <div class="section-header">
-        <div class="section-num">2</div>
-        <div class="section-title">授業を選択</div>
-      </div>
-      <div class="card">
-        <div class="subject-grid" id="subjectGrid">
-          ${selectedDay ? SUBJECTS.filter(s => s.day === selectedDay).map(s => `
-            <button class="subject-btn ${s.name === selectedSubject ? 'selected' : ''}"
-              onclick="selectSubject('${s.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${s.name}</button>
-          `).join('') : ''}
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP3: 授業回数選択（授業選択後に表示） -->
-    <div class="section ${isSessionActive ? 'disabled-section' : ''}" id="step3"
-      style="${selectedSubject ? '' : 'display:none'}">
-      <div class="section-header">
-        <div class="section-num">3</div>
-        <div class="section-title">授業回数を選択</div>
-      </div>
-      <div class="card">
-        <div class="session-grid">
-          ${Array.from({length: 15}, (_, i) => i + 1).map(n => `
-            <button class="session-btn ${n === selectedSession ? 'selected' : ''}"
-              onclick="selectSession(${n})">${n}</button>
-          `).join('')}
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP4: 授業開始 -->
-    <div class="section ${isSessionActive ? 'disabled-section' : ''}" id="step4">
-      <div class="section-header">
-        <div class="section-num">4</div>
-        <div class="section-title">授業を開始</div>
-      </div>
-      <button class="action-btn btn-start" id="startBtn"
-        onclick="startSession()" ${selectedSubject && selectedSession ? '' : 'disabled'}>
-        授業開始
-      </button>
-    </div>
-
-    <!-- STEP5: 出題（授業中のみ有効） -->
-    <div class="section ${!isSessionActive ? 'disabled-section' : ''}" id="step5">
-      <div class="section-header">
-        <div class="section-num">5</div>
-        <div class="section-title">問題を出題</div>
-      </div>
-      <div class="card">
-        <div class="form-field">
-          <div class="form-label">問題文</div>
-          <textarea class="form-textarea" id="questionText" rows="3" placeholder="問題文を入力..."></textarea>
-        </div>
-        <div class="divider"></div>
-        <div class="form-field">
-          <div class="form-label">模範解答</div>
-          <textarea class="form-textarea" id="modelAnswer" rows="3" placeholder="模範解答を入力..."></textarea>
-        </div>
-      </div>
-      <div style="margin-top:10px">
-        <button class="action-btn btn-question" onclick="broadcastQuestion()">
-          📢 全学生に出題する
-        </button>
-      </div>
-    </div>
-  `;
-}
-
-// ===== 曜日選択 =====
-function selectDay(day) {
-  selectedDay     = day;
-  selectedSubject = null;
-  selectedSession = null;
-  renderApp();
-}
-
-// ===== 授業選択 =====
-function selectSubject(subject) {
-  selectedSubject = subject;
-  selectedSession = null;
-  renderApp();
-}
-
-// ===== 回数選択 =====
-function selectSession(num) {
-  selectedSession = num;
-  renderApp();
-}
-
-// ===== 授業開始 =====
-async function startSession() {
-  if (!selectedSubject || !selectedSession) return;
-  try {
-    const res = await fetch(
-      `${GAS_URL}?action=adminStartSession` +
-      `&subject=${encodeURIComponent(selectedSubject)}` +
-      `&sessionNumber=${selectedSession}`
-    );
-    const result = await res.json();
-    if (result.success) {
-      isSessionActive   = true;
-      activeSessionInfo = { subject: selectedSubject, sessionNumber: selectedSession };
-      selectedDay = selectedSubject = selectedSession = null;
-      showToast(`✅ ${activeSessionInfo.subject} 第${activeSessionInfo.sessionNumber}回 開始しました`);
-      renderApp();
-    } else {
-      showToast('❌ エラー: ' + result.error);
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>授業管理パネル</title>
+  <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Kaisei+Tokumin:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  
+  <style>
+    :root {
+        --bg: #f5f0e8;
+        --surface: #ffffff;
+        --surface2: #faf7f2;
+        --border: #e0d8cc;
+        --ink: #1a1208;
+        --ink2: #4a3f2f;
+        --ink3: #8a7a68;
+        --accent: #2d5a3d;
+        --accent-light: #e8f2eb;
+        --danger: #8b2020;
+        --danger-light: #fdeaea;
+        --warning: #7a5a10;
+        --warning-light: #fef8e6;
     }
-  } catch (err) {
-    showToast('❌ 通信エラー');
-  }
-}
-
-// ===== 授業終了 =====
-async function endSession() {
-  try {
-    const res = await fetch(`${GAS_URL}?action=adminEndSession`);
-    const result = await res.json();
-    if (result.success) {
-      isSessionActive = false;
-      activeSessionInfo = null;
-      showToast('✅ 授業を終了しました');
-      renderApp();
-    } else {
-      showToast('❌ エラー: ' + result.error);
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Noto Sans JP', sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+        padding-bottom: 40px;
     }
-  } catch (err) {
-    showToast('❌ 通信エラー');
-  }
-}
-
-// ===== 出題 =====
-async function broadcastQuestion() {
-  const question    = document.getElementById('questionText').value.trim();
-  const modelAnswer = document.getElementById('modelAnswer').value.trim();
-  if (!question || !modelAnswer) {
-    showToast('⚠️ 問題文と模範解答を入力してください');
-    return;
-  }
-  try {
-    const res = await fetch(
-      `${GAS_URL}?action=adminBroadcast` +
-      `&question=${encodeURIComponent(question)}` +
-      `&modelAnswer=${encodeURIComponent(modelAnswer)}`
-    );
-    const result = await res.json();
-    if (result.success) {
-      document.getElementById('questionText').value  = '';
-      document.getElementById('modelAnswer').value   = '';
-      showToast(`📢 ${result.studentCount}名に配信しました`);
-    } else {
-      showToast('❌ エラー: ' + result.error);
+    .header {
+        background: var(--accent);
+        color: white;
+        padding: 16px 20px 12px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
     }
-  } catch (err) {
-    showToast('❌ 通信エラー');
-  }
-}
+    .header-label { font-size: 10px; opacity: 0.7; letter-spacing: 0.1em; }
+    .header-title { font-family: 'Kaisei Tokumin', serif; font-size: 18px; font-weight: 700; }
 
-// ===== ユーティリティ =====
-function showToast(msg) {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3000);
-}
+    .semester-bar {
+        background: var(--warning-light);
+        border-bottom: 1px solid #e8d89a;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .semester-info {
+        flex: 1;
+        font-size: 13px;
+        color: var(--warning);
+        font-weight: 500;
+    }
+    .semester-info strong { font-weight: 700; }
+    .btn-semester-change {
+        padding: 5px 12px;
+        background: var(--warning);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 12px;
+        font-family: 'Noto Sans JP', sans-serif;
+        font-weight: 500;
+        cursor: pointer;
+    }
 
-function showError(msg) {
-  document.getElementById('app').innerHTML = `
-    <div style="text-align:center;padding:80px 20px;color:var(--ink3)">
-      <div style="font-size:40px;margin-bottom:12px">⚠️</div>
-      <div>読み込みに失敗しました</div>
-      <div style="font-size:12px;margin-top:8px">${msg}</div>
-    </div>`;
-}
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+        background: var(--surface);
+        border-radius: 16px;
+        padding: 24px 20px;
+        width: calc(100% - 40px);
+        max-width: 360px;
+    }
+    .modal-title {
+        font-family: 'Kaisei Tokumin', serif;
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 16px;
+    }
+    .modal-field { margin-bottom: 14px; }
+    .modal-label { font-size: 12px; color: var(--ink3); margin-bottom: 6px; }
+    .modal-select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        font-family: 'Noto Sans JP', sans-serif;
+        font-size: 14px;
+        background: var(--surface2);
+        color: var(--ink);
+        appearance: none;
+    }
+    .modal-btns { display: flex; gap: 10px; margin-top: 18px; }
+    .modal-btn-cancel {
+        flex: 1; padding: 12px; border: 1.5px solid var(--border);
+        background: var(--surface); border-radius: 10px;
+        font-family: 'Noto Sans JP', sans-serif; font-size: 14px;
+        color: var(--ink2); cursor: pointer;
+    }
+    .modal-btn-save {
+        flex: 1; padding: 12px; border: none;
+        background: var(--accent); border-radius: 10px;
+        font-family: 'Noto Sans JP', sans-serif; font-size: 14px;
+        color: white; font-weight: 700; cursor: pointer;
+    }
 
-init();
-</script>
-</body>
+    .status-bar {
+        display: flex; align-items: center; gap: 10px;
+        background: var(--surface); margin: 12px 16px;
+        padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border);
+    }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .status-dot.active  { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.2); }
+    .status-dot.inactive { background: var(--ink3); }
+    .status-text { font-size: 13px; color: var(--ink2); flex: 1; line-height: 1.4; }
+
+    .section { margin: 0 16px 12px; }
+    .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding-left: 2px; }
+    .section-num {
+        width: 24px; height: 24px; border-radius: 50%;
+        background: var(--accent); color: white;
+        font-size: 12px; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .section-title { font-size: 14px; font-weight: 700; color: var(--ink2); }
+    .card { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+    .disabled-section { opacity: 0.4; pointer-events: none; }
+
+    .day-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 12px; }
+    .day-btn {
+        padding: 10px 4px; border-radius: 10px; border: 1.5px solid var(--border);
+        background: var(--surface2); font-family: 'Noto Sans JP', sans-serif;
+        font-size: 14px; font-weight: 500; color: var(--ink2); cursor: pointer;
+        transition: all 0.15s; display: flex; align-items: center; justify-content: center;
+    }
+    .day-btn.selected { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+
+    .subject-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; }
+    .subject-btn {
+        padding: 12px 8px; border-radius: 10px; border: 1.5px solid var(--border);
+        background: var(--surface2); font-family: 'Noto Sans JP', sans-serif;
+        font-size: 12px; font-weight: 500; color: var(--ink2); cursor: pointer;
+        transition: all 0.15s; text-align: center; line-height: 1.3;
+    }
+    .subject-btn.selected { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 700; }
+
+    .session-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 12px; }
+    .session-btn {
+        aspect-ratio: 1; border-radius: 10px; border: 1.5px solid var(--border);
+        background: var(--surface2); font-family: 'Noto Sans JP', sans-serif;
+        font-size: 14px; font-weight: 500; color: var(--ink2); cursor: pointer;
+        transition: all 0.15s; display: flex; align-items: center; justify-content: center;
+    }
+    .session-btn.selected { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 700; }
+
+    .action-btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-family: 'Noto Sans JP', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+    .btn-start { background: var(--accent); color: white; }
+    .btn-start:disabled { background: var(--border); color: var(--ink3); cursor: not-allowed; }
+    .btn-end { background: var(--danger); color: white; }
+    .btn-question { background: var(--ink); color: white; }
+
+    .form-field { padding: 0 14px; }
+    .form-label { font-size: 12px; color: var(--ink3); margin-bottom: 6px; }
+    .form-textarea { width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px; font-family: 'Noto Sans JP', sans-serif; font-size: 14px; background: var(--surface2); color: var(--ink); resize: vertical; line-height: 1.5; }
+    .divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+    .toast {
+        position: fixed; bottom: 24px; left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: var(--ink); color: white; padding: 12px 20px;
+        border-radius: 20px; font-size: 13px; font-weight: 500; z-index: 200;
+        transition: transform 0.3s ease; white-space: nowrap; max-width: calc(100% - 40px);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    </style>
+  </head>
+  <body>
+    <div id="app">読み込み中...</div>div>
+    <div id="toast" class="toast"></div>div>
+
+    <div id="semesterModal" class="modal-overlay">
+        <div class="modal">
+              <div class="modal-title">📅 アクティブクールを変更</div>div>
+              <div class="modal-field">
+                      <div class="modal-label">学年</div>div>
+                      <select id="modalGrade" class="modal-select">
+                                <option value="1">1年生</option>option>
+                                <option value="2">2年生</option>option>
+                                <option value="3">3年生</option>option>
+                                <option value="4">4年生</option>option>
+                                <option value="5">5年生</option>option>
+                                <option value="6">6年生</option>option>
+                      </select>select>
+              </div>div>
+              <div class="modal-field">
+                      <div class="modal-label">学期</div>div>
+                      <select id="modalSemester" class="modal-select">
+                                <option value="spring">春学期</option>option>
+                                <option value="fall">秋学期</option>option>
+                      </select>select>
+              </div>div>
+              <div class="modal-btns">
+                      <button class="modal-btn-cancel" onclick="closeSemesterModal()">キャンセル</button>button>
+                      <button class="modal-btn-save" onclick="saveActiveSemester()">保存</button>button>
+              </div>div>
+        </div>div>
+    </div>div>
+
+    <script>
+      const GAS_URL = 'https://script.google.com/macros/s/AKfycbzjB3a71oBi5qFJeZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec';
+      const LIFF_ID = '2009739219-9qVGb0Xm';
+
+      let SUBJECTS = [];
+      let activeSemester = { grade: 4, semester: 'spring' };
+      let selectedDay     = null;
+      let selectedSubject = null;
+      let selectedSession = null;
+      let isSessionActive  = false;
+      let activeSessionInfo = null;
+
+      async function init() {
+          try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                const [subjectsRes, statusRes, semesterRes] = await Promise.all([
+                        fetch(`${GAS_URL}?action=getSubjectMaster`),
+                        fetch(`${GAS_URL}?action=getActiveSession`),
+                        fetch(`${GAS_URL}?action=getActiveSemester`),
+                      ]);
+                SUBJECTS = (await subjectsRes.json()).subjects || [];
+                const status = await statusRes.json();
+                const semData = await semesterRes.json();
+                isSessionActive   = status.isActive;
+                activeSessionInfo = status.session;
+                activeSemester    = { grade: semData.grade || 4, semester: semData.semester || 'spring' };
+                renderApp();
+          } catch (err) {
+                showError(err.message);
+          }
+      }
+
+      function semesterLabel(sem) {
+          return sem === 'spring' ? '春学期' : '秋学期';
+      }
+
+      function renderApp() {
+          document.getElementById('app').innerHTML = `
+              <div class="header">
+                    <div class="header-label">Admin Panel</div>
+                          <div class="header-title">授業管理パネル</div>
+                              </div>
+                                  <div class="semester-bar">
+                                        <div class="semester-info">
+                                                表示中: <strong>${activeSemester.grade}年生 · ${semesterLabel(activeSemester.semester)}</strong>
+                                                      </div>
+                                                            <button class="btn-semester-change" onclick="openSemesterModal()">変更</button>
+                                                                </div>
+                                                                    <div class="status-bar">
+                                                                          <div class="status-dot ${isSessionActive ? 'active' : 'inactive'}"></div>
+                                                                                <div class="status-text">
+                                                                                        ${isSessionActive
+                                                                                                    ? `<strong>${activeSessionInfo.subject} 第${activeSessionInfo.sessionNumber}回</strong>授業進行中`
+                                                                                                    : '<strong>授業なし</strong>待機中'}
+                                                                                                          </div>
+                                                                                                                ${isSessionActive ? `
+                                                                                                                        <button class="action-btn btn-end"
+                                                                                                                                  style="width:auto;padding:8px 14px;font-size:12px;border-radius:10px"
+                                                                                                                                            onclick="endSession()">終了</button>
+                                                                                                                                                  ` : ''}
+                                                                                                                                                      </div>
+                                                                                                                                                          <div class="section ${isSessionActive ? 'disabled-section' : ''}" id="step1">
+                                                                                                                                                                <div class="section-header">
+                                                                                                                                                                        <div class="section-num">1</div>
+                                                                                                                                                                                <div class="section-title">曜日を選択</div>
+                                                                                                                                                                                      </div>
+                                                                                                                                                                                            <div class="card">
+                                                                                                                                                                                                    <div class="day-grid">
+                                                                                                                                                                                                              ${['月','火','水','木','金'].map(d => `
+                                                                                                                                                                                                                          <button class="day-btn ${d === selectedDay ? 'selected' : ''}"
+                                                                                                                                                                                                                                        onclick="selectDay('${d}')">${d}</button>
+                                                                                                                                                                                                                                                  `).join('')}
+                                                                                                                                                                                                                                                          </div>
+                                                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                        <div class="section ${isSessionActive ? 'disabled-section' : ''}"
+                                                                                                                                                                                                                                                                              style="${selectedDay ? '' : 'display:none'}">
+                                                                                                                                                                                                                                                                                    <div class="section-header">
+                                                                                                                                                                                                                                                                                            <div class="section-num">2</div>
+                                                                                                                                                                                                                                                                                                    <div class="section-title">授業を選択</div>
+                                                                                                                                                                                                                                                                                                          </div>
+                                                                                                                                                                                                                                                                                                                <div class="card">
+                                                                                                                                                                                                                                                                                                                        <div class="subject-grid">
+                                                                                                                                                                                                                                                                                                                                  ${selectedDay ? SUBJECTS.filter(s => s.day === selectedDay).map(s => `
+                                                                                                                                                                                                                                                                                                                                              <button class="subject-btn ${s.name === selectedSubject ? 'selected' : ''}"
+                                                                                                                                                                                                                                                                                                                                                            onclick="selectSubject('${s.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${s.name}</button>
+                                                                                                                                                                                                                                                                                                                                                                      `).join('') : ''}
+                                                                                                                                                                                                                                                                                                                                                                              </div>
+                                                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                                                        </div>
+                                                                                                                                                                                                                                                                                                                                                                                            <div class="section ${isSessionActive ? 'disabled-section' : ''}"
+                                                                                                                                                                                                                                                                                                                                                                                                  style="${selectedSubject ? '' : 'display:none'}">
+                                                                                                                                                                                                                                                                                                                                                                                                        <div class="section-header">
+                                                                                                                                                                                                                                                                                                                                                                                                                <div class="section-num">3</div>
+                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="section-title">授業回数を選択</div>
+                                                                                                                                                                                                                                                                                                                                                                                                                              </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="card">
+                                                                                                                                                                                                                                                                                                                                                                                                                                            <div class="session-grid">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                      ${Array.from({length: 15}, (_, i) => i + 1).map(n => `
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <button class="session-btn ${n === selectedSession ? 'selected' : ''}"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                onclick="selectSession(${n})">${n}</button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          `).join('')}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="section ${isSessionActive ? 'disabled-section' : ''}">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <div class="section-header">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <div class="section-num">4</div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <div class="section-title">授業を開始</div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <button class="action-btn btn-start" onclick="startSession()" ${selectedSubject && selectedSession ? '' : 'disabled'}>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          授業開始
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="section ${!isSessionActive ? 'disabled-section' : ''}">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <div class="section-header">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <div class="section-num">5</div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <div class="section-title">問題を出題</div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <div class="card">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <div class="form-field">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <div class="form-label">問題文</div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <textarea class="form-textarea" id="questionText" rows="3" placeholder="問題文を入力..."></textarea>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <div class="divider"></div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <div class="form-field">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="form-label">模範解答</div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <textarea class="form-textarea" id="modelAnswer" rows="3" placeholder="模範解答を入力..."></textarea>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <div style="margin-top:10px">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <button class="action-btn btn-question" onclick="broadcastQuestion()">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        📢 全学生に出題する
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            `;
+      }
+
+      function openSemesterModal() {
+          document.getElementById('modalGrade').value    = activeSemester.grade;
+          document.getElementById('modalSemester').value = activeSemester.semester;
+          document.getElementById('semesterModal').classList.add('open');
+      }
+      function closeSemesterModal() {
+          document.getElementById('semesterModal').classList.remove('open');
+      }
+      async function saveActiveSemester() {
+          const grade    = parseInt(document.getElementById('modalGrade').value);
+          const semester = document.getElementById('modalSemester').value;
+          try {
+                const res = await fetch(`${GAS_URL}?action=setActiveSemester&grade=${grade}&semester=${encodeURIComponent(semester)}`);
+                const result = await res.json();
+                if (result.success) {
+                        activeSemester = { grade, semester };
+                        const subjectsRes = await fetch(`${GAS_URL}?action=getSubjectMaster`);
+                        SUBJECTS = (await subjectsRes.json()).subjects || [];
+                        selectedDay = selectedSubject = selectedSession = null;
+                        closeSemesterModal();
+                        showToast(`✅ ${grade}年生 ${semesterLabel(semester)}に切り替えました`);
+                        renderApp();
+                } else {
+                        showToast('❌ エラー: ' + result.error);
+                }
+          } catch (err) {
+                showToast('❌ 通信エラー');
+          }
+      }
+
+      function selectDay(day) {
+          selectedDay     = day;
+          selectedSubject = null;
+          selectedSession = null;
+          renderApp();
+      }
+      function selectSubject(subject) {
+          selectedSubject = subject;
+          selectedSession = null;
+          renderApp();
+      }
+      function selectSession(num) {
+          selectedSession = num;
+          renderApp();
+      }
+
+      async function startSession() {
+          if (!selectedSubject || !selectedSession) return;
+          try {
+                const res = await fetch(
+                        `${GAS_URL}?action=adminStartSession` +
+                        `&subject=${encodeURIComponent(selectedSubject)}` +
+                        `&sessionNumber=${selectedSession}`
+                      );
+                const result = await res.json();
+                if (result.success) {
+                        isSessionActive   = true;
+                        activeSessionInfo = { subject: selectedSubject, sessionNumber: selectedSession };
+                        selectedDay = selectedSubject = selectedSession = null;
+                        showToast(`✅ ${activeSessionInfo.subject} 第${activeSessionInfo.sessionNumber}回 開始しました`);
+                        renderApp();
+                } else {
+                        showToast('❌ エラー: ' + result.error);
+                }
+          } catch (err) {
+                showToast('❌ 通信エラー');
+          }
+      }
+
+      async function endSession() {
+          try {
+                const res = await fetch(`${GAS_URL}?action=adminEndSession`);
+                const result = await res.json();
+                if (result.success) {
+                        isSessionActive = false;
+                        activeSessionInfo = null;
+                        showToast('✅ 授業を終了しました');
+                        renderApp();
+                } else {
+                        showToast('❌ エラー: ' + result.error);
+                }
+          } catch (err) {
+                showToast('❌ 通信エラー');
+          }
+      }
+
+      async function broadcastQuestion() {
+          const question    = document.getElementById('questionText').value.trim();
+          const modelAnswer = document.getElementById('modelAnswer').value.trim();
+          if (!question || !modelAnswer) {
+                showToast('⚠️ 問題文と模範解答を入力してください');
+                return;
+          }
+          try {
+                const res = await fetch(
+                        `${GAS_URL}?action=adminBroadcast` +
+                        `&question=${encodeURIComponent(question)}` +
+                        `&modelAnswer=${encodeURIComponent(modelAnswer)}`
+                      );
+                const result = await res.json();
+                if (result.success) {
+                        document.getElementById('questionText').value  = '';
+                        document.getElementById('modelAnswer').value   = '';
+                        showToast(`📢 ${result.studentCount}名に配信しました`);
+                } else {
+                        showToast('❌ エラー: ' + result.error);
+                }
+          } catch (err) {
+                showToast('❌ 通信エラー');
+          }
+      }
+
+      function showToast(msg) {
+          const toast = document.getElementById('toast');
+          toast.textContent = msg;
+          toast.classList.add('show');
+          setTimeout(() => toast.classList.remove('show'), 3000);
+      }
+      function showError(msg) {
+          document.getElementById('app').innerHTML = `
+              <div style="text-align:center;padding:80px 20px;color:var(--ink3)">
+                    <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+                          <div>読み込みに失敗しました</div>
+                                <div style="font-size:12px;margin-top:8px">${msg}</div>
+                                    </div>`;
+      }
+
+      init();
+    </script>
+  </body>
 </html>
+    </script>
+  </body>
+  </style></title>
+  </head>
