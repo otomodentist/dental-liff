@@ -1,0 +1,7 @@
+# GAS files (contain API keys - managed via clasp)
+gas_main.js.js
+gas_richmenu.js.js
+appsscript.json
+richmenu_generator.html
+.clasp.json
+.DS_Store
