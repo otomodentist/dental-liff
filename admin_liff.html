@@ -188,6 +188,45 @@
         transition: transform 0.3s ease; white-space: nowrap; max-width: calc(100% - 40px);
     }
     .toast.show { transform: translateX(-50%) translateY(0); }
+
+    .tab-nav { display: flex; background: var(--accent); border-top: 1px solid rgba(255,255,255,0.15); }
+    .tab-btn { flex: 1; padding: 10px 4px; background: none; border: none; color: rgba(255,255,255,0.6); font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    .tab-btn.active { color: white; border-bottom-color: white; font-weight: 700; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 16px 4px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 8px; text-align: center; }
+    .stat-value { font-size: 22px; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 10px; color: var(--ink3); margin-top: 2px; }
+
+    .student-list { padding: 8px 16px 40px; }
+    .student-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: border-color 0.15s; }
+    .student-item:active { opacity: 0.7; }
+    .student-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--accent-light); flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .student-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .student-info { flex: 1; min-width: 0; }
+    .student-name { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .student-meta { font-size: 11px; color: var(--ink3); margin-top: 1px; }
+    .student-score { font-size: 20px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+    .student-score.mid { color: var(--warning); }
+    .student-score.low { color: var(--danger); }
+
+    .detail-header { display: flex; align-items: center; gap: 4px; padding: 8px 16px 0; }
+    .back-btn { background: none; border: none; font-size: 13px; color: var(--ink2); cursor: pointer; padding: 8px 4px; display: flex; align-items: center; gap: 4px; }
+    .detail-name { font-size: 15px; font-weight: 700; }
+    .subject-tab-wrap { padding: 12px 16px 0; overflow-x: auto; scrollbar-width: none; }
+    .subject-tab-wrap::-webkit-scrollbar { display: none; }
+    .subject-tabs { display: flex; gap: 8px; min-width: max-content; }
+    .subject-tab { padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); background: transparent; color: var(--ink3); cursor: pointer; font-family: 'Noto Sans JP', sans-serif; }
+    .subject-tab.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: 700; }
+    .session-cards { padding: 12px 16px 40px; }
+    .session-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 8px; }
+    .session-card-header { display: flex; justify-content: space-between; align-items: center; }
+    .session-card-title { font-size: 14px; font-weight: 700; }
+    .session-card-score { font-size: 20px; font-weight: 700; color: var(--accent); }
+    .session-card-score.mid { color: var(--warning); }
+    .session-card-score.low { color: var(--danger); }
+    .session-card-meta { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--ink3); }
     </style>
   </head>
   <body>
@@ -234,6 +273,12 @@
       let isSessionActive  = false;
       let activeSessionInfo = null;
 
+      // ダッシュボード用
+      let activeTab = 'session';
+      let studentListData = null;
+      let selectedStudentId = null;
+      let selectedStudentSubjectIndex = 0;
+
       async function init() {
           try {
                 await liff.init({ liffId: LIFF_ID });
@@ -261,10 +306,20 @@
 
       function renderApp() {
           document.getElementById('app').innerHTML = `
-              <div class="header">
-                    <div class="header-label">Admin Panel</div>
-                          <div class="header-title">授業管理パネル</div>
-                              </div>
+            <div class="header">
+              <div class="header-label">Admin Panel</div>
+              <div class="header-title">授業管理パネル</div>
+              <div class="tab-nav">
+                <button class="tab-btn ${activeTab === 'session' ? 'active' : ''}" onclick="switchTab('session')">授業管理</button>
+                <button class="tab-btn ${activeTab === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">学生ダッシュボード</button>
+              </div>
+            </div>
+            ${activeTab === 'dashboard' ? renderDashboardHTML() : renderSessionHTML()}
+          `;
+      }
+
+      function renderSessionHTML() {
+          return `
                                   <div class="semester-bar">
                                         <div class="semester-info">
                                                 表示中: <strong>${activeSemester.grade}年生 · ${semesterLabel(activeSemester.semester)}</strong>
@@ -360,6 +415,150 @@
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       </div>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           </div>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             `;
+      }
+
+      async function switchTab(tab) {
+          activeTab = tab;
+          if (tab === 'dashboard' && !studentListData) {
+              document.getElementById('app').innerHTML = `
+                <div class="header">
+                  <div class="header-label">Admin Panel</div>
+                  <div class="header-title">授業管理パネル</div>
+                  <div class="tab-nav">
+                    <button class="tab-btn" onclick="switchTab('session')">授業管理</button>
+                    <button class="tab-btn active">学生ダッシュボード</button>
+                  </div>
+                </div>
+                <div style="text-align:center;padding:60px 20px;color:var(--ink3)">読み込み中...</div>
+              `;
+              try {
+                  const res = await fetch(`${GAS_URL}?action=getAdminStudentList`);
+                  studentListData = await res.json();
+              } catch (err) {
+                  showToast('❌ データ取得失敗');
+                  activeTab = 'session';
+                  renderApp();
+                  return;
+              }
+          }
+          selectedStudentId = null;
+          selectedStudentSubjectIndex = 0;
+          renderApp();
+      }
+
+      function scoreClass(score) {
+          if (score >= 70) return '';
+          if (score >= 40) return 'mid';
+          return 'low';
+      }
+
+      function renderDashboardHTML() {
+          if (!studentListData) return '<div class="empty-state">読み込み中...</div>';
+          if (selectedStudentId) return renderStudentDetailHTML();
+          const { students, overall } = studentListData;
+          const listHTML = students.length === 0
+              ? '<div class="empty-state">学生データがありません</div>'
+              : students.map(s => `
+                  <div class="student-item" onclick="showStudentDetail('${s.userId}')">
+                      <div class="student-avatar">
+                          ${s.pictureUrl ? `<img src="${s.pictureUrl}" alt="">` : '👤'}
+                      </div>
+                      <div class="student-info">
+                          <div class="student-name">${s.displayName || '名前なし'}</div>
+                          <div class="student-meta">回答数: ${s.totalAnswers}回</div>
+                      </div>
+                      <div class="student-score ${scoreClass(s.averageScore)}">${s.averageScore}</div>
+                  </div>`).join('');
+          return `
+              <div class="stat-grid">
+                  <div class="stat-card">
+                      <div class="stat-value">${overall.totalStudents}</div>
+                      <div class="stat-label">登録学生数</div>
+                  </div>
+                  <div class="stat-card">
+                      <div class="stat-value">${overall.totalAnswers}</div>
+                      <div class="stat-label">総回答数</div>
+                  </div>
+                  <div class="stat-card">
+                      <div class="stat-value ${scoreClass(overall.averageScore)}">${overall.averageScore}</div>
+                      <div class="stat-label">平均スコア</div>
+                  </div>
+              </div>
+              <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">学生一覧</div>
+              <div class="student-list">${listHTML}</div>
+          `;
+      }
+
+      function showStudentDetail(userId) {
+          selectedStudentId = userId;
+          selectedStudentSubjectIndex = 0;
+          renderApp();
+      }
+
+      function backToList() {
+          selectedStudentId = null;
+          renderApp();
+      }
+
+      function selectStudentSubject(index) {
+          selectedStudentSubjectIndex = index;
+          renderApp();
+      }
+
+      function renderStudentDetailHTML() {
+          const student = studentListData.students.find(s => s.userId === selectedStudentId);
+          if (!student) return '<div class="empty-state">データが見つかりません</div>';
+
+          // Group answers by subject
+          const answersBySubject = {};
+          (student.answerDetails || []).forEach(a => {
+              const subj = a.subject || '不明';
+              if (!answersBySubject[subj]) answersBySubject[subj] = [];
+              answersBySubject[subj].push(a);
+          });
+          const subjects = Object.keys(answersBySubject);
+          const subjectTabsHTML = subjects.length > 0 ? subjects.map((subj, i) => `
+              <button class="subject-tab ${i === selectedStudentSubjectIndex ? 'active' : ''}"
+                      onclick="selectStudentSubject(${i})">${subj}</button>
+          `).join('') : '';
+
+          const selectedSubjectAnswers = subjects.length > 0 ? answersBySubject[subjects[selectedStudentSubjectIndex]] || [] : [];
+          const sessionCardsHTML = selectedSubjectAnswers.length > 0
+              ? selectedSubjectAnswers.map(a => `
+                  <div class="session-card">
+                      <div class="session-card-header">
+                          <div class="session-card-title">第${a.sessionNumber}回</div>
+                          <div class="session-card-score ${scoreClass(a.concentrationScore)}">${a.concentrationScore}</div>
+                      </div>
+                      <div class="session-card-meta">${a.answeredAt}</div>
+                  </div>`).join('')
+              : '<div class="empty-state">回答データなし</div>';
+
+          return `
+              <div class="detail-header">
+                  <button class="back-btn" onclick="backToList()">← 一覧</button>
+                  <div class="student-avatar" style="width:32px;height:32px;font-size:14px">
+                      ${student.pictureUrl ? `<img src="${student.pictureUrl}" alt="">` : '👤'}
+                  </div>
+                  <div class="detail-name">${student.displayName || '名前なし'}</div>
+              </div>
+              <div class="stat-grid" style="margin-top:8px">
+                  <div class="stat-card">
+                      <div class="stat-value">${student.totalAnswers}</div>
+                      <div class="stat-label">総回答数</div>
+                  </div>
+                  <div class="stat-card">
+                      <div class="stat-value ${scoreClass(student.averageScore)}">${student.averageScore}</div>
+                      <div class="stat-label">平均スコア</div>
+                  </div>
+              </div>
+              ${subjects.length > 0 ? `
+              <div class="subject-tab-wrap">
+                  <div class="subject-tabs">${subjectTabsHTML}</div>
+              </div>
+              <div class="session-cards">${sessionCardsHTML}</div>
+              ` : '<div class="empty-state">回答データがありません</div>'}
+          `;
       }
 
       function openSemesterModal() {
