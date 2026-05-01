@@ -252,6 +252,19 @@
       </div>
     </div>
 
+    <div id="pauseModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-title" style="color:var(--warning)">授業に集中させる</div>
+            <div style="font-size:14px;line-height:1.6;color:var(--ink2);margin-bottom:20px">
+                このサービスを使っている余裕がないので、問題配信はしません。授業に集中させます。
+            </div>
+            <div class="modal-btns">
+                <button class="modal-btn-cancel" onclick="closePauseModal()">キャンセル</button>
+                <button class="modal-btn-save" style="background:var(--warning)" onclick="confirmPause()">確認</button>
+            </div>
+        </div>
+    </div>
+
     <div id="semesterModal" class="modal-overlay">
         <div class="modal">
               <div class="modal-title">📅 アクティブクールを変更</div>
@@ -291,6 +304,8 @@
       let selectedSession = null;
       let isSessionActive  = false;
       let activeSessionInfo = null;
+      // 改善6: 配信停止状態
+      let isDeliveryPaused = false;
 
       // ダッシュボード用
       let activeTab = 'session';
@@ -300,6 +315,11 @@
       let studentSessionsData = null;
       let sessionDetailData = null;
       let adminChart = null;
+
+      // 改善5: 学生ダッシュボードのフィルタ状態
+      let dashboardFilter = null; // { grade, semester } or null（未確定）
+      // sessionStorageキー
+      const FILTER_KEY = 'dashboardFilter';
 
       async function init() {
           try {
@@ -315,7 +335,14 @@
                 const semData = await semesterRes.json();
                 isSessionActive   = status.isActive;
                 activeSessionInfo = status.session;
+                isDeliveryPaused  = status.isPaused || false;
                 activeSemester    = { grade: semData.grade || 4, semester: semData.semester || 'spring' };
+
+                // 改善5: sessionStorageからフィルタを復元
+                const saved = sessionStorage.getItem(FILTER_KEY);
+                if (saved) {
+                    try { dashboardFilter = JSON.parse(saved); } catch (e) { dashboardFilter = null; }
+                }
                 renderApp();
           } catch (err) {
                 showError(err.message);
@@ -430,39 +457,94 @@
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   <textarea class="form-textarea" id="modelAnswer" rows="3" placeholder="模範解答を入力..."></textarea>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           </div>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      ${isDeliveryPaused ? `
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div style="background:var(--warning-light);border:1.5px solid #e8c840;border-radius:10px;padding:10px 14px;margin:10px 0;display:flex;align-items:center;gap:10px">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <span style="font-size:16px">⚠️</span>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <span style="font-size:13px;color:var(--warning);font-weight:700;flex:1">配信停止中</span>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      ` : ""}
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       <div style="margin-top:10px">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <button class="action-btn btn-question" onclick="broadcastQuestion()">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <button class="action-btn btn-question" onclick="broadcastQuestion()" ${isDeliveryPaused ? 'disabled style="background:var(--border);color:var(--ink3);cursor:not-allowed"' : ""}>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         📢 全学生に出題する
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 </button>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       </div>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <div class="section ${!isSessionActive ? 'disabled-section' : ''">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <div class="section-header">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="section-num" style="background:var(--warning)">6</div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="section-title">配信コントロール</div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ${isDeliveryPaused
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ? `<button class='action-btn' style='background:var(--accent);color:white' onclick='resumeDelivery()'>▶ 配信再開</button>`
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                : `<button class='action-btn' style='background:var(--warning);color:white' onclick='openPauseModal()'>授業に集中させる</button>`
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             `;
+
       }
 
       async function switchTab(tab) {
           activeTab = tab;
-          if (tab === 'dashboard' && !studentListData) {
-              document.getElementById('app').innerHTML = `
-                <div class="header">
-                  <div class="header-label">Admin Panel</div>
-                  <div class="header-title">授業管理パネル</div>
-                  <div class="tab-nav">
-                    <button class="tab-btn" onclick="switchTab('session')">授業管理</button>
-                    <button class="tab-btn active">学生ダッシュボード</button>
-                  </div>
-                </div>
-                <div style="text-align:center;padding:60px 20px;color:var(--ink3)">読み込み中...</div>
-              `;
-              try {
-                  const res = await fetch(`${GAS_URL}?action=getAdminStudentList`);
-                  studentListData = await res.json();
-              } catch (err) {
-                  showToast('❌ データ取得失敗');
-                  activeTab = 'session';
+          if (tab === 'dashboard') {
+              // フィルタが未確定の場合はフィルタ選択画面を表示（データ取得不要）
+              if (!dashboardFilter) {
+                  selectedStudentId = null;
+                  selectedSessionId = null;
+                  studentSessionsData = null;
+                  sessionDetailData = null;
+                  studentListData = null;
+                  if (adminChart) { adminChart.destroy(); adminChart = null; }
                   renderApp();
                   return;
               }
+              // フィルタ確定済みでデータ未取得の場合は取得
+              if (!studentListData) {
+                  document.getElementById('app').innerHTML = `
+                    <div class="header">
+                      <div class="header-label">Admin Panel</div>
+                      <div class="header-title">授業管理パネル</div>
+                      <div class="tab-nav">
+                        <button class="tab-btn" onclick="switchTab('session')">授業管理</button>
+                        <button class="tab-btn active">学生ダッシュボード</button>
+                      </div>
+                    </div>
+                    <div style="text-align:center;padding:60px 20px;color:var(--ink3)">読み込み中...</div>
+                  `;
+                  try {
+                      const url = `${GAS_URL}?action=getStudentsByGradeAndSemester&grade=${dashboardFilter.grade}&semester=${encodeURIComponent(dashboardFilter.semester)}`;
+                      const res = await fetch(url);
+                      studentListData = await res.json();
+                  } catch (err) {
+                      showToast('❌ データ取得失敗');
+                      activeTab = 'session';
+                      renderApp();
+                      return;
+                  }
+              }
           }
+          selectedStudentId = null;
+          selectedSessionId = null;
+          studentSessionsData = null;
+          sessionDetailData = null;
+          if (adminChart) { adminChart.destroy(); adminChart = null; }
+          renderApp();
+      }
+
+      // 改善5: ダッシュボードフィルタ確定
+      async function confirmDashboardFilter() {
+          const grade = parseInt(document.getElementById('filterGrade').value);
+          const semester = document.getElementById('filterSemester').value;
+          dashboardFilter = { grade, semester };
+          sessionStorage.setItem(FILTER_KEY, JSON.stringify(dashboardFilter));
+          studentListData = null; // リセットして再取得
+          await switchTab('dashboard');
+      }
+
+      // 改善5: フィルタ変更（リセット）
+      function changeDashboardFilter() {
+          dashboardFilter = null;
+          sessionStorage.removeItem(FILTER_KEY);
+          studentListData = null;
           selectedStudentId = null;
           selectedSessionId = null;
           studentSessionsData = null;
@@ -478,14 +560,45 @@
       }
 
       function renderDashboardHTML() {
+          // 改善5: フィルタ未確定の場合はフィルタ選択UIを表示
+          if (!dashboardFilter) return renderDashboardFilterHTML();
           if (!studentListData) return '<div class="empty-state">読み込み中...</div>';
           if (selectedSessionId) return renderSessionDetailHTML();
           if (selectedStudentId) return renderStudentSessionsHTML();
           return renderStudentListHTML();
       }
 
+      // 改善5: フィルタ選択UI
+      function renderDashboardFilterHTML() {
+          return `
+              <div style="padding:20px 16px">
+                  <div style="font-family:'Kaisei Tokumin',serif;font-size:16px;font-weight:700;margin-bottom:16px;color:var(--ink)">学年・学期を選択</div>
+                  <div style="margin-bottom:14px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:6px">学年</div>
+                      <select id="filterGrade" class="modal-select">
+                          <option value="1">1年生</option>
+                          <option value="2">2年生</option>
+                          <option value="3">3年生</option>
+                          <option value="4" selected>4年生</option>
+                          <option value="5">5年生</option>
+                          <option value="6">6年生</option>
+                      </select>
+                  </div>
+                  <div style="margin-bottom:20px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:6px">学期</div>
+                      <select id="filterSemester" class="modal-select">
+                          <option value="spring">春学期</option>
+                          <option value="fall">秋学期</option>
+                      </select>
+                  </div>
+                  <button class="action-btn btn-start" onclick="confirmDashboardFilter()">確定</button>
+              </div>
+          `;
+      }
+
       function renderStudentListHTML() {
           const { students, overall } = studentListData;
+          const filterLabel = `${dashboardFilter.grade}年 ${dashboardFilter.semester === 'spring' ? '春学期' : '秋学期'}`;
           const listHTML = students.length === 0
               ? '<div class="empty-state">学生データがありません</div>'
               : students.map(s => `
@@ -500,7 +613,13 @@
                       <div style="font-size:13px;color:var(--ink3)">▶</div>
                   </div>`).join('');
           return `
-              <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">学生一覧（${overall.totalStudents}名登録）</div>
+              <div style="background:var(--warning-light);border-bottom:1px solid #e8d89a;padding:10px 16px;display:flex;align-items:center;gap:10px">
+                  <div style="flex:1;font-size:13px;color:var(--warning);font-weight:500">
+                      現在表示中：<strong>${filterLabel}</strong>
+                  </div>
+                  <button class="btn-semester-change" onclick="changeDashboardFilter()">変更</button>
+              </div>
+              <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">学生一覧（${overall.totalStudents}名）</div>
               <div class="student-list">${listHTML}</div>
           `;
       }
@@ -639,6 +758,19 @@
           const labels = answers.map(a => `${a.minutesElapsed}分`);
           const scores = answers.map(a => a.accuracyScore);
 
+          // 改善6: 配信停止区間をグレー縦線でグラフに表示
+          const pausedAt = sessionDetailData.pausedAt; // 分単位の経過時間
+          let pauseLineDatasets = [];
+          if (pausedAt !== null && pausedAt !== undefined) {
+              // データ点の中でpausedAtに最も近いインデックスを計算して縦線用データセットを作る
+              pauseLineDatasets = [{
+                  label: '配信停止',
+                  data: labels.map(() => null), // 全点null（縦線は別途Canvas描画）
+                  borderColor: 'transparent',
+                  pointRadius: 0,
+              }];
+          }
+
           adminChart = new Chart(canvas, {
               type: 'line',
               data: {
@@ -687,6 +819,36 @@
                       if (elements.length > 0) showPointDetail(elements[0].index);
                   },
               },
+              plugins: [{
+                  // 改善6: 配信停止位置にグレー縦線を描画するカスタムプラグイン
+                  id: 'pauseLine',
+                  afterDraw(chart) {
+                      if (pausedAt === null || pausedAt === undefined) return;
+                      const { ctx, scales: { x, y } } = chart;
+                      // x軸のラベル（分）からピクセル位置を補間
+                      const minuteValues = answers.map(a => a.minutesElapsed);
+                      if (minuteValues.length === 0) return;
+                      const minVal = minuteValues[0];
+                      const maxVal = minuteValues[minuteValues.length - 1];
+                      if (maxVal === minVal) return;
+                      // pausedAtのX座標を線形補間
+                      const clampedPause = Math.max(minVal, Math.min(maxVal, pausedAt));
+                      const ratio = (clampedPause - minVal) / (maxVal - minVal);
+                      const xPixel = x.left + ratio * (x.right - x.left);
+                      ctx.save();
+                      ctx.beginPath();
+                      ctx.moveTo(xPixel, y.top);
+                      ctx.lineTo(xPixel, y.bottom);
+                      ctx.strokeStyle = 'rgba(150,100,0,0.6)';
+                      ctx.lineWidth = 2;
+                      ctx.setLineDash([6, 3]);
+                      ctx.stroke();
+                      ctx.fillStyle = 'rgba(150,100,0,0.8)';
+                      ctx.font = '11px sans-serif';
+                      ctx.fillText('配信停止', xPixel + 4, y.top + 14);
+                      ctx.restore();
+                  },
+              }],
           });
       }
 
@@ -802,6 +964,7 @@
                 if (result.success) {
                         isSessionActive = false;
                         activeSessionInfo = null;
+                        isDeliveryPaused = false; // 改善6: 授業終了時に配信停止状態もリセット
                         showToast('✅ 授業を終了しました');
                         renderApp();
                 } else {
@@ -835,6 +998,47 @@
                 }
           } catch (err) {
                 showToast('❌ 通信エラー');
+          }
+      }
+
+      // 改善6: 配信停止モーダル
+      function openPauseModal() {
+          document.getElementById('pauseModal').classList.add('open');
+      }
+      function closePauseModal() {
+          document.getElementById('pauseModal').classList.remove('open');
+      }
+      async function confirmPause() {
+          closePauseModal();
+          try {
+              const sessionId = activeSessionInfo ? activeSessionInfo.sessionId : '';
+              const res = await fetch(`${GAS_URL}?action=pauseQuestionDelivery&sessionId=${encodeURIComponent(sessionId)}`);
+              const result = await res.json();
+              if (result.success) {
+                  isDeliveryPaused = true;
+                  showToast('⚠️ 配信停止しました。学生にLINEを送信しました。');
+                  renderApp();
+              } else {
+                  showToast('❌ エラー: ' + result.error);
+              }
+          } catch (err) {
+              showToast('❌ 通信エラー');
+          }
+      }
+      async function resumeDelivery() {
+          try {
+              const sessionId = activeSessionInfo ? activeSessionInfo.sessionId : '';
+              const res = await fetch(`${GAS_URL}?action=resumeQuestionDelivery&sessionId=${encodeURIComponent(sessionId)}`);
+              const result = await res.json();
+              if (result.success) {
+                  isDeliveryPaused = false;
+                  showToast('✅ 配信を再開しました');
+                  renderApp();
+              } else {
+                  showToast('❌ エラー: ' + result.error);
+              }
+          } catch (err) {
+              showToast('❌ 通信エラー');
           }
       }
 
