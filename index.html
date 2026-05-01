@@ -314,9 +314,44 @@
 
   /* フッター余白 */
   .footer-pad { height: 40px; }
+
+  /* 直近授業ボタン */
+  .latest-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin: 0 20px 16px;
+    cursor: pointer;
+    width: calc(100% - 40px);
+    text-align: left;
+    transition: border-color 0.2s;
+  }
+  .latest-btn:active { opacity: 0.8; }
+  .latest-btn-icon { font-size: 22px; }
+  .latest-btn-text { flex: 1; }
+  .latest-btn-label { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
+  .latest-btn-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; }
+
+  /* 直近授業ポップアップ */
+  .latest-popup { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: flex-end; }
+  .latest-popup.open { display: flex; }
+  .latest-popup-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 20px 40px; width: 100%; }
+  .latest-popup-close { float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
 </style>
 </head>
 <body>
+
+<div id="latestPopup" class="latest-popup">
+  <div class="latest-popup-sheet">
+    <button class="latest-popup-close" onclick="closeLatestPopup()">✕</button>
+    <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;margin-bottom:16px">直近終了した授業</div>
+    <div id="latestPopupContent"></div>
+  </div>
+</div>
 
 <div id="app">
   <div class="loading" id="loading">
@@ -416,6 +451,15 @@ function renderApp() {
         `).join('')}
       </div>
     </div>
+
+    <button class="latest-btn" onclick="checkLatestSession()">
+      <div class="latest-btn-icon">🔔</div>
+      <div class="latest-btn-text">
+        <div class="latest-btn-label">LATEST CLASS</div>
+        <div class="latest-btn-title">直近終了した授業を確認する</div>
+      </div>
+      <div style="font-size:13px;color:var(--text-muted)">▶</div>
+    </button>
 
     <div class="summary-grid">
       <div class="summary-card accent1">
@@ -616,6 +660,45 @@ function drawHistoryChart(canvasId, sessions) {
       },
     },
   });
+}
+
+async function checkLatestSession() {
+  const popup = document.getElementById('latestPopup');
+  const content = document.getElementById('latestPopupContent');
+  content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)">読み込み中...</div>';
+  popup.classList.add('open');
+  try {
+    const res = await fetch(`${GAS_URL}?action=getLatestSessionData&userId=${encodeURIComponent(userId)}`);
+    const data = await res.json();
+    if (!data.found) {
+      content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)">終了した授業がまだありません</div>';
+      return;
+    }
+    const scoreColor = data.avgScore >= 70 ? 'var(--accent)' : data.avgScore >= 40 ? '#ffd666' : 'var(--accent3)';
+    content.innerHTML = `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">${data.subject}</div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px">第${data.sessionNumber}回授業</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="text-align:center">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">集中度スコア</div>
+            <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:${scoreColor}">${data.avgScore}</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">回答問題数</div>
+            <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800">${data.answerCount}</div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);text-align:center">詳細は下の「授業詳細」から確認できます</div>
+    `;
+  } catch (e) {
+    content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)">データ取得に失敗しました</div>';
+  }
+}
+
+function closeLatestPopup() {
+  document.getElementById('latestPopup').classList.remove('open');
 }
 
 function showError(msg) {
