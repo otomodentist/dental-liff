@@ -194,11 +194,6 @@
     .tab-btn { flex: 1; padding: 10px 4px; background: none; border: none; color: rgba(255,255,255,0.6); font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
     .tab-btn.active { color: white; border-bottom-color: white; font-weight: 700; }
 
-    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 16px 4px; }
-    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 8px; text-align: center; }
-    .stat-value { font-size: 22px; font-weight: 700; color: var(--accent); }
-    .stat-label { font-size: 10px; color: var(--ink3); margin-top: 2px; }
-
     .student-list { padding: 8px 16px 40px; }
     .student-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: border-color 0.15s; }
     .student-item:active { opacity: 0.7; }
@@ -214,19 +209,6 @@
     .detail-header { display: flex; align-items: center; gap: 4px; padding: 8px 16px 0; }
     .back-btn { background: none; border: none; font-size: 13px; color: var(--ink2); cursor: pointer; padding: 8px 4px; display: flex; align-items: center; gap: 4px; }
     .detail-name { font-size: 15px; font-weight: 700; }
-    .subject-tab-wrap { padding: 12px 16px 0; overflow-x: auto; scrollbar-width: none; }
-    .subject-tab-wrap::-webkit-scrollbar { display: none; }
-    .subject-tabs { display: flex; gap: 8px; min-width: max-content; }
-    .subject-tab { padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); background: transparent; color: var(--ink3); cursor: pointer; font-family: 'Noto Sans JP', sans-serif; }
-    .subject-tab.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: 700; }
-    .session-cards { padding: 12px 16px 40px; }
-    .session-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 8px; }
-    .session-card-header { display: flex; justify-content: space-between; align-items: center; }
-    .session-card-title { font-size: 14px; font-weight: 700; }
-    .session-card-score { font-size: 20px; font-weight: 700; color: var(--accent); }
-    .session-card-score.mid { color: var(--warning); }
-    .session-card-score.low { color: var(--danger); }
-    .session-card-meta { font-size: 11px; color: var(--ink3); margin-top: 2px; }
     .empty-state { text-align: center; padding: 60px 20px; color: var(--ink3); }
 
     .popup-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; justify-content: center; }
@@ -304,7 +286,6 @@
       let selectedSession = null;
       let isSessionActive  = false;
       let activeSessionInfo = null;
-      // 改善6: 配信停止状態
       let isDeliveryPaused = false;
 
       // ダッシュボード用
@@ -316,9 +297,7 @@
       let sessionDetailData = null;
       let adminChart = null;
 
-      // 改善5: 学生ダッシュボードのフィルタ状態
       let dashboardFilter = null; // { grade, semester } or null（未確定）
-      // sessionStorageキー
       const FILTER_KEY = 'dashboardFilter';
 
       async function init() {
@@ -343,7 +322,6 @@
                 isSessionActive   = session.isActive || false;
                 activeSessionInfo = session.session || null;
                 isDeliveryPaused  = session.isPaused || false;
-                sessionStorage.setItem('adminInitCache', JSON.stringify({ subjects: SUBJECTS, activeSemester }));
                 renderApp();
           } catch (err) {
                 showError(err.message);
@@ -531,7 +509,6 @@
           renderApp();
       }
 
-      // 改善5: ダッシュボードフィルタ確定
       async function confirmDashboardFilter() {
           const grade = parseInt(document.getElementById('filterGrade').value);
           const semester = document.getElementById('filterSemester').value;
@@ -541,7 +518,6 @@
           await switchTab('dashboard');
       }
 
-      // 改善5: フィルタ変更（リセット）
       function changeDashboardFilter() {
           dashboardFilter = null;
           sessionStorage.removeItem(FILTER_KEY);
@@ -561,7 +537,6 @@
       }
 
       function renderDashboardHTML() {
-          // 改善5: フィルタ未確定の場合はフィルタ選択UIを表示
           if (!dashboardFilter) return renderDashboardFilterHTML();
           if (!studentListData) return '<div class="empty-state">読み込み中...</div>';
           if (selectedSessionId) return renderSessionDetailHTML();
@@ -569,7 +544,6 @@
           return renderStudentListHTML();
       }
 
-      // 改善5: フィルタ選択UI
       function renderDashboardFilterHTML() {
           return `
               <div style="padding:20px 16px">
@@ -759,18 +733,7 @@
           const labels = answers.map(a => `${a.minutesElapsed}分`);
           const scores = answers.map(a => a.accuracyScore);
 
-          // 改善6: 配信停止区間をグレー縦線でグラフに表示
-          const pausedAt = sessionDetailData.pausedAt; // 分単位の経過時間
-          let pauseLineDatasets = [];
-          if (pausedAt !== null && pausedAt !== undefined) {
-              // データ点の中でpausedAtに最も近いインデックスを計算して縦線用データセットを作る
-              pauseLineDatasets = [{
-                  label: '配信停止',
-                  data: labels.map(() => null), // 全点null（縦線は別途Canvas描画）
-                  borderColor: 'transparent',
-                  pointRadius: 0,
-              }];
-          }
+          const pausedAt = sessionDetailData.pausedAt; // 配信停止時刻（分単位の経過時間）
 
           adminChart = new Chart(canvas, {
               type: 'line',
@@ -821,18 +784,15 @@
                   },
               },
               plugins: [{
-                  // 改善6: 配信停止位置にグレー縦線を描画するカスタムプラグイン
                   id: 'pauseLine',
                   afterDraw(chart) {
                       if (pausedAt === null || pausedAt === undefined) return;
                       const { ctx, scales: { x, y } } = chart;
-                      // x軸のラベル（分）からピクセル位置を補間
                       const minuteValues = answers.map(a => a.minutesElapsed);
                       if (minuteValues.length === 0) return;
                       const minVal = minuteValues[0];
                       const maxVal = minuteValues[minuteValues.length - 1];
                       if (maxVal === minVal) return;
-                      // pausedAtのX座標を線形補間
                       const clampedPause = Math.max(minVal, Math.min(maxVal, pausedAt));
                       const ratio = (clampedPause - minVal) / (maxVal - minVal);
                       const xPixel = x.left + ratio * (x.right - x.left);
@@ -965,7 +925,7 @@
                 if (result.success) {
                         isSessionActive = false;
                         activeSessionInfo = null;
-                        isDeliveryPaused = false; // 改善6: 授業終了時に配信停止状態もリセット
+                        isDeliveryPaused = false;
                         showToast('✅ 授業を終了しました');
                         renderApp();
                 } else {
@@ -1002,7 +962,6 @@
           }
       }
 
-      // 改善6: 配信停止モーダル
       function openPauseModal() {
           document.getElementById('pauseModal').classList.add('open');
       }
