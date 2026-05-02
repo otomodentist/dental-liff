@@ -321,18 +321,10 @@
       // sessionStorageキー
       const FILTER_KEY = 'dashboardFilter';
 
-      function setStatus(msg) {
-          const el = document.getElementById('app');
-          if (el) el.innerHTML = `<div style="padding:40px 20px;text-align:center;color:var(--ink3);font-size:13px">${msg}</div>`;
-      }
-
       async function init() {
           try {
-                setStatus('LIFFを初期化中...');
                 await liff.init({ liffId: LIFF_ID });
                 if (!liff.isLoggedIn()) { liff.login(); return; }
-
-                setStatus('データを取得中...');
                 // sessionStorageからフィルタ復元
                 const saved = sessionStorage.getItem(FILTER_KEY);
                 if (saved) {
