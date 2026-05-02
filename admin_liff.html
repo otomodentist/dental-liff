@@ -332,50 +332,16 @@
                     try { dashboardFilter = JSON.parse(saved); } catch (e) { dashboardFilter = null; }
                 }
 
-                // キャッシュがあれば即表示 → activeSessionだけ取得
-                const cache = sessionStorage.getItem('adminInitCache');
-                if (cache) {
-                    const c = JSON.parse(cache);
-                    SUBJECTS = c.subjects || [];
-                    activeSemester = c.activeSemester || { grade: 4, semester: 'spring' };
-                    renderApp(); // キャッシュで即座に描画
-
-                    // activeSessionのみリアルタイム取得
-                    const statusRes = await fetch(`${GAS_URL}?action=getActiveSession`);
-                    const status = await statusRes.json();
-                    isSessionActive   = status.isActive;
-                    activeSessionInfo = status.session;
-                    isDeliveryPaused  = status.isPaused || false;
-                    renderApp();
-
-                    // バックグラウンドでキャッシュ更新
-                    Promise.all([
-                        fetch(`${GAS_URL}?action=getSubjectMaster`),
-                        fetch(`${GAS_URL}?action=getActiveSemester`),
-                    ]).then(async ([sRes, semRes]) => {
-                        SUBJECTS = (await sRes.json()).subjects || [];
-                        const semData = await semRes.json();
-                        activeSemester = { grade: semData.grade || 4, semester: semData.semester || 'spring' };
-                        sessionStorage.setItem('adminInitCache', JSON.stringify({ subjects: SUBJECTS, activeSemester }));
-                        renderApp();
-                    });
-                } else {
-                    // 初回のみ3並列取得
-                    const [subjectsRes, statusRes, semesterRes] = await Promise.all([
-                        fetch(`${GAS_URL}?action=getSubjectMaster`),
-                        fetch(`${GAS_URL}?action=getActiveSession`),
-                        fetch(`${GAS_URL}?action=getActiveSemester`),
-                    ]);
-                    SUBJECTS = (await subjectsRes.json()).subjects || [];
-                    const status = await statusRes.json();
-                    const semData = await semesterRes.json();
-                    isSessionActive   = status.isActive;
-                    activeSessionInfo = status.session;
-                    isDeliveryPaused  = status.isPaused || false;
-                    activeSemester    = { grade: semData.grade || 4, semester: semData.semester || 'spring' };
-                    sessionStorage.setItem('adminInitCache', JSON.stringify({ subjects: SUBJECTS, activeSemester }));
-                    renderApp();
-                }
+                // 1リクエストで全初期データ取得
+                const res = await fetch(`${GAS_URL}?action=getInitData`);
+                const data = await res.json();
+                SUBJECTS         = data.subjects || [];
+                activeSemester   = data.semesterData || { grade: 4, semester: 'spring' };
+                isSessionActive  = data.activeSession.isActive;
+                activeSessionInfo = data.activeSession.session;
+                isDeliveryPaused  = data.activeSession.isPaused || false;
+                sessionStorage.setItem('adminInitCache', JSON.stringify({ subjects: SUBJECTS, activeSemester }));
+                renderApp();
           } catch (err) {
                 showError(err.message);
           }
