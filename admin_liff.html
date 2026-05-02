@@ -297,15 +297,16 @@
       let sessionDetailData = null;
       let adminChart = null;
 
-      let dashboardFilter = null; // { grade, semester } or null（未確定）
+      let dashboardFilter = null;
       const FILTER_KEY = 'dashboardFilter';
 
       async function init() {
           try {
                 await liff.init({ liffId: LIFF_ID });
                 if (!liff.isLoggedIn()) { liff.login(); return; }
-                // sessionStorageからフィルタ復元
-                const saved = sessionStorage.getItem(FILTER_KEY);
+
+                // localStorageからフィルタ復元（アプリを閉じても保持）
+                const saved = localStorage.getItem(FILTER_KEY);
                 if (saved) {
                     try { dashboardFilter = JSON.parse(saved); } catch (e) { dashboardFilter = null; }
                 }
@@ -322,6 +323,12 @@
                 isSessionActive   = session.isActive || false;
                 activeSessionInfo = session.session || null;
                 isDeliveryPaused  = session.isPaused || false;
+
+                // フィルタ未設定の場合はactiveSemesterを自動適用
+                if (!dashboardFilter) {
+                    dashboardFilter = { grade: activeSemester.grade, semester: activeSemester.semester };
+                    localStorage.setItem(FILTER_KEY, JSON.stringify(dashboardFilter));
+                }
                 renderApp();
           } catch (err) {
                 showError(err.message);
@@ -513,14 +520,14 @@
           const grade = parseInt(document.getElementById('filterGrade').value);
           const semester = document.getElementById('filterSemester').value;
           dashboardFilter = { grade, semester };
-          sessionStorage.setItem(FILTER_KEY, JSON.stringify(dashboardFilter));
+          localStorage.setItem(FILTER_KEY, JSON.stringify(dashboardFilter));
           studentListData = null; // リセットして再取得
           await switchTab('dashboard');
       }
 
       function changeDashboardFilter() {
           dashboardFilter = null;
-          sessionStorage.removeItem(FILTER_KEY);
+          localStorage.removeItem(FILTER_KEY);
           studentListData = null;
           selectedStudentId = null;
           selectedSessionId = null;
