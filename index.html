@@ -426,7 +426,6 @@ function renderApp() {
   const allSessions = subject.sessions;
   const avgScore = subject.averageScore;
 
-  // 全セッション平均の時系列（最新セッション）
   const latestSession = allSessions[allSessions.length - 1];
 
   app.innerHTML = `
