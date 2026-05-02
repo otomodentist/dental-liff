@@ -332,14 +332,18 @@
                     try { dashboardFilter = JSON.parse(saved); } catch (e) { dashboardFilter = null; }
                 }
 
-                // 1リクエストで全初期データ取得
-                const res = await fetch(`${GAS_URL}?action=getInitData`);
+                // 1リクエストで全初期データ取得（30秒タイムアウト）
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 30000);
+                const res = await fetch(`${GAS_URL}?action=getInitData`, { signal: controller.signal });
+                clearTimeout(timeout);
                 const data = await res.json();
-                SUBJECTS         = data.subjects || [];
-                activeSemester   = data.semesterData || { grade: 4, semester: 'spring' };
-                isSessionActive  = data.activeSession.isActive;
-                activeSessionInfo = data.activeSession.session;
-                isDeliveryPaused  = data.activeSession.isPaused || false;
+                SUBJECTS          = data.subjects || [];
+                activeSemester    = data.semesterData || { grade: 4, semester: 'spring' };
+                const session     = data.activeSession || {};
+                isSessionActive   = session.isActive || false;
+                activeSessionInfo = session.session || null;
+                isDeliveryPaused  = session.isPaused || false;
                 sessionStorage.setItem('adminInitCache', JSON.stringify({ subjects: SUBJECTS, activeSemester }));
                 renderApp();
           } catch (err) {
