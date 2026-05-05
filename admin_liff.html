@@ -471,22 +471,26 @@
 
       }
 
+      function renderLoadingScreen(activeTabName) {
+          document.getElementById('app').innerHTML = `
+            <div class="header">
+              <div class="header-label">Admin Panel</div>
+              <div class="header-title">授業管理パネル</div>
+              <div class="tab-nav">
+                <button class="tab-btn ${activeTabName === 'session' ? 'active' : ''}" onclick="switchTab('session')">授業管理</button>
+                <button class="tab-btn ${activeTabName === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">学生ダッシュボード</button>
+                <button class="tab-btn ${activeTabName === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">課金管理</button>
+              </div>
+            </div>
+            <div style="text-align:center;padding:60px 20px;color:var(--ink3)">読み込み中...</div>
+          `;
+      }
+
       async function switchTab(tab) {
           activeTab = tab;
           if (tab === 'billing') {
               if (!billingListData) {
-                  document.getElementById('app').innerHTML = `
-                    <div class="header">
-                      <div class="header-label">Admin Panel</div>
-                      <div class="header-title">授業管理パネル</div>
-                      <div class="tab-nav">
-                        <button class="tab-btn" onclick="switchTab('session')">授業管理</button>
-                        <button class="tab-btn" onclick="switchTab('dashboard')">学生ダッシュボード</button>
-                        <button class="tab-btn active">課金管理</button>
-                      </div>
-                    </div>
-                    <div style="text-align:center;padding:60px 20px;color:var(--ink3)">読み込み中...</div>
-                  `;
+                  renderLoadingScreen('billing');
                   try {
                       const res = await fetch(`${GAS_URL}?action=getAdminStudentListWithBilling`);
                       billingListData = await res.json();
@@ -512,17 +516,7 @@
               }
               // フィルタ確定済みでデータ未取得の場合は取得
               if (!studentListData) {
-                  document.getElementById('app').innerHTML = `
-                    <div class="header">
-                      <div class="header-label">Admin Panel</div>
-                      <div class="header-title">授業管理パネル</div>
-                      <div class="tab-nav">
-                        <button class="tab-btn" onclick="switchTab('session')">授業管理</button>
-                        <button class="tab-btn active">学生ダッシュボード</button>
-                      </div>
-                    </div>
-                    <div style="text-align:center;padding:60px 20px;color:var(--ink3)">読み込み中...</div>
-                  `;
+                  renderLoadingScreen('dashboard');
                   try {
                       const url = `${GAS_URL}?action=getStudentsByGradeAndSemester&grade=${dashboardFilter.grade}&semester=${encodeURIComponent(dashboardFilter.semester)}`;
                       const res = await fetch(url);
