@@ -62,3 +62,7 @@ git push origin main
 | 2026/05/05 | generateStripeCheckoutUrl / sendDecisionMessage / recordDemoAccess追加 |
 | 2026/05/05 | demo.html: LIFF初期化 + デモアクセス時にGAS通知（決済案内メッセージ3を自動送信） |
 | 2026/05/05 | 学生マスタH列（デモ確認日時）追加 |
+| 2026/05/06 | index.html: アカウント管理セクション＋サブスク解約ボタン＋確認モーダル追加 |
+| 2026/05/06 | gas_main.js.js: cancelSubscription・processStripePayment・sendCompletionMessage追加 |
+| 2026/05/06 | gas_main.js.js: handleFollowEvent簡略化（あいさつはLINE OAMへ移行）|
+| 2026/05/06 | gas_main.js.js: adminGrantFreeAccess完了時に登録完了メッセージ自動配信 |

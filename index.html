@@ -315,6 +315,48 @@
   /* フッター余白 */
   .footer-pad { height: 40px; }
 
+  /* アカウント管理セクション */
+  .account-section {
+    padding: 0 20px 20px;
+    margin-top: 8px;
+  }
+  .account-section-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .cancel-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px;
+    background: rgba(255,107,138,0.12);
+    border: 1px solid rgba(255,107,138,0.4);
+    border-radius: 14px;
+    color: var(--accent3);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .cancel-btn:active { opacity: 0.8; }
+
+  /* 解約確認モーダル */
+  .cancel-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: flex-end; }
+  .cancel-modal.open { display: flex; }
+  .cancel-modal-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 24px 20px 40px; width: 100%; }
+  .cancel-modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; margin-bottom: 16px; color: var(--accent3); }
+  .cancel-modal-body { font-size: 14px; color: var(--text-dim); line-height: 1.7; margin-bottom: 24px; }
+  .cancel-modal-body ul { padding-left: 20px; margin-top: 8px; }
+  .cancel-modal-btns { display: flex; gap: 10px; }
+  .cancel-modal-btns .btn-keep { flex: 1; padding: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .cancel-modal-btns .btn-confirm-cancel { flex: 1; padding: 14px; background: var(--accent3); border: none; border-radius: 12px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
+
   /* 直近授業ボタン */
   .latest-btn {
     display: flex;
@@ -344,6 +386,25 @@
 </style>
 </head>
 <body>
+
+<div id="cancelModal" class="cancel-modal">
+  <div class="cancel-modal-sheet">
+    <div class="cancel-modal-title">サブスクリプションを解約しますか？</div>
+    <div class="cancel-modal-body">
+      解約すると：
+      <ul>
+        <li>すぐにサービスが利用できなくなります</li>
+        <li>授業データは保持されます</li>
+        <li>再度契約する場合は再度決済が必要です</li>
+      </ul>
+      <br>本当に解約しますか？
+    </div>
+    <div class="cancel-modal-btns">
+      <button class="btn-keep" onclick="hideCancelModal()">キャンセル</button>
+      <button class="btn-confirm-cancel" onclick="confirmCancel()">解約する</button>
+    </div>
+  </div>
+</div>
 
 <div id="latestPopup" class="latest-popup">
   <div class="latest-popup-sheet">
@@ -530,6 +591,13 @@ function renderApp() {
       </div>
     </div>
 
+    <div class="account-section">
+      <div class="account-section-title">Account</div>
+      <button class="cancel-btn" onclick="showCancelModal()">
+        サブスクリプションを解約する
+      </button>
+    </div>
+
     <div class="footer-pad"></div>
   `;
 
@@ -698,6 +766,39 @@ async function checkLatestSession() {
 
 function closeLatestPopup() {
   document.getElementById('latestPopup').classList.remove('open');
+}
+
+function showCancelModal() {
+  document.getElementById('cancelModal').classList.add('open');
+}
+function hideCancelModal() {
+  document.getElementById('cancelModal').classList.remove('open');
+}
+async function confirmCancel() {
+  const btn = document.querySelector('.btn-confirm-cancel');
+  btn.disabled = true;
+  btn.textContent = '処理中...';
+  try {
+    const res = await fetch(`${GAS_URL}?action=cancelSubscription&userId=${encodeURIComponent(userId)}`);
+    const data = await res.json();
+    if (data.success) {
+      hideCancelModal();
+      document.getElementById('app').innerHTML = `
+        <div class="error-state" style="padding-top:80px">
+          <div class="icon">✅</div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:8px">解約完了</div>
+          <div style="font-size:13px;color:var(--text-muted)">サブスクリプションの解約が完了しました。<br>ご利用ありがとうございました。</div>
+        </div>`;
+    } else {
+      btn.disabled = false;
+      btn.textContent = '解約する';
+      alert('エラーが発生しました: ' + (data.error || '不明なエラー'));
+    }
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '解約する';
+    alert('通信エラーが発生しました');
+  }
 }
 
 function showError(msg) {
