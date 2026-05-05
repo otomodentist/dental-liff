@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>デモ体験 | 授業のオトモ</title>
+  <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Kaisei+Tokumin:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -334,6 +335,11 @@ const DEMO_SUBJECTS = [
   }
 ];
 
+// ===== 設定 =====
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec';
+// LIFF ID: demo.html用のLIFF IDをLINE Developers Consoleで作成して設定してください
+const DEMO_LIFF_ID = ''; // 例: '2009739219-xxxxxxxx'
+
 // ===== 状態 =====
 let view = 'subjects'; // 'subjects' | 'sessions' | 'chart'
 let selectedSubjectIdx = 0;
@@ -567,7 +573,31 @@ function openRegister() {
   alert('このデモページでは登録できません。\nLINEで「授業のオトモ」を友達追加してご登録ください。');
 }
 
-render();
+// ===== LIFF初期化 & デモアクセス記録 =====
+async function initLiffAndRecord() {
+  if (!DEMO_LIFF_ID) { render(); return; }
+  try {
+    await liff.init({ liffId: DEMO_LIFF_ID });
+    if (liff.isLoggedIn()) {
+      const profile = await liff.getProfile();
+      const userId = profile.userId;
+      // 1セッションにつき1回だけGASに記録（決済案内メッセージ3が送信される）
+      if (!sessionStorage.getItem('demoAccessRecorded')) {
+        sessionStorage.setItem('demoAccessRecorded', '1');
+        fetch(`${GAS_URL}?action=recordDemoAccess&userId=${encodeURIComponent(userId)}`)
+          .catch(() => {}); // 失敗してもデモは表示
+      }
+    } else {
+      liff.login();
+      return;
+    }
+  } catch (e) {
+    // LIFF未設定またはLIFF外からのアクセス → そのまま表示
+  }
+  render();
+}
+
+initLiffAndRecord();
 </script>
 </body>
 </html>

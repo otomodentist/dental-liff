@@ -58,3 +58,7 @@ git push origin main
 | 2026/05/05 | gas_main.js.js 課金チェック追加・adminGrantFreeAccess・getAdminStudentListWithBilling |
 | 2026/05/05 | gas_richmenu.js.js 課金分岐リッチメニュー追加（paid_student_richmenu）・デフォルトをdemo.htmlに変更 |
 | 2026/05/05 | 学生マスタに課金ステータス・課金開始日・課金更新日カラム追加（col 4,5,6） |
+| 2026/05/05 | handleFollowEvent追加: 友だち登録時に挨拶・デモ案内を2段階送信 |
+| 2026/05/05 | generateStripeCheckoutUrl / sendDecisionMessage / recordDemoAccess追加 |
+| 2026/05/05 | demo.html: LIFF初期化 + デモアクセス時にGAS通知（決済案内メッセージ3を自動送信） |
+| 2026/05/05 | 学生マスタH列（デモ確認日時）追加 |
