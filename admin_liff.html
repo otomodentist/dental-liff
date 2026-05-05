@@ -348,7 +348,7 @@
               <div class="tab-nav">
                 <button class="tab-btn ${activeTab === 'session' ? 'active' : ''}" onclick="switchTab('session')">授業管理</button>
                 <button class="tab-btn ${activeTab === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">学生ダッシュボード</button>
-                <button class="tab-btn ${activeTab === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">課金管理</button>
+                <button class="tab-btn ${activeTab === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">登録管理</button>
               </div>
             </div>
             ${activeTab === 'billing' ? renderBillingHTML() : activeTab === 'dashboard' ? renderDashboardHTML() : renderSessionHTML()}
@@ -479,7 +479,7 @@
               <div class="tab-nav">
                 <button class="tab-btn ${activeTabName === 'session' ? 'active' : ''}" onclick="switchTab('session')">授業管理</button>
                 <button class="tab-btn ${activeTabName === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">学生ダッシュボード</button>
-                <button class="tab-btn ${activeTabName === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">課金管理</button>
+                <button class="tab-btn ${activeTabName === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">登録管理</button>
               </div>
             </div>
             <div style="text-align:center;padding:60px 20px;color:var(--ink3)">読み込み中...</div>
@@ -1035,41 +1035,55 @@
       function renderBillingHTML() {
           if (!billingListData) return '<div class="empty-state">読み込み中...</div>';
           const students = billingListData.students || [];
-          const paid = students.filter(s => s.billingStatus === '課金有効' || s.billingStatus === '管理者承認');
-          const unpaid = students.filter(s => s.billingStatus !== '課金有効' && s.billingStatus !== '管理者承認');
-          const renderStudent = (s) => `
+          const registered = students.filter(s => s.billingStatus === '課金有効' || s.billingStatus === '管理者承認');
+          const unregistered = students.filter(s => s.billingStatus !== '課金有効' && s.billingStatus !== '管理者承認');
+
+          const renderRegistered = (s) => `
               <div class="student-item" style="cursor:default">
                   <div class="student-avatar">
                       ${s.pictureUrl ? `<img src="${s.pictureUrl}" alt="">` : '👤'}
                   </div>
                   <div class="student-info">
                       <div class="student-name">${s.displayName || '名前なし'}</div>
-                      <div class="student-meta">${s.billingStatus || '未登録'}</div>
+                      <div class="student-meta">${s.billingStatus}</div>
                   </div>
-                  ${(s.billingStatus !== '課金有効' && s.billingStatus !== '管理者承認')
-                    ? `<button onclick="grantFreeAccess('${s.userId}')"
-                           style="padding:6px 12px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:12px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer">
-                           課金許可
-                       </button>`
-                    : `<span style="font-size:12px;color:var(--accent);font-weight:700">✓ 有効</span>`
-                  }
+                  <button onclick="revokeAccess('${s.userId}')"
+                      style="padding:6px 12px;background:var(--danger);color:white;border:none;border-radius:8px;font-size:12px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;flex-shrink:0">
+                      登録手動解除
+                  </button>
               </div>`;
+
+          const renderUnregistered = (s) => `
+              <div class="student-item" style="cursor:default">
+                  <div class="student-avatar">
+                      ${s.pictureUrl ? `<img src="${s.pictureUrl}" alt="">` : '👤'}
+                  </div>
+                  <div class="student-info">
+                      <div class="student-name">${s.displayName || '名前なし'}</div>
+                      <div class="student-meta">未登録</div>
+                  </div>
+                  <button onclick="grantFreeAccess('${s.userId}')"
+                      style="padding:6px 12px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:12px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;flex-shrink:0">
+                      手動登録
+                  </button>
+              </div>`;
+
           return `
               <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">
-                  課金済み（${paid.length}名）
+                  登録済み（${registered.length}名）
               </div>
               <div class="student-list" style="padding-bottom:4px">
-                  ${paid.length === 0
+                  ${registered.length === 0
                     ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
-                    : paid.map(renderStudent).join('')}
+                    : registered.map(renderRegistered).join('')}
               </div>
               <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">
-                  未課金（${unpaid.length}名）
+                  未登録（${unregistered.length}名）
               </div>
               <div class="student-list">
-                  ${unpaid.length === 0
+                  ${unregistered.length === 0
                     ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
-                    : unpaid.map(renderStudent).join('')}
+                    : unregistered.map(renderUnregistered).join('')}
               </div>`;
       }
 
@@ -1078,9 +1092,26 @@
               const res = await fetch(`${GAS_URL}?action=adminGrantFreeAccess&targetUserId=${encodeURIComponent(userId)}`);
               const result = await res.json();
               if (result.success) {
-                  billingListData = null; // リセットして再取得
+                  billingListData = null;
                   await switchTab('billing');
-                  showToast('✅ 課金許可しました');
+                  showToast('✅ 手動登録しました');
+              } else {
+                  showToast('❌ エラー: ' + result.error);
+              }
+          } catch (err) {
+              showToast('❌ 通信エラー');
+          }
+      }
+
+      async function revokeAccess(userId) {
+          if (!confirm('登録を解除しますか？この学生はデモ画面のみ利用可能になります。')) return;
+          try {
+              const res = await fetch(`${GAS_URL}?action=adminRevokeAccess&targetUserId=${encodeURIComponent(userId)}`);
+              const result = await res.json();
+              if (result.success) {
+                  billingListData = null;
+                  await switchTab('billing');
+                  showToast('✅ 登録を解除しました');
               } else {
                   showToast('❌ エラー: ' + result.error);
               }
