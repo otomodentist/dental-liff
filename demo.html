@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>デモ体験 | 授業のオトモ</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Kaisei+Tokumin:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f0e8;
+      --surface: #ffffff;
+      --surface2: #faf7f2;
+      --border: #e0d8cc;
+      --ink: #1a1208;
+      --ink2: #4a3f2f;
+      --ink3: #8a7a68;
+      --accent: #2d5a3d;
+      --accent-light: #e8f2eb;
+      --danger: #8b2020;
+      --warning: #7a5a10;
+      --warning-light: #fef8e6;
+      --demo: #1a3a6b;
+      --demo-light: #e8eef8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; padding-bottom: 80px; }
+
+    .demo-banner {
+      background: var(--demo);
+      color: white;
+      padding: 10px 16px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .demo-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 2px 10px;
+      margin-right: 6px;
+      font-size: 11px;
+    }
+
+    .header {
+      background: var(--accent);
+      color: white;
+      padding: 16px 20px 12px;
+    }
+    .header-label { font-size: 10px; opacity: 0.7; letter-spacing: 0.1em; }
+    .header-title { font-family: 'Kaisei Tokumin', serif; font-size: 18px; font-weight: 700; }
+
+    .profile-card {
+      background: var(--surface);
+      margin: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .profile-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--accent-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .profile-name { font-size: 16px; font-weight: 700; }
+    .profile-meta { font-size: 12px; color: var(--ink3); margin-top: 2px; }
+    .demo-label {
+      margin-left: auto;
+      background: var(--demo-light);
+      color: var(--demo);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
+
+    .section-label {
+      padding: 8px 16px 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink3);
+      letter-spacing: 0.05em;
+    }
+
+    .subject-card {
+      background: var(--surface);
+      margin: 0 16px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .subject-card:active { opacity: 0.7; }
+    .subject-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--accent-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .subject-name { font-size: 14px; font-weight: 700; flex: 1; }
+    .subject-meta { font-size: 12px; color: var(--ink3); }
+    .subject-score { font-size: 20px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+
+    .session-item {
+      background: var(--surface);
+      margin: 0 16px 6px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .session-item:active { opacity: 0.7; }
+    .session-num {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .session-info { flex: 1; }
+    .session-title { font-size: 14px; font-weight: 700; }
+    .session-meta { font-size: 11px; color: var(--ink3); margin-top: 1px; }
+    .session-score { font-size: 20px; font-weight: 700; flex-shrink: 0; }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px 6px;
+    }
+    .back-btn {
+      background: none; border: none;
+      font-size: 13px; color: var(--ink2);
+      cursor: pointer; padding: 6px 4px;
+      display: flex; align-items: center; gap: 4px;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .detail-title { font-size: 14px; font-weight: 700; }
+
+    .chart-container { padding: 4px 16px 8px; height: 220px; position: relative; }
+
+    .popup-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 200;
+      align-items: flex-end; justify-content: center;
+    }
+    .popup-overlay.open { display: flex; }
+    .popup-sheet {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      padding: 20px; width: 100%;
+      max-height: 80vh; overflow-y: auto;
+    }
+    .popup-close { float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--ink3); }
+    .popup-label { font-size: 12px; color: var(--ink3); margin-bottom: 4px; }
+    .popup-value { font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+    .popup-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .popup-stat { border-radius: 10px; padding: 10px; text-align: center; }
+    .popup-stat-label { font-size: 10px; margin-bottom: 2px; }
+    .popup-stat-value { font-size: 18px; font-weight: 700; }
+
+    .cta-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 12px 16px;
+      background: white;
+      border-top: 1px solid var(--border);
+    }
+    .cta-btn {
+      width: 100%; padding: 15px;
+      background: var(--demo);
+      color: white; border: none;
+      border-radius: 12px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 15px; font-weight: 700;
+      cursor: pointer;
+    }
+    .cta-sub { font-size: 11px; opacity: 0.8; font-weight: 400; }
+
+    .score-high { color: var(--accent); }
+    .score-mid { color: var(--warning); }
+    .score-low { color: var(--danger); }
+  </style>
+</head>
+<body>
+
+<div id="pointDetailPopup" class="popup-overlay">
+  <div class="popup-sheet">
+    <button class="popup-close" onclick="closePopup()">✕</button>
+    <div style="font-family:'Kaisei Tokumin',serif;font-size:16px;font-weight:700;margin-bottom:16px">回答詳細</div>
+    <div id="popupContent"></div>
+  </div>
+</div>
+
+<div id="app"></div>
+
+<div class="cta-bar">
+  <button class="cta-btn" onclick="openRegister()">
+    利用登録して授業で使う<br><span class="cta-sub">登録後すぐに授業内で問題を受け取れます</span>
+  </button>
+</div>
+
+<script>
+// ===== サンプルデータ =====
+const DEMO_STUDENT = { name: '山田 太郎', grade: '4年生' };
+
+const DEMO_SUBJECTS = [
+  {
+    name: '口腔解剖学',
+    icon: '🦷',
+    sessions: [
+      {
+        sessionNumber: 1, avgScore: 71, answerCount: 4,
+        answers: [
+          { minutesElapsed: 5, accuracyScore: 80, concentrationScore: 80, responseTimeSec: 42,
+            questionText: '上顎第一大臼歯の歯根数を答えなさい',
+            modelAnswer: '3根（近心頬側根・遠心頬側根・口蓋根）',
+            answerText: '3本の根があります' },
+          { minutesElapsed: 18, accuracyScore: 65, concentrationScore: 59, responseTimeSec: 82,
+            questionText: 'エナメル質のモース硬度はいくつか',
+            modelAnswer: 'モース硬度6〜7',
+            answerText: '6程度' },
+          { minutesElapsed: 32, accuracyScore: 90, concentrationScore: 90, responseTimeSec: 38,
+            questionText: '象牙細管の内径は何μmか',
+            modelAnswer: '1〜3μm',
+            answerText: '1〜3マイクロメートル' },
+          { minutesElapsed: 48, accuracyScore: 45, concentrationScore: 34, responseTimeSec: 135,
+            questionText: 'セメント質の主な機能を答えなさい',
+            modelAnswer: 'シャーピー線維（歯根膜線維）を固定し、歯を歯槽骨に連結する',
+            answerText: '歯を骨につなぎとめる' },
+        ]
+      },
+      {
+        sessionNumber: 2, avgScore: 63, answerCount: 4,
+        answers: [
+          { minutesElapsed: 8, accuracyScore: 85, concentrationScore: 85, responseTimeSec: 30,
+            questionText: '乳歯の本数は何本か',
+            modelAnswer: '20本',
+            answerText: '20本' },
+          { minutesElapsed: 22, accuracyScore: 70, concentrationScore: 65, responseTimeSec: 72,
+            questionText: '永久歯の本数は（親知らず含む）',
+            modelAnswer: '32本',
+            answerText: '32本' },
+          { minutesElapsed: 37, accuracyScore: 55, concentrationScore: 50, responseTimeSec: 65,
+            questionText: '歯髄の機能を2つ挙げなさい',
+            modelAnswer: '栄養供給・感覚（痛覚）・防御・象牙質形成など',
+            answerText: '栄養供給と感覚' },
+          { minutesElapsed: 52, accuracyScore: 35, concentrationScore: 23, responseTimeSec: 160,
+            questionText: '下顎第一大臼歯の歯根数と特徴を答えなさい',
+            modelAnswer: '2根（近心根・遠心根）。近心根には2根管（近心頬側・近心舌側）があることが多い',
+            answerText: '2本の根があります' },
+        ]
+      },
+      {
+        sessionNumber: 3, avgScore: 78, answerCount: 4,
+        answers: [
+          { minutesElapsed: 10, accuracyScore: 88, concentrationScore: 88, responseTimeSec: 28,
+            questionText: '歯根膜の幅（厚さ）は平均何mmか',
+            modelAnswer: '約0.2mm（0.15〜0.38mm）',
+            answerText: '0.2ミリくらい' },
+          { minutesElapsed: 25, accuracyScore: 75, concentrationScore: 71, responseTimeSec: 63,
+            questionText: '固有歯槽骨の別名を答えなさい',
+            modelAnswer: '篩状板（しじょうばん）またはlamina dura',
+            answerText: '篩状板' },
+          { minutesElapsed: 38, accuracyScore: 82, concentrationScore: 74, responseTimeSec: 70,
+            questionText: 'シャーピー線維が埋め込まれている組織を2つ挙げなさい',
+            modelAnswer: '歯槽骨（固有歯槽骨）とセメント質',
+            answerText: '歯槽骨とセメント質' },
+          { minutesElapsed: 50, accuracyScore: 68, concentrationScore: 65, responseTimeSec: 58,
+            questionText: '歯周組織を構成する4つの組織を答えなさい',
+            modelAnswer: '歯肉・歯根膜・歯槽骨・セメント質',
+            answerText: '歯肉、歯根膜、歯槽骨、セメント質' },
+        ]
+      },
+      {
+        sessionNumber: 4, avgScore: 83, answerCount: 4,
+        answers: [
+          { minutesElapsed: 6, accuracyScore: 92, concentrationScore: 92, responseTimeSec: 28,
+            questionText: '口腔の前庭と固有口腔を区切る構造物は何か',
+            modelAnswer: '歯列・歯槽突起（歯肉）',
+            answerText: '歯列と歯肉' },
+          { minutesElapsed: 20, accuracyScore: 78, concentrationScore: 75, responseTimeSec: 62,
+            questionText: '顎下腺の開口部（ワルトン管）はどこか',
+            modelAnswer: '舌下小丘（舌の前腹面、舌小帯の両側）',
+            answerText: '舌下小丘' },
+          { minutesElapsed: 35, accuracyScore: 88, concentrationScore: 88, responseTimeSec: 40,
+            questionText: '耳下腺の開口部（ステノン管）はどこか',
+            modelAnswer: '上顎第二大臼歯の頬側粘膜',
+            answerText: '上顎第二大臼歯の頬粘膜' },
+          { minutesElapsed: 48, accuracyScore: 72, concentrationScore: 60, responseTimeSec: 88,
+            questionText: '軟口蓋と硬口蓋の境界を何というか',
+            modelAnswer: '口蓋弓（または口蓋帆）',
+            answerText: '口蓋弓' },
+        ]
+      },
+      {
+        sessionNumber: 5, avgScore: 85, answerCount: 4,
+        answers: [
+          { minutesElapsed: 7, accuracyScore: 92, concentrationScore: 92, responseTimeSec: 25,
+            questionText: '近心・遠心の定義を説明せよ',
+            modelAnswer: '近心：正中に近い方向、遠心：正中から遠い方向',
+            answerText: '近心は正中に近い側、遠心は遠い側' },
+          { minutesElapsed: 19, accuracyScore: 85, concentrationScore: 82, responseTimeSec: 52,
+            questionText: '上顎中切歯の切縁結節（マメロン）は何歳頃から磨耗するか',
+            modelAnswer: '萌出後2〜3年で磨耗し始める（10〜12歳頃）',
+            answerText: '萌出後数年で磨耗' },
+          { minutesElapsed: 33, accuracyScore: 80, concentrationScore: 80, responseTimeSec: 45,
+            questionText: '下顎第一小臼歯の咬頭数を答えなさい',
+            modelAnswer: '2咬頭（頬側咬頭・舌側咬頭）、頬側咬頭が著しく発達',
+            answerText: '2咬頭です' },
+          { minutesElapsed: 47, accuracyScore: 83, concentrationScore: 78, responseTimeSec: 62,
+            questionText: 'カラベリー結節が発現しやすい歯はどれか',
+            modelAnswer: '上顎第一大臼歯の近心舌側咬頭',
+            answerText: '上顎第一大臼歯の近心舌側咬頭' },
+        ]
+      },
+    ]
+  }
+];
+
+// ===== 状態 =====
+let view = 'subjects'; // 'subjects' | 'sessions' | 'chart'
+let selectedSubjectIdx = 0;
+let selectedSessionIdx = null;
+let demoChart = null;
+
+// ===== レンダリング =====
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = buildHTML();
+  if (view === 'chart' && selectedSessionIdx !== null) {
+    setTimeout(drawChart, 80);
+  }
+}
+
+function buildHTML() {
+  const bannerHTML = `
+    <div class="demo-banner">
+      <span class="demo-badge">DEMO</span>サービス体験中 — これはサンプルデータです
+    </div>`;
+  const headerHTML = `
+    <div class="header">
+      <div class="header-label">授業のオトモ</div>
+      <div class="header-title">マイページ（デモ）</div>
+    </div>`;
+  const profileHTML = `
+    <div class="profile-card">
+      <div class="profile-avatar">👤</div>
+      <div>
+        <div class="profile-name">${DEMO_STUDENT.name}</div>
+        <div class="profile-meta">${DEMO_STUDENT.grade}</div>
+      </div>
+      <div class="demo-label">デモユーザー</div>
+    </div>`;
+
+  if (view === 'subjects') return bannerHTML + headerHTML + profileHTML + buildSubjectsHTML();
+  if (view === 'sessions') return bannerHTML + headerHTML + buildSessionsHTML();
+  if (view === 'chart') return bannerHTML + headerHTML + buildChartHTML();
+  return '';
+}
+
+function scoreClass(s) {
+  return s >= 70 ? 'score-high' : s >= 40 ? 'score-mid' : 'score-low';
+}
+
+function buildSubjectsHTML() {
+  const avgAll = Math.round(
+    DEMO_SUBJECTS.reduce((sum, subj) => {
+      const allScores = subj.sessions.flatMap(s => s.answers.map(a => a.concentrationScore));
+      return sum + allScores.reduce((a, b) => a + b, 0) / allScores.length;
+    }, 0) / DEMO_SUBJECTS.length
+  );
+  const html = DEMO_SUBJECTS.map((subj, idx) => {
+    const allScores = subj.sessions.flatMap(s => s.answers.map(a => a.concentrationScore));
+    const avg = Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length);
+    return `
+      <div class="subject-card" onclick="selectSubject(${idx})">
+        <div class="subject-icon">${subj.icon}</div>
+        <div style="flex:1">
+          <div class="subject-name">${subj.name}</div>
+          <div class="subject-meta">${subj.sessions.length}回授業 / 平均集中度</div>
+        </div>
+        <div class="subject-score ${scoreClass(avg)}">${avg}</div>
+      </div>`;
+  }).join('');
+  return `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin:0 16px 12px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:2px">総合集中度スコア</div>
+        <div style="font-family:'Kaisei Tokumin',serif;font-size:32px;font-weight:700;color:var(--accent)">${avgAll}<span style="font-size:14px;font-weight:400;margin-left:2px">/100</span></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:var(--ink3)">参加授業</div>
+        <div style="font-size:20px;font-weight:700">${DEMO_SUBJECTS.reduce((n, s) => n + s.sessions.length, 0)}回</div>
+      </div>
+    </div>
+    <div class="section-label">科目一覧</div>
+    ${html}`;
+}
+
+function buildSessionsHTML() {
+  const subj = DEMO_SUBJECTS[selectedSubjectIdx];
+  const html = subj.sessions.map((sess, idx) => {
+    const avg = sess.avgScore;
+    return `
+      <div class="session-item" onclick="selectSession(${idx})">
+        <div class="session-num">第${sess.sessionNumber}</div>
+        <div class="session-info">
+          <div class="session-title">第${sess.sessionNumber}回授業</div>
+          <div class="session-meta">${sess.answerCount}問回答</div>
+        </div>
+        <div class="session-score ${scoreClass(avg)}">${avg}</div>
+      </div>`;
+  }).join('');
+  return `
+    <div class="detail-header">
+      <button class="back-btn" onclick="goBack('subjects')">← 科目一覧</button>
+      <div class="detail-title">${subj.name}</div>
+    </div>
+    <div class="section-label">授業一覧</div>
+    ${html}`;
+}
+
+function buildChartHTML() {
+  const subj = DEMO_SUBJECTS[selectedSubjectIdx];
+  const sess = subj.sessions[selectedSessionIdx];
+  return `
+    <div class="detail-header">
+      <button class="back-btn" onclick="goBack('sessions')">← 授業一覧</button>
+      <div class="detail-title">${subj.name} 第${sess.sessionNumber}回</div>
+    </div>
+    <div style="padding:4px 16px 0;font-size:12px;color:var(--ink3)">採点結果の推移（点をタップで詳細）</div>
+    <div class="chart-container">
+      <canvas id="demoChartCanvas"></canvas>
+    </div>
+    <div style="padding:0 16px 8px;font-size:12px;font-weight:700;color:var(--ink3)">回答一覧</div>
+    ${sess.answers.map((a, i) => `
+      <div class="session-item" onclick="showPointDetail(${i})">
+        <div class="session-num" style="background:var(--surface2);color:var(--ink2);font-size:11px">問${i+1}</div>
+        <div class="session-info">
+          <div class="session-title" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.questionText}</div>
+          <div class="session-meta">回答時間: ${a.responseTimeSec}秒</div>
+        </div>
+        <div class="session-score ${scoreClass(a.accuracyScore)}" style="font-size:16px">${a.accuracyScore}</div>
+      </div>`).join('')}`;
+}
+
+function drawChart() {
+  const canvas = document.getElementById('demoChartCanvas');
+  if (!canvas) return;
+  if (demoChart) { demoChart.destroy(); demoChart = null; }
+  const sess = DEMO_SUBJECTS[selectedSubjectIdx].sessions[selectedSessionIdx];
+  const answers = sess.answers;
+  demoChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: answers.map(a => `${a.minutesElapsed}分`),
+      datasets: [{
+        data: answers.map(a => a.accuracyScore),
+        borderColor: '#2d5a3d',
+        backgroundColor: 'rgba(45,90,61,0.08)',
+        pointBackgroundColor: '#2d5a3d',
+        pointRadius: 8,
+        pointHoverRadius: 10,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.3,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => `問${items[0].dataIndex + 1}（${items[0].label}）`,
+            label: (item) => {
+              const a = answers[item.dataIndex];
+              return [`採点: ${a.accuracyScore}/100`, `回答時間: ${a.responseTimeSec}秒`];
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          title: { display: true, text: '授業開始からの経過時間', font: { size: 11 } },
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: { font: { size: 11 } },
+        },
+        y: {
+          min: 0, max: 100,
+          title: { display: true, text: '採点結果（点）', font: { size: 11 } },
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: { font: { size: 11 }, stepSize: 25 },
+        },
+      },
+      onClick: (e, elements) => {
+        if (elements.length > 0) showPointDetail(elements[0].index);
+      },
+    },
+  });
+}
+
+function showPointDetail(idx) {
+  const sess = DEMO_SUBJECTS[selectedSubjectIdx].sessions[selectedSessionIdx];
+  const a = sess.answers[idx];
+  document.getElementById('popupContent').innerHTML = `
+    <div class="popup-label">問題文</div>
+    <div class="popup-value">${a.questionText}</div>
+    <div class="popup-label">模範解答</div>
+    <div class="popup-value">${a.modelAnswer}</div>
+    <div class="popup-label">山田さんの回答</div>
+    <div class="popup-value">${a.answerText}</div>
+    <div class="popup-row">
+      <div class="popup-stat" style="background:var(--accent-light)">
+        <div class="popup-stat-label" style="color:var(--accent)">採点結果</div>
+        <div class="popup-stat-value" style="color:var(--accent)">${a.accuracyScore}/100</div>
+      </div>
+      <div class="popup-stat" style="background:var(--surface2)">
+        <div class="popup-stat-label" style="color:var(--ink3)">回答時間</div>
+        <div class="popup-stat-value">${a.responseTimeSec}秒</div>
+      </div>
+    </div>`;
+  document.getElementById('pointDetailPopup').classList.add('open');
+}
+
+function closePopup() {
+  document.getElementById('pointDetailPopup').classList.remove('open');
+}
+
+function selectSubject(idx) {
+  selectedSubjectIdx = idx;
+  view = 'sessions';
+  render();
+}
+
+function selectSession(idx) {
+  selectedSessionIdx = idx;
+  view = 'chart';
+  render();
+}
+
+function goBack(to) {
+  if (demoChart) { demoChart.destroy(); demoChart = null; }
+  view = to;
+  render();
+}
+
+function openRegister() {
+  alert('このデモページでは登録できません。\nLINEで「授業のオトモ」を友達追加してご登録ください。');
+}
+
+render();
+</script>
+</body>
+</html>

@@ -296,6 +296,7 @@
       let studentSessionsData = null;
       let sessionDetailData = null;
       let adminChart = null;
+      let billingListData = null;
 
       let dashboardFilter = null;
       const FILTER_KEY = 'dashboardFilter';
@@ -347,9 +348,10 @@
               <div class="tab-nav">
                 <button class="tab-btn ${activeTab === 'session' ? 'active' : ''}" onclick="switchTab('session')">授業管理</button>
                 <button class="tab-btn ${activeTab === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">学生ダッシュボード</button>
+                <button class="tab-btn ${activeTab === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">課金管理</button>
               </div>
             </div>
-            ${activeTab === 'dashboard' ? renderDashboardHTML() : renderSessionHTML()}
+            ${activeTab === 'billing' ? renderBillingHTML() : activeTab === 'dashboard' ? renderDashboardHTML() : renderSessionHTML()}
           `;
       }
 
@@ -471,6 +473,31 @@
 
       async function switchTab(tab) {
           activeTab = tab;
+          if (tab === 'billing') {
+              if (!billingListData) {
+                  document.getElementById('app').innerHTML = `
+                    <div class="header">
+                      <div class="header-label">Admin Panel</div>
+                      <div class="header-title">授業管理パネル</div>
+                      <div class="tab-nav">
+                        <button class="tab-btn" onclick="switchTab('session')">授業管理</button>
+                        <button class="tab-btn" onclick="switchTab('dashboard')">学生ダッシュボード</button>
+                        <button class="tab-btn active">課金管理</button>
+                      </div>
+                    </div>
+                    <div style="text-align:center;padding:60px 20px;color:var(--ink3)">読み込み中...</div>
+                  `;
+                  try {
+                      const res = await fetch(`${GAS_URL}?action=getAdminStudentListWithBilling`);
+                      billingListData = await res.json();
+                  } catch (err) {
+                      showToast('❌ データ取得失敗');
+                      activeTab = 'session';
+                  }
+              }
+              renderApp();
+              return;
+          }
           if (tab === 'dashboard') {
               // フィルタが未確定の場合はフィルタ選択画面を表示（データ取得不要）
               if (!dashboardFilter) {
@@ -1001,6 +1028,63 @@
                   isDeliveryPaused = false;
                   showToast('✅ 配信を再開しました');
                   renderApp();
+              } else {
+                  showToast('❌ エラー: ' + result.error);
+              }
+          } catch (err) {
+              showToast('❌ 通信エラー');
+          }
+      }
+
+      function renderBillingHTML() {
+          if (!billingListData) return '<div class="empty-state">読み込み中...</div>';
+          const { students } = billingListData;
+          const paid = students.filter(s => s.billingStatus === '課金有効' || s.billingStatus === '管理者承認');
+          const unpaid = students.filter(s => s.billingStatus !== '課金有効' && s.billingStatus !== '管理者承認');
+          const renderStudent = (s) => `
+              <div class="student-item" style="cursor:default">
+                  <div class="student-avatar">
+                      ${s.pictureUrl ? `<img src="${s.pictureUrl}" alt="">` : '👤'}
+                  </div>
+                  <div class="student-info">
+                      <div class="student-name">${s.displayName || '名前なし'}</div>
+                      <div class="student-meta">${s.billingStatus || '未登録'}</div>
+                  </div>
+                  ${(s.billingStatus !== '課金有効' && s.billingStatus !== '管理者承認')
+                    ? `<button onclick="grantFreeAccess('${s.userId}')"
+                           style="padding:6px 12px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:12px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer">
+                           課金許可
+                       </button>`
+                    : `<span style="font-size:12px;color:var(--accent);font-weight:700">✓ 有効</span>`
+                  }
+              </div>`;
+          return `
+              <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">
+                  課金済み（${paid.length}名）
+              </div>
+              <div class="student-list" style="padding-bottom:4px">
+                  ${paid.length === 0
+                    ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
+                    : paid.map(renderStudent).join('')}
+              </div>
+              <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">
+                  未課金（${unpaid.length}名）
+              </div>
+              <div class="student-list">
+                  ${unpaid.length === 0
+                    ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
+                    : unpaid.map(renderStudent).join('')}
+              </div>`;
+      }
+
+      async function grantFreeAccess(userId) {
+          try {
+              const res = await fetch(`${GAS_URL}?action=adminGrantFreeAccess&targetUserId=${encodeURIComponent(userId)}`);
+              const result = await res.json();
+              if (result.success) {
+                  billingListData = null; // リセットして再取得
+                  await switchTab('billing');
+                  showToast('✅ 課金許可しました');
               } else {
                   showToast('❌ エラー: ' + result.error);
               }
