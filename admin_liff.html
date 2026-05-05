@@ -493,9 +493,11 @@
                   renderLoadingScreen('billing');
                   try {
                       const res = await fetch(`${GAS_URL}?action=getAdminStudentListWithBilling`);
-                      billingListData = await res.json();
+                      const data = await res.json();
+                      if (!data.students) throw new Error(data.error || 'students undefined');
+                      billingListData = data;
                   } catch (err) {
-                      showToast('❌ データ取得失敗');
+                      showToast('❌ データ取得失敗: ' + err.message);
                       activeTab = 'session';
                   }
               }
@@ -1032,7 +1034,7 @@
 
       function renderBillingHTML() {
           if (!billingListData) return '<div class="empty-state">読み込み中...</div>';
-          const { students } = billingListData;
+          const students = billingListData.students || [];
           const paid = students.filter(s => s.billingStatus === '課金有効' || s.billingStatus === '管理者承認');
           const unpaid = students.filter(s => s.billingStatus !== '課金有効' && s.billingStatus !== '管理者承認');
           const renderStudent = (s) => `
