@@ -247,34 +247,6 @@
         </div>
     </div>
 
-    <div id="semesterModal" class="modal-overlay">
-        <div class="modal">
-              <div class="modal-title">📅 アクティブクールを変更</div>
-              <div class="modal-field">
-                      <div class="modal-label">学年</div>
-                      <select id="modalGrade" class="modal-select">
-                                <option value="1">1年生</option>
-                                <option value="2">2年生</option>
-                                <option value="3">3年生</option>
-                                <option value="4">4年生</option>
-                                <option value="5">5年生</option>
-                                <option value="6">6年生</option>
-                      </select>
-              </div>
-              <div class="modal-field">
-                      <div class="modal-label">学期</div>
-                      <select id="modalSemester" class="modal-select">
-                                <option value="spring">春学期</option>
-                                <option value="fall">秋学期</option>
-                      </select>
-              </div>
-              <div class="modal-btns">
-                      <button class="modal-btn-cancel" onclick="closeSemesterModal()">キャンセル</button>
-                      <button class="modal-btn-save" onclick="saveActiveSemester()">保存</button>
-              </div>
-        </div>
-    </div>
-
     <script>
       const GAS_URL = 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec';
       const LIFF_ID = '2009739219-9qVGb0Xm';
@@ -932,36 +904,6 @@
               }
           } catch (err) {
               showToast('❌ 通信エラー');
-          }
-      }
-
-      function openSemesterModal() {
-          document.getElementById('modalGrade').value    = activeSemester.grade;
-          document.getElementById('modalSemester').value = activeSemester.semester;
-          document.getElementById('semesterModal').classList.add('open');
-      }
-      function closeSemesterModal() {
-          document.getElementById('semesterModal').classList.remove('open');
-      }
-      async function saveActiveSemester() {
-          const grade    = parseInt(document.getElementById('modalGrade').value);
-          const semester = document.getElementById('modalSemester').value;
-          try {
-                const res = await fetch(`${GAS_URL}?action=setActiveSemester&grade=${grade}&semester=${encodeURIComponent(semester)}`);
-                const result = await res.json();
-                if (result.success) {
-                        activeSemester = { grade, semester };
-                        const subjectsRes = await fetch(`${GAS_URL}?action=getSubjectMaster`);
-                        SUBJECTS = (await subjectsRes.json()).subjects || [];
-                        selectedDay = selectedSubject = selectedSession = null;
-                        closeSemesterModal();
-                        showToast(`✅ ${grade}年生 ${semesterLabel(semester)}に切り替えました`);
-                        renderApp();
-                } else {
-                        showToast('❌ エラー: ' + result.error);
-                }
-          } catch (err) {
-                showToast('❌ 通信エラー');
           }
       }
 
