@@ -887,21 +887,20 @@ async function completeTodayItem(planId, btn) {
 }
 
 // ===== 学習計画ビュー =====
+let studyPlanInitData = null; // { grade, semester, activeSubjects, exams, attendedBySubject, plan, progressBlocks }
+
 async function openStudyPlanView() {
   currentView = 'studyPlan';
+  studyPlanInitData = null;
   renderStudyPlanView();
-  // データ非同期取得
   try {
-    const [examRes, planRes, progressRes] = await Promise.all([
-      fetch(`${GAS_URL}?action=getExamSchedule`),
-      fetch(`${GAS_URL}?action=getStudyPlan&userId=${encodeURIComponent(userId)}`),
-      fetch(`${GAS_URL}?action=getProgressBlocks&userId=${encodeURIComponent(userId)}`),
-    ]);
-    examScheduleData = (await examRes.json()).exams || [];
-    studyPlanData = (await planRes.json()).plan || [];
-    progressBlocksData = await progressRes.json();
+    const res = await fetch(`${GAS_URL}?action=getStudyPlanInitData&userId=${encodeURIComponent(userId)}`);
+    studyPlanInitData = await res.json();
+    examScheduleData = studyPlanInitData.exams || [];
+    studyPlanData    = studyPlanInitData.plan  || [];
+    progressBlocksData = studyPlanInitData.progressBlocks || {};
   } catch (e) {
-    examScheduleData = []; studyPlanData = []; progressBlocksData = {};
+    studyPlanInitData = null;
   }
   renderStudyPlanView();
 }
@@ -913,52 +912,50 @@ function closeStudyPlanView() {
 
 function renderStudyPlanView() {
   const app = document.getElementById('app');
+
+  // ローディング中
+  if (!studyPlanInitData) {
+    app.innerHTML = `
+      <div class="plan-header">
+        <button class="plan-back-btn" onclick="closeStudyPlanView()">← 戻る</button>
+        <div class="plan-title">定期試験対策</div>
+      </div>
+      <div class="loading" style="height:50vh"><div class="spinner"></div><div style="font-size:13px;color:var(--text-dim)">読み込み中...</div></div>`;
+    return;
+  }
+
+  const { grade, semester, exams, attendedBySubject, plan, progressBlocks } = studyPlanInitData;
+  const semLabel = semester === 'spring' ? '春学期' : '秋学期';
   const typeLabel = { 'review': '復習', 're-review': '再復習' };
 
-  // 進捗ブロック
-  const progressHTML = Object.keys(progressBlocksData).length > 0
-    ? `<div class="section"><div class="section-title">復習進捗</div>
-        <div class="progress-section">
-          ${Object.entries(progressBlocksData).map(([subj, p]) => `
-            <div class="progress-subj">
-              <div class="progress-subj-name">${subj}</div>
-              <div class="progress-count">残り${p.remaining}コマ<span>/ ${p.attended}コマ参加済み</span></div>
-              <div class="blocks-row">
-                ${Array.from({length: p.total}, (_, i) => {
-                  if (i < p.reviewed) return '<div class="block reviewed"></div>';
-                  if (i < p.attended) return '<div class="block pending"></div>';
-                  return '<div class="block unattended"></div>';
-                }).join('')}
-              </div>
-            </div>`).join('')}
-        </div></div>`
-    : '';
-
-  // 試験×計画リスト
   const planByExam = {};
-  (studyPlanData || []).forEach(item => {
+  (plan || []).forEach(item => {
     if (!planByExam[item.examId]) planByExam[item.examId] = [];
     planByExam[item.examId].push(item);
   });
 
-  const today = new Date().toISOString().split('T')[0];
+  // 試験科目カード
+  const examCardsHTML = exams.length === 0
+    ? '<div style="padding:24px 20px;text-align:center;color:var(--text-dim);font-size:13px">この学期の試験日程は管理者が設定します</div>'
+    : exams.map(exam => {
+        const attended = (attendedBySubject[exam.subjectName] || []);
+        const attendedHTML = attended.length > 0
+          ? attended.map(n => `<span style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600">第${n}回</span>`).join(' ')
+          : '<span style="font-size:12px;color:var(--text-muted)">まだ参加した授業がありません</span>';
 
-  const examCardsHTML = examScheduleData.length === 0
-    ? '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px">試験日程は管理者が設定します</div>'
-    : examScheduleData.map(exam => {
         const entries = planByExam[exam.examId] || [];
         const hasPlan = entries.length > 0;
+        const doneCount = entries.filter(e => e.status === 'done').length;
 
-        const alertsHTML = (() => {
-          if (!hasPlan) return '';
-          const dayMap = {};
-          entries.filter(e => e.status === 'pending').forEach(e => {
-            dayMap[e.date] = (dayMap[e.date] || 0) + e.durationMin;
-          });
-          const over = Object.entries(dayMap).filter(([, m]) => m > 240);
-          return over.map(([d, m]) => `
-            <div class="plan-alert">⚠️ ${d}：このままだと1日${Math.round(m/6)/10}時間の学習が必要です。計画を調整してください</div>`).join('');
-        })();
+        // 1日超過アラート
+        const dayMap = {};
+        entries.filter(e => e.status === 'pending').forEach(e => {
+          dayMap[e.date] = (dayMap[e.date] || 0) + e.durationMin;
+        });
+        const alertsHTML = Object.entries(dayMap)
+          .filter(([, m]) => m > 240)
+          .map(([d, m]) => `<div class="plan-alert">⚠️ ${d.slice(5)}：1日${Math.round(m/6)/10}時間が必要です。リプランを検討してください</div>`)
+          .join('');
 
         const planItemsHTML = hasPlan
           ? entries.map(e => `
@@ -974,29 +971,44 @@ function renderStudyPlanView() {
                   ${e.status === 'done' ? '完了' : '学習済み'}
                 </button>
               </div>`).join('')
-          : `<div style="padding:14px 16px;font-size:13px;color:var(--text-dim)">
-               計画がまだ生成されていません
-             </div>`;
+          : `<div style="padding:12px 16px;font-size:13px;color:var(--text-dim)">計画を生成してください</div>`;
 
         const replanBtn = hasPlan
-          ? `<button onclick="replanStudyPlan()" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:12px;padding:5px 10px;cursor:pointer;margin-left:8px">リプラン</button>`
+          ? `<button onclick="replanStudyPlan()" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:12px;padding:5px 10px;cursor:pointer;margin-right:6px">リプラン</button>`
+          : '';
+
+        const progressBlock = progressBlocks[exam.subjectName];
+        const progressHTML = progressBlock
+          ? `<div style="padding:10px 16px;border-top:1px solid var(--border);background:var(--bg)">
+               <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">復習進捗：残り${progressBlock.remaining}コマ / ${progressBlock.attended}コマ参加済み</div>
+               <div class="blocks-row">
+                 ${Array.from({length: progressBlock.total}, (_, i) => {
+                   if (i < progressBlock.reviewed) return '<div class="block reviewed"></div>';
+                   if (i < progressBlock.attended) return '<div class="block pending"></div>';
+                   return '<div class="block unattended"></div>';
+                 }).join('')}
+               </div>
+             </div>`
           : '';
 
         return `
           ${alertsHTML}
           <div class="plan-exam-card">
             <div class="plan-exam-header">
-              <div>
+              <div style="flex:1;min-width:0">
                 <div class="plan-exam-name">${exam.subjectName}</div>
-                <div class="plan-exam-date">試験日: ${exam.examDate}（復習${exam.reviewMinutes}分/回）</div>
+                <div class="plan-exam-date">試験日: ${exam.examDate}　復習: ${exam.reviewMinutes}分/回</div>
+                <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">${attendedHTML}</div>
+                ${hasPlan ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${doneCount}/${entries.length}コマ完了</div>` : ''}
               </div>
-              <div style="display:flex;align-items:center;gap:4px">
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;margin-left:10px">
                 ${replanBtn}
-                <button class="plan-generate-btn" onclick="generatePlan('${exam.examId}')">
+                <button class="plan-generate-btn" onclick="generatePlan('${exam.examId}', event)">
                   ${hasPlan ? '再生成' : '計画生成'}
                 </button>
               </div>
             </div>
+            ${progressHTML}
             ${planItemsHTML}
           </div>`;
       }).join('');
@@ -1006,14 +1018,15 @@ function renderStudyPlanView() {
       <button class="plan-back-btn" onclick="closeStudyPlanView()">← 戻る</button>
       <div class="plan-title">定期試験対策</div>
     </div>
-    <div class="theory-card">
-      <div class="theory-title">効果的な学習計画の根拠</div>
-      <div class="theory-step">ステップ1（授業）：集中度スコアで授業の質を向上</div>
-      <div class="theory-step">ステップ2（復習）：定着の質を向上しながら復習時間を約1/2に短縮</div>
-      <div class="theory-step">ステップ3（再復習）：さらに定着を強化しながら再復習時間を約1/3に短縮</div>
+    <div style="padding:10px 20px 4px;font-size:12px;color:var(--text-muted)">
+      表示中：${grade}年生 ${semLabel}の科目（${exams.length}件）
     </div>
-    ${progressHTML}
-    <div class="section" style="padding-bottom:0"><div class="section-title">試験スケジュール</div></div>
+    <div class="theory-card">
+      <div class="theory-title">反復学習による効率化の根拠</div>
+      <div class="theory-step">ステップ1（授業）：集中度スコアで授業の質を向上</div>
+      <div class="theory-step">ステップ2（復習）：復習時間を約1/2に短縮しつつ定着の質を向上</div>
+      <div class="theory-step">ステップ3（再復習）：復習時間を約1/3に短縮しながらさらに定着を強化</div>
+    </div>
     ${examCardsHTML}
     <div class="footer-pad"></div>
   `;
