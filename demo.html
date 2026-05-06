@@ -197,6 +197,73 @@
     .score-high { color: var(--accent); }
     .score-mid { color: var(--warning); }
     .score-low { color: var(--danger); }
+
+    /* ===== Study Plan ===== */
+    .plan-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 16px; background: var(--accent); color: white;
+    }
+    .plan-back-btn {
+      background: none; border: none; color: white; font-size: 14px;
+      cursor: pointer; padding: 4px; font-family: 'Noto Sans JP', sans-serif;
+    }
+    .plan-title { font-family: 'Kaisei Tokumin', serif; font-size: 16px; font-weight: 700; }
+
+    .theory-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; margin: 0 16px 12px; padding: 14px 16px;
+    }
+    .theory-title { font-size: 12px; font-weight: 700; color: var(--ink2); margin-bottom: 8px; }
+    .theory-step { font-size: 11px; color: var(--ink3); line-height: 1.8; }
+
+    .plan-exam-card {
+      background: var(--surface); margin: 0 16px 10px;
+      border-radius: 12px; border: 1px solid var(--border); overflow: hidden;
+    }
+    .plan-exam-header { padding: 14px 16px; display: flex; align-items: flex-start; gap: 10px; }
+    .plan-exam-name { font-size: 14px; font-weight: 700; }
+    .plan-exam-date { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+
+    .plan-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px; border-top: 1px solid var(--border);
+    }
+    .plan-item-done { opacity: 0.45; }
+    .plan-item-date { font-size: 11px; color: var(--ink3); width: 72px; flex-shrink: 0; }
+    .plan-item-label { font-size: 12px; flex: 1; }
+    .plan-item-btn {
+      background: var(--accent-light); border: none; border-radius: 8px;
+      color: var(--accent); font-size: 11px; padding: 4px 8px;
+      cursor: pointer; font-family: 'Noto Sans JP', sans-serif; flex-shrink: 0;
+    }
+    .plan-item-btn.done { background: var(--surface2); color: var(--ink3); cursor: default; }
+    .plan-generate-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--ink2); font-size: 12px;
+      padding: 5px 10px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+      white-space: nowrap;
+    }
+
+    .blocks-row { display: flex; gap: 2px; }
+    .block { flex: 1; height: 10px; border-radius: 2px; border: 1px solid var(--border); }
+    .block.reviewed { background: #c8c8c8; border-color: #b0b0b0; }
+    .block.pending { background: linear-gradient(135deg, #4caf50, #2196f3); border-color: transparent; }
+    .block.unattended { background: var(--surface2); }
+
+    .study-plan-btn {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 16px; width: 100%;
+      margin-bottom: 8px; font-family: 'Noto Sans JP', sans-serif; text-align: left;
+    }
+    .study-plan-btn-icon { font-size: 22px; flex-shrink: 0; }
+    .study-plan-btn-text { flex: 1; }
+    .study-plan-btn-title { font-size: 14px; font-weight: 700; }
+    .study-plan-btn-desc { font-size: 11px; color: var(--ink3); margin-top: 1px; }
+    .dev-badge {
+      font-size: 11px; padding: 3px 8px; border-radius: 20px;
+      background: #f0f0f0; color: #888; flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -219,7 +286,7 @@
 
 <script>
 // ===== サンプルデータ =====
-const DEMO_STUDENT = { name: '山田 太郎', grade: '4年生' };
+const DEMO_STUDENT = { name: '山田 太郎', grade: '3年生' };
 
 const DEMO_SUBJECTS = [
   {
@@ -335,13 +402,121 @@ const DEMO_SUBJECTS = [
   }
 ];
 
+// ===== デモ 試験・学習計画データ（令和7年3年生春学期） =====
+const DEMO_EXAMS = [
+  { examId: 'ex1', subjectName: '基礎臨床統合歯学Ⅱ',               examDate: '2025-08-22', reviewMinutes: 45 },
+  { examId: 'ex2', subjectName: '病因・病態・診断（総論）',           examDate: '2025-08-25', reviewMinutes: 45 },
+  { examId: 'ex3', subjectName: '臨床医学（内科Ⅱ）',               examDate: '2025-08-26', reviewMinutes: 45 },
+  { examId: 'ex4', subjectName: '感染と免疫Ⅱ',                     examDate: '2025-08-26', reviewMinutes: 45 },
+  { examId: 'ex5', subjectName: '放射線・画像診断学（画像検査）Ⅱ',   examDate: '2025-08-27', reviewMinutes: 45 },
+  { examId: 'ex6', subjectName: '生体と薬物Ⅱ',                     examDate: '2025-08-27', reviewMinutes: 45 },
+  { examId: 'ex7', subjectName: '硬組織疾患の病態と治療Ⅱ',           examDate: '2025-08-28', reviewMinutes: 45 },
+  { examId: 'ex8', subjectName: '臨床医学（外科Ⅱ）',               examDate: '2025-08-28', reviewMinutes: 45 },
+  { examId: 'ex9', subjectName: '社会と歯学Ⅱ',                     examDate: '2025-08-29', reviewMinutes: 45 },
+];
+
+// 全科目 15コマ参加済み
+const DEMO_ATTENDED_BY_SUBJECT = {};
+DEMO_EXAMS.forEach(e => {
+  DEMO_ATTENDED_BY_SUBJECT[e.subjectName] = Array.from({ length: 15 }, (_, i) => i + 1);
+});
+
+// 復習進捗（スナップショット：2025/8/12時点）
+const DEMO_PROGRESS_BLOCKS = {
+  '基礎臨床統合歯学Ⅱ':             { reviewed: 15, attended: 15, total: 15, remaining: 0  },
+  '病因・病態・診断（総論）':         { reviewed: 15, attended: 15, total: 15, remaining: 0  },
+  '臨床医学（内科Ⅱ）':             { reviewed: 5,  attended: 15, total: 15, remaining: 10 },
+  '感染と免疫Ⅱ':                   { reviewed: 5,  attended: 15, total: 15, remaining: 10 },
+  '放射線・画像診断学（画像検査）Ⅱ': { reviewed: 0,  attended: 15, total: 15, remaining: 15 },
+  '生体と薬物Ⅱ':                   { reviewed: 0,  attended: 15, total: 15, remaining: 15 },
+  '硬組織疾患の病態と治療Ⅱ':         { reviewed: 0,  attended: 15, total: 15, remaining: 15 },
+  '臨床医学（外科Ⅱ）':             { reviewed: 0,  attended: 15, total: 15, remaining: 15 },
+  '社会と歯学Ⅱ':                   { reviewed: 0,  attended: 15, total: 15, remaining: 15 },
+};
+
+// 学習計画（日付ごとにグループ化、復習45分/再復習15分）
+const DEMO_PLAN_GROUPS = {
+  ex1: [
+    { date: '8/4 (月)',  type: 'review',     count: 5, doneCount: 5 },
+    { date: '8/5 (火)',  type: 'review',     count: 5, doneCount: 5 },
+    { date: '8/6 (水)',  type: 'review',     count: 5, doneCount: 5 },
+    { date: '8/18 (月)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/19 (火)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/20 (水)', type: 're-review',  count: 5, doneCount: 0 },
+  ],
+  ex2: [
+    { date: '8/7 (木)',  type: 'review',     count: 5, doneCount: 5 },
+    { date: '8/8 (金)',  type: 'review',     count: 5, doneCount: 5 },
+    { date: '8/11 (月)', type: 'review',     count: 5, doneCount: 5 },
+    { date: '8/21 (木)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/22 (金)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/23 (土)', type: 're-review',  count: 5, doneCount: 0 },
+  ],
+  ex3: [
+    { date: '8/9 (土)',  type: 'review',     count: 5, doneCount: 5 },
+    { date: '8/12 (火)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/13 (水)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/22 (金)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/23 (土)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/24 (日)', type: 're-review',  count: 5, doneCount: 0 },
+  ],
+  ex4: [
+    { date: '8/10 (日)', type: 'review',     count: 5, doneCount: 5 },
+    { date: '8/12 (火)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/13 (水)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/22 (金)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/23 (土)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/24 (日)', type: 're-review',  count: 5, doneCount: 0 },
+  ],
+  ex5: [
+    { date: '8/13 (水)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/14 (木)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/15 (金)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/23 (土)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/24 (日)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/25 (月)', type: 're-review',  count: 5, doneCount: 0 },
+  ],
+  ex6: [
+    { date: '8/13 (水)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/14 (木)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/15 (金)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/24 (日)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/25 (月)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/26 (火)', type: 're-review',  count: 5, doneCount: 0 },
+  ],
+  ex7: [
+    { date: '8/14 (木)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/15 (金)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/16 (土)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/24 (日)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/25 (月)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/26 (火)', type: 're-review',  count: 5, doneCount: 0 },
+  ],
+  ex8: [
+    { date: '8/15 (金)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/16 (土)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/17 (日)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/25 (月)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/26 (火)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/27 (水)', type: 're-review',  count: 5, doneCount: 0 },
+  ],
+  ex9: [
+    { date: '8/16 (土)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/17 (日)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/18 (月)', type: 'review',     count: 5, doneCount: 0 },
+    { date: '8/25 (月)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/26 (火)', type: 're-review',  count: 5, doneCount: 0 },
+    { date: '8/27 (水)', type: 're-review',  count: 5, doneCount: 0 },
+  ],
+};
+
 // ===== 設定 =====
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec';
 // LIFF ID: demo.html用のLIFF IDをLINE Developers Consoleで作成して設定してください
 const DEMO_LIFF_ID = ''; // 例: '2009739219-xxxxxxxx'
 
 // ===== 状態 =====
-let view = 'subjects'; // 'subjects' | 'sessions' | 'chart'
+let view = 'subjects'; // 'subjects' | 'sessions' | 'chart' | 'studyPlan'
 let selectedSubjectIdx = 0;
 let selectedSessionIdx = null;
 let demoChart = null;
@@ -378,6 +553,7 @@ function buildHTML() {
   if (view === 'subjects') return bannerHTML + headerHTML + profileHTML + buildSubjectsHTML();
   if (view === 'sessions') return bannerHTML + headerHTML + buildSessionsHTML();
   if (view === 'chart') return bannerHTML + headerHTML + buildChartHTML();
+  if (view === 'studyPlan') return buildStudyPlanHTML();
   return '';
 }
 
@@ -417,7 +593,34 @@ function buildSubjectsHTML() {
       </div>
     </div>
     <div class="section-label">科目一覧</div>
-    ${html}`;
+    ${html}
+    <div class="section-label" style="margin-top:4px">試験対策</div>
+    <div style="padding:0 16px 16px">
+      <button onclick="view='studyPlan';render()" class="study-plan-btn">
+        <div class="study-plan-btn-icon">📚</div>
+        <div class="study-plan-btn-text">
+          <div class="study-plan-btn-title">定期試験対策</div>
+          <div class="study-plan-btn-desc">3年生 春学期 · 9科目 · 学習計画を見る</div>
+        </div>
+        <div style="color:var(--ink3);font-size:20px">›</div>
+      </button>
+      <button onclick="alert('CBT対策機能は現在開発中です！')" class="study-plan-btn" style="opacity:0.65">
+        <div class="study-plan-btn-icon">📖</div>
+        <div class="study-plan-btn-text">
+          <div class="study-plan-btn-title">CBT対策</div>
+          <div class="study-plan-btn-desc">4年生進級時の共用試験対策</div>
+        </div>
+        <span class="dev-badge">開発中</span>
+      </button>
+      <button onclick="alert('国試対策機能は現在開発中です！')" class="study-plan-btn" style="opacity:0.65">
+        <div class="study-plan-btn-icon">🏥</div>
+        <div class="study-plan-btn-text">
+          <div class="study-plan-btn-title">国試対策</div>
+          <div class="study-plan-btn-desc">歯科医師国家試験対策</div>
+        </div>
+        <span class="dev-badge">開発中</span>
+      </button>
+    </div>`;
 }
 
 function buildSessionsHTML() {
@@ -567,6 +770,94 @@ function goBack(to) {
   if (demoChart) { demoChart.destroy(); demoChart = null; }
   view = to;
   render();
+}
+
+function demoAction() {
+  alert('デモ版では操作できません。\n本番版ではこの機能が使えます。');
+}
+
+function buildStudyPlanHTML() {
+  const typeLabel = { 'review': '復習', 're-review': '再復習' };
+
+  const examCardsHTML = DEMO_EXAMS.map(exam => {
+    // 実施コマ バッジ（15コマ全参加）
+    const attendedHTML = Array.from({ length: 15 }, (_, i) =>
+      `<span style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-size:10px;font-weight:600">第${i+1}回</span>`
+    ).join(' ');
+
+    // 復習進捗ブロック
+    const p = DEMO_PROGRESS_BLOCKS[exam.subjectName];
+    const progressHTML = p ? `
+      <div style="padding:10px 16px;border-top:1px solid var(--border);background:var(--bg)">
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">復習進捗：残り${p.remaining}コマ / ${p.attended}コマ参加済み</div>
+        <div class="blocks-row">
+          ${Array.from({ length: 15 }, (_, i) => {
+            if (i < p.reviewed) return '<div class="block reviewed"></div>';
+            if (i < p.attended) return '<div class="block pending"></div>';
+            return '<div class="block unattended"></div>';
+          }).join('')}
+        </div>
+      </div>` : '';
+
+    // 計画アイテム（日付グループ）
+    const groups = DEMO_PLAN_GROUPS[exam.examId] || [];
+    const doneTotal = groups.reduce((s, g) => s + g.doneCount, 0);
+    const totalSessions = groups.reduce((s, g) => s + g.count, 0);
+
+    const planItemsHTML = groups.map(g => {
+      const allDone = g.doneCount >= g.count;
+      const min = g.type === 'review'
+        ? g.count * exam.reviewMinutes
+        : g.count * Math.round(exam.reviewMinutes / 3);
+      return `
+        <div class="plan-item ${allDone ? 'plan-item-done' : ''}">
+          <div class="plan-item-date">${g.date}</div>
+          <div class="plan-item-label">${typeLabel[g.type]} ×${g.count}コマ（${min}分）</div>
+          <button class="plan-item-btn ${allDone ? 'done' : ''}" onclick="demoAction()">
+            ${allDone ? '完了✓' : '学習済み'}
+          </button>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="plan-exam-card">
+        <div class="plan-exam-header">
+          <div style="flex:1;min-width:0">
+            <div class="plan-exam-name">${exam.subjectName}</div>
+            <div class="plan-exam-date">試験日：${exam.examDate}　復習：${exam.reviewMinutes}分/回</div>
+            <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">${attendedHTML}</div>
+            <div style="font-size:11px;color:var(--ink3);margin-top:6px">${doneTotal}/${totalSessions}コマ完了</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;margin-left:10px">
+            <button class="plan-generate-btn" onclick="demoAction()">リプラン</button>
+            <button class="plan-generate-btn" style="background:var(--accent-light);color:var(--accent);border-color:transparent" onclick="demoAction()">再生成</button>
+          </div>
+        </div>
+        ${progressHTML}
+        ${planItemsHTML}
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="demo-banner">
+      <span class="demo-badge">DEMO</span>サービス体験中 — サンプルデータ（2025年8月12日時点）
+    </div>
+    <div class="plan-header">
+      <button class="plan-back-btn" onclick="goBack('subjects')">← 戻る</button>
+      <div class="plan-title">定期試験対策（デモ）</div>
+    </div>
+    <div style="padding:10px 20px 4px;font-size:12px;color:var(--ink3)">
+      表示中：3年生 春学期の科目（9件）
+    </div>
+    <div class="theory-card">
+      <div class="theory-title">反復学習による効率化の根拠</div>
+      <div class="theory-step">ステップ1（授業）：集中度スコアで授業の集中の質を向上</div>
+      <div class="theory-step">ステップ2（復習）：復習時間を約1/2に短縮しつつ定着の質を向上</div>
+      <div class="theory-step">ステップ3（再復習）：復習時間を約1/3に短縮しながらさらに定着を強化</div>
+    </div>
+    ${examCardsHTML}
+    <div style="height:100px"></div>
+  `;
 }
 
 function openRegister() {
