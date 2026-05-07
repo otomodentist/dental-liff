@@ -1137,28 +1137,63 @@
       }
 
       // ===== 試験日程タブ =====
+      let editingExamId = null;
+
       function renderExamHTML() {
           const exams = (examListData && examListData.exams) || [];
+          const registeredSubjects = new Set(exams.map(e => e.subjectName));
+          const availableSubjects = SUBJECTS.filter(s => !registeredSubjects.has(s.name));
+
           const listHTML = exams.length === 0
               ? '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">試験日程はまだ登録されていません</div>'
-              : exams.map(e => `
-                  <div style="padding:12px 16px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:10px">
-                      <div style="flex:1">
-                          <div style="font-weight:600;font-size:14px">${e.subjectName}</div>
-                          <div style="font-size:12px;color:var(--ink3)">試験日: ${e.examDate}　復習: ${e.reviewMinutes}分/回</div>
-                      </div>
-                      <button onclick="deleteExam('${e.examId}')"
-                          style="background:none;border:1px solid #e0695a;border-radius:8px;color:#e0695a;font-size:12px;padding:5px 10px;cursor:pointer">削除</button>
-                  </div>`).join('');
+              : exams.map(e => {
+                  if (editingExamId === e.examId) {
+                      return `
+                          <div style="padding:12px 16px;border-bottom:1px solid var(--border2);background:var(--bg-sub)">
+                              <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--ink2)">${e.subjectName}（編集中）</div>
+                              <div style="margin-bottom:6px">
+                                  <div style="font-size:11px;color:var(--ink3);margin-bottom:2px">授業最終日</div>
+                                  <input id="editLastClass_${e.examId}" type="date" class="modal-select" style="width:100%" value="${e.lastClassDate || ''}" />
+                              </div>
+                              <div style="margin-bottom:6px">
+                                  <div style="font-size:11px;color:var(--ink3);margin-bottom:2px">試験日</div>
+                                  <input id="editExamDate_${e.examId}" type="date" class="modal-select" style="width:100%" value="${e.examDate}" />
+                              </div>
+                              <div style="margin-bottom:10px">
+                                  <div style="font-size:11px;color:var(--ink3);margin-bottom:2px">復習標準時間（分/回）</div>
+                                  <input id="editReviewMin_${e.examId}" type="number" value="${e.reviewMinutes}" min="10" max="120" class="modal-select" style="width:100%" />
+                              </div>
+                              <div style="display:flex;gap:8px">
+                                  <button onclick="saveEditExam('${e.examId}')" class="action-btn btn-start" style="flex:1;padding:8px;font-size:13px">保存</button>
+                                  <button onclick="cancelEditExam()" style="flex:1;padding:8px;font-size:13px;background:none;border:1px solid var(--border2);border-radius:10px;cursor:pointer">キャンセル</button>
+                              </div>
+                          </div>`;
+                  }
+                  return `
+                      <div style="padding:12px 16px;border-bottom:1px solid var(--border2)">
+                          <div style="font-weight:600;font-size:14px;margin-bottom:2px">${e.subjectName}</div>
+                          <div style="font-size:12px;color:var(--ink3)">試験日: ${e.examDate}${e.lastClassDate ? '　授業最終日: ' + e.lastClassDate : ''}　復習: ${e.reviewMinutes}分/回</div>
+                          <div style="display:flex;gap:8px;margin-top:8px">
+                              <button onclick="startEditExam('${e.examId}')"
+                                  style="background:none;border:1px solid var(--border2);border-radius:8px;color:var(--ink2);font-size:12px;padding:4px 10px;cursor:pointer">編集</button>
+                              <button onclick="deleteExam('${e.examId}')"
+                                  style="background:none;border:1px solid #e0695a;border-radius:8px;color:#e0695a;font-size:12px;padding:4px 10px;cursor:pointer">削除</button>
+                          </div>
+                      </div>`;
+              }).join('');
 
-          return `
-              <div style="padding:16px">
-                  <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:14px;color:var(--ink)">試験日程を追加</div>
+          const addFormHTML = availableSubjects.length === 0
+              ? '<div style="padding:12px;background:var(--bg-sub);border-radius:10px;font-size:13px;color:var(--ink3);text-align:center">全科目の試験日程が登録済みです</div>'
+              : `
                   <div style="margin-bottom:10px">
                       <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">科目名</div>
                       <select id="examSubject" class="modal-select">
-                          ${SUBJECTS.map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
+                          ${availableSubjects.map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
                       </select>
+                  </div>
+                  <div style="margin-bottom:10px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">授業最終日</div>
+                      <input id="examLastClass" type="date" class="modal-select" style="width:100%" />
                   </div>
                   <div style="margin-bottom:10px">
                       <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">試験日</div>
@@ -1168,8 +1203,12 @@
                       <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">復習標準時間（分/回）</div>
                       <input id="examReviewMin" type="number" value="45" min="10" max="120" class="modal-select" style="width:100%" />
                   </div>
-                  <button class="action-btn btn-start" onclick="addExam()" style="margin-bottom:20px">追加</button>
+                  <button class="action-btn btn-start" onclick="addExam()" style="margin-bottom:20px">追加</button>`;
 
+          return `
+              <div style="padding:16px">
+                  <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:14px;color:var(--ink)">試験日程を追加</div>
+                  ${addFormHTML}
                   <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:10px;color:var(--ink)">登録済み試験日程（${exams.length}件）</div>
                   <div class="card" style="padding:0;overflow:hidden">${listHTML}</div>
               </div>
@@ -1178,16 +1217,48 @@
 
       async function addExam() {
           const subjectName = document.getElementById('examSubject').value;
+          const lastClassDate = document.getElementById('examLastClass').value;
           const examDate = document.getElementById('examDate').value;
           const reviewMinutes = document.getElementById('examReviewMin').value;
           if (!subjectName || !examDate) { showToast('❌ 科目名と試験日を入力してください'); return; }
           try {
-              const res = await fetch(`${GAS_URL}?action=addExamDate&subjectName=${encodeURIComponent(subjectName)}&examDate=${encodeURIComponent(examDate)}&reviewMinutes=${reviewMinutes}`);
+              const res = await fetch(`${GAS_URL}?action=addExamDate&subjectName=${encodeURIComponent(subjectName)}&examDate=${encodeURIComponent(examDate)}&reviewMinutes=${reviewMinutes}&lastClassDate=${encodeURIComponent(lastClassDate)}`);
               const result = await res.json();
               if (result.success) {
                   examListData = null;
                   await switchTab('exam');
                   showToast('✅ 試験日程を追加しました');
+              } else {
+                  showToast('❌ エラー: ' + result.error);
+              }
+          } catch (err) {
+              showToast('❌ 通信エラー');
+          }
+      }
+
+      function startEditExam(examId) {
+          editingExamId = examId;
+          renderApp();
+      }
+
+      function cancelEditExam() {
+          editingExamId = null;
+          renderApp();
+      }
+
+      async function saveEditExam(examId) {
+          const examDate = document.getElementById(`editExamDate_${examId}`).value;
+          const reviewMinutes = document.getElementById(`editReviewMin_${examId}`).value;
+          const lastClassDate = document.getElementById(`editLastClass_${examId}`).value;
+          if (!examDate) { showToast('❌ 試験日を入力してください'); return; }
+          try {
+              const res = await fetch(`${GAS_URL}?action=updateExamDate&examId=${encodeURIComponent(examId)}&examDate=${encodeURIComponent(examDate)}&reviewMinutes=${reviewMinutes}&lastClassDate=${encodeURIComponent(lastClassDate)}`);
+              const result = await res.json();
+              if (result.success) {
+                  examListData = null;
+                  editingExamId = null;
+                  await switchTab('exam');
+                  showToast('✅ 試験日程を更新しました');
               } else {
                   showToast('❌ エラー: ' + result.error);
               }
@@ -1203,6 +1274,7 @@
               const result = await res.json();
               if (result.success) {
                   examListData = null;
+                  editingExamId = null;
                   await switchTab('exam');
                   showToast('✅ 削除しました');
               } else {
