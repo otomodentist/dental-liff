@@ -878,8 +878,10 @@ async function initLiffAndRecord() {
         fetch(`${GAS_URL}?action=recordDemoAccess&userId=${encodeURIComponent(userId)}`)
           .catch(() => {}); // 失敗してもデモは表示
       }
+    } else {
+      liff.login();
+      return;
     }
-    // 未ログインでもデモはそのまま表示（ログイン強制なし）
   } catch (e) {
     // LIFF未設定またはLIFF外からのアクセス → そのまま表示
   }
