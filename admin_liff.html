@@ -1141,6 +1141,7 @@
 
       function renderExamHTML() {
           const exams = (examListData && examListData.exams) || [];
+          const lastClassDate = (examListData && examListData.lastClassDate) || '';
           const registeredSubjects = new Set(exams.map(e => e.subjectName));
           const availableSubjects = SUBJECTS.filter(s => !registeredSubjects.has(s.name));
 
@@ -1151,10 +1152,6 @@
                       return `
                           <div style="padding:12px 16px;border-bottom:1px solid var(--border2);background:var(--bg-sub)">
                               <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--ink2)">${e.subjectName}（編集中）</div>
-                              <div style="margin-bottom:6px">
-                                  <div style="font-size:11px;color:var(--ink3);margin-bottom:2px">授業最終日</div>
-                                  <input id="editLastClass_${e.examId}" type="date" class="modal-select" style="width:100%" value="${e.lastClassDate || ''}" />
-                              </div>
                               <div style="margin-bottom:6px">
                                   <div style="font-size:11px;color:var(--ink3);margin-bottom:2px">試験日</div>
                                   <input id="editExamDate_${e.examId}" type="date" class="modal-select" style="width:100%" value="${e.examDate}" />
@@ -1172,7 +1169,7 @@
                   return `
                       <div style="padding:12px 16px;border-bottom:1px solid var(--border2)">
                           <div style="font-weight:600;font-size:14px;margin-bottom:2px">${e.subjectName}</div>
-                          <div style="font-size:12px;color:var(--ink3)">試験日: ${e.examDate}${e.lastClassDate ? '　授業最終日: ' + e.lastClassDate : ''}　復習: ${e.reviewMinutes}分/回</div>
+                          <div style="font-size:12px;color:var(--ink3)">試験日: ${e.examDate}　復習: ${e.reviewMinutes}分/回</div>
                           <div style="display:flex;gap:8px;margin-top:8px">
                               <button onclick="startEditExam('${e.examId}')"
                                   style="background:none;border:1px solid var(--border2);border-radius:8px;color:var(--ink2);font-size:12px;padding:4px 10px;cursor:pointer">編集</button>
@@ -1192,10 +1189,6 @@
                       </select>
                   </div>
                   <div style="margin-bottom:10px">
-                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">授業最終日</div>
-                      <input id="examLastClass" type="date" class="modal-select" style="width:100%" />
-                  </div>
-                  <div style="margin-bottom:10px">
                       <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">試験日</div>
                       <input id="examDate" type="date" class="modal-select" style="width:100%" />
                   </div>
@@ -1207,6 +1200,14 @@
 
           return `
               <div style="padding:16px">
+                  <div style="background:var(--bg-sub);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;margin-bottom:18px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">授業最終日（全科目共通）</div>
+                      <div style="display:flex;align-items:center;gap:8px">
+                          <input id="lastClassDateInput" type="date" class="modal-select" style="flex:1" value="${lastClassDate}" />
+                          <button onclick="saveLastClassDate()" class="action-btn btn-start" style="padding:8px 14px;font-size:13px;white-space:nowrap">保存</button>
+                      </div>
+                      <div style="font-size:11px;color:var(--ink3);margin-top:6px">学習計画の開始日算出に使用します</div>
+                  </div>
                   <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:14px;color:var(--ink)">試験日程を追加</div>
                   ${addFormHTML}
                   <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:10px;color:var(--ink)">登録済み試験日程（${exams.length}件）</div>
@@ -1215,14 +1216,29 @@
           `;
       }
 
+      async function saveLastClassDate() {
+          const date = document.getElementById('lastClassDateInput').value;
+          try {
+              const res = await fetch(`${GAS_URL}?action=setLastClassDate&date=${encodeURIComponent(date)}`);
+              const result = await res.json();
+              if (result.success) {
+                  if (examListData) examListData.lastClassDate = date;
+                  showToast('✅ 授業最終日を保存しました');
+              } else {
+                  showToast('❌ エラー: ' + result.error);
+              }
+          } catch (err) {
+              showToast('❌ 通信エラー');
+          }
+      }
+
       async function addExam() {
           const subjectName = document.getElementById('examSubject').value;
-          const lastClassDate = document.getElementById('examLastClass').value;
           const examDate = document.getElementById('examDate').value;
           const reviewMinutes = document.getElementById('examReviewMin').value;
           if (!subjectName || !examDate) { showToast('❌ 科目名と試験日を入力してください'); return; }
           try {
-              const res = await fetch(`${GAS_URL}?action=addExamDate&subjectName=${encodeURIComponent(subjectName)}&examDate=${encodeURIComponent(examDate)}&reviewMinutes=${reviewMinutes}&lastClassDate=${encodeURIComponent(lastClassDate)}`);
+              const res = await fetch(`${GAS_URL}?action=addExamDate&subjectName=${encodeURIComponent(subjectName)}&examDate=${encodeURIComponent(examDate)}&reviewMinutes=${reviewMinutes}`);
               const result = await res.json();
               if (result.success) {
                   examListData = null;
@@ -1249,10 +1265,9 @@
       async function saveEditExam(examId) {
           const examDate = document.getElementById(`editExamDate_${examId}`).value;
           const reviewMinutes = document.getElementById(`editReviewMin_${examId}`).value;
-          const lastClassDate = document.getElementById(`editLastClass_${examId}`).value;
           if (!examDate) { showToast('❌ 試験日を入力してください'); return; }
           try {
-              const res = await fetch(`${GAS_URL}?action=updateExamDate&examId=${encodeURIComponent(examId)}&examDate=${encodeURIComponent(examDate)}&reviewMinutes=${reviewMinutes}&lastClassDate=${encodeURIComponent(lastClassDate)}`);
+              const res = await fetch(`${GAS_URL}?action=updateExamDate&examId=${encodeURIComponent(examId)}&examDate=${encodeURIComponent(examDate)}&reviewMinutes=${reviewMinutes}`);
               const result = await res.json();
               if (result.success) {
                   examListData = null;

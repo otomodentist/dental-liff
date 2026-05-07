@@ -403,16 +403,17 @@ const DEMO_SUBJECTS = [
 ];
 
 // ===== デモ 試験・学習計画データ（令和7年3年生春学期） =====
+const DEMO_LAST_CLASS_DATE = '2025-07-24'; // 授業最終日（全科目共通）
 const DEMO_EXAMS = [
-  { examId: 'ex1', subjectName: '基礎臨床統合歯学Ⅱ',               examDate: '2025-08-22', reviewMinutes: 45, lastClassDate: '2025-07-24' },
-  { examId: 'ex2', subjectName: '病因・病態・診断（総論）',           examDate: '2025-08-25', reviewMinutes: 45, lastClassDate: '2025-07-24' },
-  { examId: 'ex3', subjectName: '臨床医学（内科Ⅱ）',               examDate: '2025-08-26', reviewMinutes: 45, lastClassDate: '2025-07-24' },
-  { examId: 'ex4', subjectName: '感染と免疫Ⅱ',                     examDate: '2025-08-26', reviewMinutes: 45, lastClassDate: '2025-07-24' },
-  { examId: 'ex5', subjectName: '放射線・画像診断学（画像検査）Ⅱ',   examDate: '2025-08-27', reviewMinutes: 45, lastClassDate: '2025-07-24' },
-  { examId: 'ex6', subjectName: '生体と薬物Ⅱ',                     examDate: '2025-08-27', reviewMinutes: 45, lastClassDate: '2025-07-24' },
-  { examId: 'ex7', subjectName: '硬組織疾患の病態と治療Ⅱ',           examDate: '2025-08-28', reviewMinutes: 45, lastClassDate: '2025-07-24' },
-  { examId: 'ex8', subjectName: '臨床医学（外科Ⅱ）',               examDate: '2025-08-28', reviewMinutes: 45, lastClassDate: '2025-07-24' },
-  { examId: 'ex9', subjectName: '社会と歯学Ⅱ',                     examDate: '2025-08-29', reviewMinutes: 45, lastClassDate: '2025-07-24' },
+  { examId: 'ex1', subjectName: '基礎臨床統合歯学Ⅱ',               examDate: '2025-08-22', reviewMinutes: 45 },
+  { examId: 'ex2', subjectName: '病因・病態・診断（総論）',           examDate: '2025-08-25', reviewMinutes: 45 },
+  { examId: 'ex3', subjectName: '臨床医学（内科Ⅱ）',               examDate: '2025-08-26', reviewMinutes: 45 },
+  { examId: 'ex4', subjectName: '感染と免疫Ⅱ',                     examDate: '2025-08-26', reviewMinutes: 45 },
+  { examId: 'ex5', subjectName: '放射線・画像診断学（画像検査）Ⅱ',   examDate: '2025-08-27', reviewMinutes: 45 },
+  { examId: 'ex6', subjectName: '生体と薬物Ⅱ',                     examDate: '2025-08-27', reviewMinutes: 45 },
+  { examId: 'ex7', subjectName: '硬組織疾患の病態と治療Ⅱ',           examDate: '2025-08-28', reviewMinutes: 45 },
+  { examId: 'ex8', subjectName: '臨床医学（外科Ⅱ）',               examDate: '2025-08-28', reviewMinutes: 45 },
+  { examId: 'ex9', subjectName: '社会と歯学Ⅱ',                     examDate: '2025-08-29', reviewMinutes: 45 },
 ];
 
 // 全科目 15コマ参加済み
@@ -824,7 +825,7 @@ function buildStudyPlanHTML() {
         <div class="plan-exam-header">
           <div style="flex:1;min-width:0">
             <div class="plan-exam-name">${exam.subjectName}</div>
-            <div class="plan-exam-date">試験日：${exam.examDate}　授業最終日：${exam.lastClassDate}　復習：${exam.reviewMinutes}分/回</div>
+            <div class="plan-exam-date">試験日：${exam.examDate}　復習：${exam.reviewMinutes}分/回</div>
             <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">${attendedHTML}</div>
             <div style="font-size:11px;color:var(--ink3);margin-top:6px">${doneTotal}/${totalSessions}コマ完了</div>
           </div>
@@ -847,7 +848,7 @@ function buildStudyPlanHTML() {
       <div class="plan-title">定期試験対策（デモ）</div>
     </div>
     <div style="padding:10px 20px 4px;font-size:12px;color:var(--ink3)">
-      表示中：3年生 春学期の科目（9件）
+      表示中：3年生 春学期の科目（9件）　授業最終日：${DEMO_LAST_CLASS_DATE}
     </div>
     <div class="theory-card">
       <div class="theory-title">反復学習による効率化の根拠</div>
