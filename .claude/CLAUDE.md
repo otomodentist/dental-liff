@@ -57,7 +57,7 @@
 | Project ID | `1dfHpjEjSigxTJbSnuER99IKDBROzZ-ZXJ2XPiNJMfDsUZ9idejL35Cq8` |
 | Web App URL（Webhook & API） | `https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec` |
 | Deploy ID（`clasp deploy -i` に指定） | `AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug` |
-| 現在のバージョン | v25（2026/05/03） |
+| 現在のバージョン | v46（2026/05/09） |
 
 ### Google Sheets（Spreadsheet ID: `15UpJAol2SayyiEQDyOdKYX02eQQ4pMH4gq4SssJrYT4`）
 
@@ -68,6 +68,8 @@
 | 問題マスタ | 問題ID, セッションID, 科目名, 授業回数, 経過分, 問題文, 模範解答, 出題時刻 |
 | 回答データ | 回答ID, 学生ID, セッションID, 問題ID, 科目名, 授業回数, 経過分, 回答テキスト, 正確性スコア, 回答時間(秒), 集中度スコア, 回答時刻 |
 | 科目マスタ | 科目名, 曜日, 学年, 学期（16科目, 学年4, spring） |
+| 試験日程 | 試験ID, 科目名, 試験日, 復習標準時間（分）, 作成日時, コマ, 復習必要コマ数 |
+| 学習計画 | 計画ID, userId, 試験ID, 科目名, セッションID, 授業回数, タイプ, 予定日, 所要時間（分）, 完了状態, 完了日時, リプラン回数 |
 
 ### Google Drive
 
@@ -114,10 +116,16 @@
 - `getActiveSemester()` / `setActiveSemester(grade, semester)` — アクティブクール取得・設定
 - `getAdminStudentList()` — 学生一覧
 - `getStudentsByGradeAndSemester(grade, semester)` — 学年・学期でフィルタした学生一覧
-- `getStudentSessions(userId)` — 学生が参加したセッション一覧
+- `getStudentSessions(userId)` — 学生が参加したセッション一覧（latestAnswerAt付き、直近活動順）
 - `queryBySessionAndStudent(sessionId, userId)` — セッション×学生の回答詳細（問題文・模範解答付き）
 - `getLatestSessionData(userId)` — 直近終了セッションのサマリ
-- `getDashboardData(userId)` — 科目・セッション別集計（学生LIFF用）
+- `getDashboardData(userId)` — 科目・セッション別集計（学生LIFF用、latestAnswerAt付き・科目を直近活動順でソート）
+- `getExamSchedule()` — 試験日程一覧（period・requiredSessions含む）
+- `addExamDate(subjectName, examDate, reviewMinutes, period, requiredSessions)` — 試験日程追加
+- `updateExamDate(examId, examDate, reviewMinutes, period, requiredSessions)` — 試験日程更新
+- `deleteExamDate(examId)` — 試験日程削除
+- `generateStudyPlan(userId, examId, dailyAvailableHours)` — 学習計画生成（requiredSessionsで対象コマ数を制限）
+- `getScheduledSessionStart_()` — コマ定刻に基づく授業開始時刻を返す（内部関数）
 
 **スプレッドシート操作**
 - `saveAnswer(...)` — 回答データ保存
