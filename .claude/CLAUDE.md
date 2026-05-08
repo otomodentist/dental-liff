@@ -122,13 +122,11 @@
 **スプレッドシート操作**
 - `saveAnswer(...)` — 回答データ保存
 - `ensureStudentRegistered(userId)` — 未登録学生の自動登録
-- `getActiveStudentIds()` — 全学生IDリスト取得
+- `getPaidStudentIds()` — 課金有効・管理者承認の学生IDリスト取得
 
 **LINE APIヘルパー**
 - `replyMessage(replyToken, text)` — 返信
 - `multicastMessage(userIds, text)` — 最大500件ずつ分割してMulticast送信
-- `multicastStartMessage(subjectName, sessionNumber)` — 授業開始通知を全員に送信
-- `multicastEndMessage(subjectName)` — 授業終了通知を全員に送信
 - `getLineProfile(userId)` — LINEプロフィール取得
 
 **初回セットアップ（手動実行）**
@@ -216,7 +214,7 @@ const ADMIN_RICHMENU_FOLDER_ID = '1PEBapWgq6JwpSMElYjqoxn2PTnRp189_';
 ACTIVE_SESSION_ID      // 進行中セッションID（セッション中のみ存在）
 ACTIVE_SUBJECT         // 進行中科目名
 ACTIVE_SESSION_NUMBER  // 進行中授業回数
-SESSION_START_TIME     // セッション開始エポックms
+SESSION_START_TIME     // コマ定刻開始時刻エポックms（1コマ8:40・2コマ10:25・3コマ12:55・4コマ14:40、コマ外はボタン押下時刻）
 CURRENT_QUESTION_ID    // 出題中問題ID
 CURRENT_QUESTION_TEXT  // 出題中問題文
 CURRENT_MODEL_ANSWER   // 出題中模範解答

@@ -681,9 +681,9 @@ function drawChart() {
   demoChart = new Chart(canvas, {
     type: 'line',
     data: {
-      labels: answers.map(a => `${a.minutesElapsed}分`),
+      labels: ['0分', ...answers.map(a => `${a.minutesElapsed}分`)],
       datasets: [{
-        data: answers.map(a => a.concentrationScore),
+        data: [null, ...answers.map(a => a.concentrationScore)],
         borderColor: '#2d5a3d',
         backgroundColor: 'rgba(45,90,61,0.08)',
         pointBackgroundColor: '#2d5a3d',
