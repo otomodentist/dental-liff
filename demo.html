@@ -513,10 +513,11 @@ const DEMO_PLAN_GROUPS = {
 
 // ===== 設定 =====
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec';
-// LIFF ID: demo.html用のLIFF IDをLINE Developers Consoleで作成して設定してください
-const DEMO_LIFF_ID = ''; // 例: '2009739219-xxxxxxxx'
+const DEMO_LIFF_ID = '2009739219-dSnPUVFj';
+const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/aFa7sK9mA7XP5u2e4zfbq02';
 
 // ===== 状態 =====
+let demoUserId = null;
 let view = 'subjects'; // 'subjects' | 'sessions' | 'chart' | 'studyPlan'
 let selectedSubjectIdx = 0;
 let selectedSessionIdx = null;
@@ -862,7 +863,12 @@ function buildStudyPlanHTML() {
 }
 
 function openRegister() {
-  alert('このデモページでは登録できません。\nLINEで「授業のオトモ」を友達追加してご登録ください。');
+  const url = STRIPE_PAYMENT_LINK + (demoUserId ? '?client_reference_id=' + encodeURIComponent(demoUserId) : '');
+  if (typeof liff !== 'undefined' && liff.isInClient()) {
+    liff.openWindow({ url, external: true });
+  } else {
+    window.open(url, '_blank');
+  }
 }
 
 // ===== LIFF初期化 & デモアクセス記録 =====
@@ -872,7 +878,8 @@ async function initLiffAndRecord() {
     await liff.init({ liffId: DEMO_LIFF_ID });
     if (liff.isLoggedIn()) {
       const profile = await liff.getProfile();
-      const userId = profile.userId;
+      demoUserId = profile.userId;
+      const userId = demoUserId;
       // 1セッションにつき1回だけGASに記録（決済案内メッセージ3が送信される）
       if (!sessionStorage.getItem('demoAccessRecorded')) {
         sessionStorage.setItem('demoAccessRecorded', '1');
