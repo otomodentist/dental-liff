@@ -697,15 +697,19 @@
           const sessions = studentSessionsData.sessions || [];
           const subjectMap = {};
           sessions.forEach(s => {
-              if (!subjectMap[s.subject]) subjectMap[s.subject] = [];
-              subjectMap[s.subject].push(s);
+              if (!subjectMap[s.subject]) subjectMap[s.subject] = { sessions: [], latestAnswerAt: 0 };
+              subjectMap[s.subject].sessions.push(s);
+              if ((s.latestAnswerAt || 0) > subjectMap[s.subject].latestAnswerAt)
+                  subjectMap[s.subject].latestAnswerAt = s.latestAnswerAt || 0;
           });
 
           const listHTML = sessions.length === 0
               ? '<div class="empty-state">授業データがありません</div>'
-              : Object.entries(subjectMap).map(([subj, ses]) => `
+              : Object.entries(subjectMap)
+                  .sort(([, a], [, b]) => b.latestAnswerAt - a.latestAnswerAt)
+                  .map(([subj, data]) => `
                   <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">${subj}</div>
-                  ${ses.map(s => `
+                  ${data.sessions.map(s => `
                       <div class="student-item" onclick="showSessionDetail('${s.sessionId}')">
                           <div class="student-info">
                               <div class="student-name">第${s.sessionNumber}回</div>
@@ -797,8 +801,8 @@
           const answers = sessionDetailData.answers || [];
           if (answers.length === 0) return;
 
-          const labels = answers.map(a => `${a.minutesElapsed}分`);
-          const scores = answers.map(a => a.concentrationScore);
+          const labels = ['0分', ...answers.map(a => `${a.minutesElapsed}分`)];
+          const scores = [null, ...answers.map(a => a.concentrationScore)];
 
           const pausedAt = sessionDetailData.pausedAt; // 配信停止時刻（分単位の経過時間）
 
@@ -860,7 +864,7 @@
                       const { ctx, scales: { x, y } } = chart;
                       const minuteValues = answers.map(a => a.minutesElapsed);
                       if (minuteValues.length === 0) return;
-                      const minVal = minuteValues[0];
+                      const minVal = 0;
                       const maxVal = minuteValues[minuteValues.length - 1];
                       if (maxVal === minVal) return;
                       const clampedPause = Math.max(minVal, Math.min(maxVal, pausedAt));

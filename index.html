@@ -748,8 +748,8 @@ function drawTimelineChart(canvasId, timeline, instanceKey) {
   const key = instanceKey || canvasId;
   if (chartInstances[key]) chartInstances[key].destroy();
 
-  const labels = timeline.map(t => `${t.minutesElapsed}分`);
-  const scores = timeline.map(t => t.concentrationScore);
+  const labels = ['0分', ...timeline.map(t => `${t.minutesElapsed}分`)];
+  const scores = [null, ...timeline.map(t => t.concentrationScore)];
 
   chartInstances[key] = new Chart(canvas, {
     type: 'line',
