@@ -643,17 +643,22 @@
           const filterLabel = `${dashboardFilter.grade}年生 · ${semesterLabel(dashboardFilter.semester)}`;
           const listHTML = students.length === 0
               ? '<div class="empty-state">学生データがありません</div>'
-              : students.map(s => `
+              : students.map(s => {
+                  const isPaid = s.billingStatus === '課金有効' || s.billingStatus === '管理者承認';
+                  const statusLabel = isPaid ? '登録済み' : '未登録';
+                  const statusColor = isPaid ? 'var(--ink3)' : '#e06060';
+                  return `
                   <div class="student-item" onclick="showStudentSessions('${s.userId}')">
                       <div class="student-avatar">
                           ${s.pictureUrl ? `<img src="${s.pictureUrl}" alt="">` : '👤'}
                       </div>
                       <div class="student-info">
                           <div class="student-name">${s.displayName || '名前なし'}</div>
-                          <div class="student-meta">登録済み</div>
+                          <div class="student-meta" style="color:${statusColor}">${statusLabel}</div>
                       </div>
                       <div style="font-size:13px;color:var(--ink3)">▶</div>
-                  </div>`).join('');
+                  </div>`;
+              }).join('');
           return `
               <div style="background:var(--warning-light);border-bottom:1px solid #e8d89a;padding:10px 16px;display:flex;align-items:center;gap:10px">
                   <div style="flex:1;font-size:13px;color:var(--warning);font-weight:500">
