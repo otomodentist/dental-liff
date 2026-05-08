@@ -910,6 +910,13 @@ function closeStudyPlanView() {
   renderApp();
 }
 
+function formatExamDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr + 'T00:00:00');
+  const days = ['日','月','火','水','木','金','土'];
+  return `${d.getMonth()+1}/${d.getDate()}（${days[d.getDay()]}）`;
+}
+
 function renderStudyPlanView() {
   const app = document.getElementById('app');
 
@@ -997,7 +1004,7 @@ function renderStudyPlanView() {
             <div class="plan-exam-header">
               <div style="flex:1;min-width:0">
                 <div class="plan-exam-name">${exam.subjectName}</div>
-                <div class="plan-exam-date">試験日: ${exam.examDate}　復習: ${exam.reviewMinutes}分/回</div>
+                <div class="plan-exam-date">試験日: ${formatExamDate(exam.examDate)}　復習: ${exam.reviewMinutes}分/回</div>
                 <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">${attendedHTML}</div>
                 ${hasPlan ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${doneCount}/${entries.length}コマ完了</div>` : ''}
               </div>

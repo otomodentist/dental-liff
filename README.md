@@ -99,3 +99,4 @@ git push origin main
 | 2026/05/09 | gas_main.js.js: 未登録者への配信除外・解約時ステータス「未登録」・登録案内メッセージ改善（GAS v40） |
 | 2026/05/09 | demo.html: LIFF ID設定・登録ボタンをStripe決済ページへ遷移（userId付き）（GAS v40） |
 | 2026/05/09 | gas_main.js.js: 不要関数削除（multicastStartMessage・multicastEndMessage・updateStudentMasterHeaders・getActiveStudentIds）（GAS v41） |
+| 2026/05/09 | admin_liff.html: 登録済み試験日程を横スクロール対応テーブル表示に変更（試験日をM/D（曜）形式で表示） |

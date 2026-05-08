@@ -274,6 +274,13 @@
       const FILTER_KEY = 'dashboardFilter';
       let sessionSemesterEditing = false;
 
+      const _busy = new Set();
+      async function guardedAction(key, fn) {
+        if (_busy.has(key)) return;
+        _busy.add(key);
+        try { await fn(); } finally { _busy.delete(key); }
+      }
+
       async function init() {
           try {
                 await liff.init({ liffId: LIFF_ID });
@@ -907,25 +914,27 @@
           renderApp();
       }
       async function saveSessionSemester() {
-          const grade    = parseInt(document.getElementById('sessionGrade').value);
-          const semester = document.getElementById('sessionSemester').value;
-          try {
-              const res = await fetch(`${GAS_URL}?action=setActiveSemester&grade=${grade}&semester=${encodeURIComponent(semester)}`);
-              const result = await res.json();
-              if (result.success) {
-                  activeSemester = { grade, semester };
-                  const subjectsRes = await fetch(`${GAS_URL}?action=getSubjectMaster`);
-                  SUBJECTS = (await subjectsRes.json()).subjects || [];
-                  selectedDay = selectedSubject = selectedSession = null;
-                  sessionSemesterEditing = false;
-                  showToast(`✅ ${grade}年生 ${semesterLabel(semester)}に切り替えました`);
-                  renderApp();
-              } else {
-                  showToast('❌ エラー: ' + result.error);
+          await guardedAction('saveSessionSemester', async () => {
+              const grade    = parseInt(document.getElementById('sessionGrade').value);
+              const semester = document.getElementById('sessionSemester').value;
+              try {
+                  const res = await fetch(`${GAS_URL}?action=setActiveSemester&grade=${grade}&semester=${encodeURIComponent(semester)}`);
+                  const result = await res.json();
+                  if (result.success) {
+                      activeSemester = { grade, semester };
+                      const subjectsRes = await fetch(`${GAS_URL}?action=getSubjectMaster`);
+                      SUBJECTS = (await subjectsRes.json()).subjects || [];
+                      selectedDay = selectedSubject = selectedSession = null;
+                      sessionSemesterEditing = false;
+                      showToast(`✅ ${grade}年生 ${semesterLabel(semester)}に切り替えました`);
+                      renderApp();
+                  } else {
+                      showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
               }
-          } catch (err) {
-              showToast('❌ 通信エラー');
-          }
+          });
       }
 
       function selectDay(day) {
@@ -946,69 +955,76 @@
 
       async function startSession() {
           if (!selectedSubject || !selectedSession) return;
-          try {
-                const res = await fetch(
-                        `${GAS_URL}?action=adminStartSession` +
-                        `&subject=${encodeURIComponent(selectedSubject)}` +
-                        `&sessionNumber=${selectedSession}`
-                      );
-                const result = await res.json();
-                if (result.success) {
-                        isSessionActive   = true;
-                        activeSessionInfo = { subject: selectedSubject, sessionNumber: selectedSession };
-                        selectedDay = selectedSubject = selectedSession = null;
-                        showToast(`✅ ${activeSessionInfo.subject} 第${activeSessionInfo.sessionNumber}回 開始しました`);
-                        renderApp();
-                } else {
-                        showToast('❌ エラー: ' + result.error);
-                }
-          } catch (err) {
-                showToast('❌ 通信エラー');
-          }
+          await guardedAction('startSession', async () => {
+              try {
+                  const res = await fetch(
+                      `${GAS_URL}?action=adminStartSession` +
+                      `&subject=${encodeURIComponent(selectedSubject)}` +
+                      `&sessionNumber=${selectedSession}`
+                  );
+                  const result = await res.json();
+                  if (result.success) {
+                      isSessionActive   = true;
+                      activeSessionInfo = { subject: selectedSubject, sessionNumber: selectedSession };
+                      selectedDay = selectedSubject = selectedSession = null;
+                      showToast(`✅ ${activeSessionInfo.subject} 第${activeSessionInfo.sessionNumber}回 開始しました`);
+                      renderApp();
+                  } else {
+                      showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
+              }
+          });
       }
 
       async function endSession() {
-          try {
-                const res = await fetch(`${GAS_URL}?action=adminEndSession`);
-                const result = await res.json();
-                if (result.success) {
-                        isSessionActive = false;
-                        activeSessionInfo = null;
-                        isDeliveryPaused = false;
-                        showToast('✅ 授業を終了しました');
-                        renderApp();
-                } else {
-                        showToast('❌ エラー: ' + result.error);
-                }
-          } catch (err) {
-                showToast('❌ 通信エラー');
-          }
+          await guardedAction('endSession', async () => {
+              try {
+                  const res = await fetch(`${GAS_URL}?action=adminEndSession`);
+                  const result = await res.json();
+                  if (result.success) {
+                      isSessionActive = false;
+                      activeSessionInfo = null;
+                      isDeliveryPaused = false;
+                      showToast('✅ 授業を終了しました');
+                      renderApp();
+                  } else {
+                      showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
+              }
+          });
       }
 
       async function broadcastQuestion() {
           const question    = document.getElementById('questionText').value.trim();
           const modelAnswer = document.getElementById('modelAnswer').value.trim();
-          if (!question || !modelAnswer) {
-                showToast('⚠️ 問題文と模範解答を入力してください');
-                return;
-          }
-          try {
-                const res = await fetch(
-                        `${GAS_URL}?action=adminBroadcast` +
-                        `&question=${encodeURIComponent(question)}` +
-                        `&modelAnswer=${encodeURIComponent(modelAnswer)}`
-                      );
-                const result = await res.json();
-                if (result.success) {
-                        document.getElementById('questionText').value  = '';
-                        document.getElementById('modelAnswer').value   = '';
-                        showToast(`📢 ${result.studentCount}名に配信しました`);
-                } else {
-                        showToast('❌ エラー: ' + result.error);
-                }
-          } catch (err) {
-                showToast('❌ 通信エラー');
-          }
+          if (!question || !modelAnswer) { showToast('⚠️ 問題文と模範解答を入力してください'); return; }
+          await guardedAction('broadcastQuestion', async () => {
+              const btn = document.querySelector('.btn-question');
+              if (btn) { btn.disabled = true; btn.textContent = '配信中...'; }
+              try {
+                  const res = await fetch(
+                      `${GAS_URL}?action=adminBroadcast` +
+                      `&question=${encodeURIComponent(question)}` +
+                      `&modelAnswer=${encodeURIComponent(modelAnswer)}`
+                  );
+                  const result = await res.json();
+                  if (result.success) {
+                      document.getElementById('questionText').value  = '';
+                      document.getElementById('modelAnswer').value   = '';
+                      showToast(`📢 ${result.studentCount}名に配信しました`);
+                  } else {
+                      showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
+              } finally {
+                  if (btn) { btn.disabled = false; btn.textContent = '📢 全学生に出題する'; }
+              }
+          });
       }
 
       function openPauseModal() {
@@ -1019,36 +1035,40 @@
       }
       async function confirmPause() {
           closePauseModal();
-          try {
-              const sessionId = activeSessionInfo ? activeSessionInfo.sessionId : '';
-              const res = await fetch(`${GAS_URL}?action=pauseQuestionDelivery&sessionId=${encodeURIComponent(sessionId)}`);
-              const result = await res.json();
-              if (result.success) {
-                  isDeliveryPaused = true;
-                  showToast('⚠️ 配信停止しました。学生にLINEを送信しました。');
-                  renderApp();
-              } else {
-                  showToast('❌ エラー: ' + result.error);
+          await guardedAction('confirmPause', async () => {
+              try {
+                  const sessionId = activeSessionInfo ? activeSessionInfo.sessionId : '';
+                  const res = await fetch(`${GAS_URL}?action=pauseQuestionDelivery&sessionId=${encodeURIComponent(sessionId)}`);
+                  const result = await res.json();
+                  if (result.success) {
+                      isDeliveryPaused = true;
+                      showToast('⚠️ 配信停止しました。学生にLINEを送信しました。');
+                      renderApp();
+                  } else {
+                      showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
               }
-          } catch (err) {
-              showToast('❌ 通信エラー');
-          }
+          });
       }
       async function resumeDelivery() {
-          try {
-              const sessionId = activeSessionInfo ? activeSessionInfo.sessionId : '';
-              const res = await fetch(`${GAS_URL}?action=resumeQuestionDelivery&sessionId=${encodeURIComponent(sessionId)}`);
-              const result = await res.json();
-              if (result.success) {
-                  isDeliveryPaused = false;
-                  showToast('✅ 配信を再開しました');
-                  renderApp();
-              } else {
-                  showToast('❌ エラー: ' + result.error);
+          await guardedAction('resumeDelivery', async () => {
+              try {
+                  const sessionId = activeSessionInfo ? activeSessionInfo.sessionId : '';
+                  const res = await fetch(`${GAS_URL}?action=resumeQuestionDelivery&sessionId=${encodeURIComponent(sessionId)}`);
+                  const result = await res.json();
+                  if (result.success) {
+                      isDeliveryPaused = false;
+                      showToast('✅ 配信を再開しました');
+                      renderApp();
+                  } else {
+                      showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
               }
-          } catch (err) {
-              showToast('❌ 通信エラー');
-          }
+          });
       }
 
       function renderBillingHTML() {
@@ -1107,40 +1127,51 @@
       }
 
       async function grantFreeAccess(userId) {
-          try {
-              const res = await fetch(`${GAS_URL}?action=adminGrantFreeAccess&targetUserId=${encodeURIComponent(userId)}`);
-              const result = await res.json();
-              if (result.success) {
-                  billingListData = null;
-                  await switchTab('billing');
-                  showToast('✅ 手動登録しました');
-              } else {
-                  showToast('❌ エラー: ' + result.error);
+          await guardedAction('grantFreeAccess_' + userId, async () => {
+              try {
+                  const res = await fetch(`${GAS_URL}?action=adminGrantFreeAccess&targetUserId=${encodeURIComponent(userId)}`);
+                  const result = await res.json();
+                  if (result.success) {
+                      billingListData = null;
+                      await switchTab('billing');
+                      showToast('✅ 手動登録しました');
+                  } else {
+                      showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
               }
-          } catch (err) {
-              showToast('❌ 通信エラー');
-          }
+          });
       }
 
       async function revokeAccess(userId) {
           if (!confirm('登録を解除しますか？この学生はデモ画面のみ利用可能になります。')) return;
-          try {
-              const res = await fetch(`${GAS_URL}?action=adminRevokeAccess&targetUserId=${encodeURIComponent(userId)}`);
-              const result = await res.json();
-              if (result.success) {
-                  billingListData = null;
-                  await switchTab('billing');
-                  showToast('✅ 登録を解除しました');
-              } else {
-                  showToast('❌ エラー: ' + result.error);
+          await guardedAction('revokeAccess_' + userId, async () => {
+              try {
+                  const res = await fetch(`${GAS_URL}?action=adminRevokeAccess&targetUserId=${encodeURIComponent(userId)}`);
+                  const result = await res.json();
+                  if (result.success) {
+                      billingListData = null;
+                      await switchTab('billing');
+                      showToast('✅ 登録を解除しました');
+                  } else {
+                      showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
               }
-          } catch (err) {
-              showToast('❌ 通信エラー');
-          }
+          });
       }
 
       // ===== 試験日程タブ =====
       let editingExamId = null;
+
+      function formatExamDate(dateStr) {
+          if (!dateStr) return '—';
+          const d = new Date(dateStr + 'T00:00:00');
+          const days = ['日','月','火','水','木','金','土'];
+          return `${d.getMonth()+1}/${d.getDate()}（${days[d.getDay()]}）`;
+      }
 
       function renderExamHTML() {
           const exams = (examListData && examListData.exams) || [];
@@ -1148,39 +1179,53 @@
           const registeredSubjects = new Set(exams.map(e => e.subjectName));
           const availableSubjects = SUBJECTS.filter(s => !registeredSubjects.has(s.name));
 
-          const listHTML = exams.length === 0
-              ? '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">試験日程はまだ登録されていません</div>'
-              : exams.map(e => {
+          let tableHTML;
+          if (exams.length === 0) {
+              tableHTML = '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">試験日程はまだ登録されていません</div>';
+          } else {
+              const rowsHTML = exams.map(e => {
                   if (editingExamId === e.examId) {
                       return `
-                          <div style="padding:12px 16px;border-bottom:1px solid var(--border2);background:var(--bg-sub)">
-                              <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--ink2)">${e.subjectName}（編集中）</div>
-                              <div style="margin-bottom:6px">
-                                  <div style="font-size:11px;color:var(--ink3);margin-bottom:2px">試験日</div>
-                                  <input id="editExamDate_${e.examId}" type="date" class="modal-select" style="width:100%" value="${e.examDate}" />
-                              </div>
-                              <div style="margin-bottom:10px">
-                                  <div style="font-size:11px;color:var(--ink3);margin-bottom:2px">復習標準時間（分/回）</div>
-                                  <input id="editReviewMin_${e.examId}" type="number" value="${e.reviewMinutes}" min="10" max="120" class="modal-select" style="width:100%" />
-                              </div>
-                              <div style="display:flex;gap:8px">
-                                  <button onclick="saveEditExam('${e.examId}')" class="action-btn btn-start" style="flex:1;padding:8px;font-size:13px">保存</button>
-                                  <button onclick="cancelEditExam()" style="flex:1;padding:8px;font-size:13px;background:none;border:1px solid var(--border2);border-radius:10px;cursor:pointer">キャンセル</button>
-                              </div>
-                          </div>`;
+                          <tr style="border-bottom:1px solid var(--border2);background:var(--bg-sub)">
+                              <td style="padding:8px 12px;font-weight:600;font-size:12px;color:var(--ink2);white-space:nowrap">${e.subjectName}</td>
+                              <td style="padding:6px 8px">
+                                  <input id="editExamDate_${e.examId}" type="date" class="modal-select" style="width:130px;font-size:12px;padding:4px 8px" value="${e.examDate}" />
+                              </td>
+                              <td style="padding:6px 8px">
+                                  <input id="editReviewMin_${e.examId}" type="number" value="${e.reviewMinutes}" min="10" max="120" class="modal-select" style="width:68px;font-size:12px;padding:4px 8px" />
+                              </td>
+                              <td style="padding:6px 8px;white-space:nowrap">
+                                  <button onclick="saveEditExam('${e.examId}')" class="action-btn btn-start" style="font-size:11px;padding:4px 8px;margin-right:4px">保存</button>
+                                  <button onclick="cancelEditExam()" style="font-size:11px;padding:4px 8px;background:none;border:1px solid var(--border2);border-radius:8px;cursor:pointer">×</button>
+                              </td>
+                          </tr>`;
                   }
                   return `
-                      <div style="padding:12px 16px;border-bottom:1px solid var(--border2)">
-                          <div style="font-weight:600;font-size:14px;margin-bottom:2px">${e.subjectName}</div>
-                          <div style="font-size:12px;color:var(--ink3)">試験日: ${e.examDate}　復習: ${e.reviewMinutes}分/回</div>
-                          <div style="display:flex;gap:8px;margin-top:8px">
-                              <button onclick="startEditExam('${e.examId}')"
-                                  style="background:none;border:1px solid var(--border2);border-radius:8px;color:var(--ink2);font-size:12px;padding:4px 10px;cursor:pointer">編集</button>
-                              <button onclick="deleteExam('${e.examId}')"
-                                  style="background:none;border:1px solid #e0695a;border-radius:8px;color:#e0695a;font-size:12px;padding:4px 10px;cursor:pointer">削除</button>
-                          </div>
-                      </div>`;
+                      <tr style="border-bottom:1px solid var(--border2)">
+                          <td style="padding:10px 12px;font-weight:600;font-size:13px;white-space:nowrap">${e.subjectName}</td>
+                          <td style="padding:10px 12px;text-align:center;white-space:nowrap;font-size:13px">${formatExamDate(e.examDate)}</td>
+                          <td style="padding:10px 12px;text-align:center;white-space:nowrap;font-size:13px">${e.reviewMinutes}分</td>
+                          <td style="padding:10px 12px;text-align:center;white-space:nowrap">
+                              <button onclick="startEditExam('${e.examId}')" style="background:none;border:1px solid var(--border2);border-radius:6px;color:var(--ink2);font-size:11px;padding:3px 8px;cursor:pointer;margin-right:4px">編集</button>
+                              <button onclick="deleteExam('${e.examId}')" style="background:none;border:1px solid #e0695a;border-radius:6px;color:#e0695a;font-size:11px;padding:3px 8px;cursor:pointer">削除</button>
+                          </td>
+                      </tr>`;
               }).join('');
+              tableHTML = `
+                  <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+                      <table style="width:100%;border-collapse:collapse;min-width:400px">
+                          <thead>
+                              <tr style="background:var(--bg-sub);border-bottom:2px solid var(--border2)">
+                                  <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--ink3);font-size:12px;white-space:nowrap">科目名</th>
+                                  <th style="padding:8px 12px;text-align:center;font-weight:600;color:var(--ink3);font-size:12px;white-space:nowrap">試験日</th>
+                                  <th style="padding:8px 12px;text-align:center;font-weight:600;color:var(--ink3);font-size:12px;white-space:nowrap">復習</th>
+                                  <th style="padding:8px 12px;text-align:center;font-weight:600;color:var(--ink3);font-size:12px;white-space:nowrap">操作</th>
+                              </tr>
+                          </thead>
+                          <tbody>${rowsHTML}</tbody>
+                      </table>
+                  </div>`;
+          }
 
           const addFormHTML = availableSubjects.length === 0
               ? '<div style="padding:12px;background:var(--bg-sub);border-radius:10px;font-size:13px;color:var(--ink3);text-align:center">全科目の試験日程が登録済みです</div>'
@@ -1204,35 +1249,37 @@
           return `
               <div style="padding:16px">
                   <div style="background:var(--bg-sub);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;margin-bottom:18px">
-                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">授業最終日（全科目共通）</div>
-                      <div style="display:flex;align-items:center;gap:8px">
-                          <input id="lastClassDateInput" type="date" class="modal-select" style="flex:1" value="${lastClassDate}" />
-                          <button onclick="saveLastClassDate()" class="action-btn btn-start" style="padding:8px 14px;font-size:13px;white-space:nowrap">保存</button>
+                      <div style="margin-bottom:10px">
+                          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">授業最終日（全科目共通）</div>
+                          <input id="lastClassDateInput" type="date" class="modal-select" style="width:100%" value="${lastClassDate}" />
+                          <div style="font-size:11px;color:var(--ink3);margin-top:4px">学習計画の開始日算出に使用します</div>
                       </div>
-                      <div style="font-size:11px;color:var(--ink3);margin-top:6px">学習計画の開始日算出に使用します</div>
+                      <button onclick="saveLastClassDate()" class="action-btn btn-start" style="width:100%">保存</button>
                   </div>
                   <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:14px;color:var(--ink)">試験日程を追加</div>
                   ${addFormHTML}
                   <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:10px;color:var(--ink)">登録済み試験日程（${exams.length}件）</div>
-                  <div class="card" style="padding:0;overflow:hidden">${listHTML}</div>
+                  <div class="card" style="padding:0;overflow:hidden">${tableHTML}</div>
               </div>
           `;
       }
 
       async function saveLastClassDate() {
-          const date = document.getElementById('lastClassDateInput').value;
-          try {
-              const res = await fetch(`${GAS_URL}?action=setLastClassDate&date=${encodeURIComponent(date)}`);
-              const result = await res.json();
-              if (result.success) {
-                  if (examListData) examListData.lastClassDate = date;
-                  showToast('✅ 授業最終日を保存しました');
-              } else {
-                  showToast('❌ エラー: ' + result.error);
+          await guardedAction('saveLastClassDate', async () => {
+              const date = document.getElementById('lastClassDateInput').value;
+              try {
+                  const res = await fetch(`${GAS_URL}?action=setLastClassDate&date=${encodeURIComponent(date)}`);
+                  const result = await res.json();
+                  if (result.success) {
+                      if (examListData) examListData.lastClassDate = date;
+                      showToast('✅ 授業最終日を保存しました');
+                  } else {
+                      showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
               }
-          } catch (err) {
-              showToast('❌ 通信エラー');
-          }
+          });
       }
 
       async function addExam() {
@@ -1240,19 +1287,21 @@
           const examDate = document.getElementById('examDate').value;
           const reviewMinutes = document.getElementById('examReviewMin').value;
           if (!subjectName || !examDate) { showToast('❌ 科目名と試験日を入力してください'); return; }
-          try {
-              const res = await fetch(`${GAS_URL}?action=addExamDate&subjectName=${encodeURIComponent(subjectName)}&examDate=${encodeURIComponent(examDate)}&reviewMinutes=${reviewMinutes}`);
-              const result = await res.json();
-              if (result.success) {
-                  examListData = null;
-                  await switchTab('exam');
-                  showToast('✅ 試験日程を追加しました');
-              } else {
-                  showToast('❌ エラー: ' + result.error);
+          await guardedAction('addExam', async () => {
+              try {
+                  const res = await fetch(`${GAS_URL}?action=addExamDate&subjectName=${encodeURIComponent(subjectName)}&examDate=${encodeURIComponent(examDate)}&reviewMinutes=${reviewMinutes}`);
+                  const result = await res.json();
+                  if (result.success) {
+                      examListData = null;
+                      await switchTab('exam');
+                      showToast('✅ 試験日程を追加しました');
+                  } else {
+                      showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
               }
-          } catch (err) {
-              showToast('❌ 通信エラー');
-          }
+          });
       }
 
       function startEditExam(examId) {
@@ -1269,38 +1318,42 @@
           const examDate = document.getElementById(`editExamDate_${examId}`).value;
           const reviewMinutes = document.getElementById(`editReviewMin_${examId}`).value;
           if (!examDate) { showToast('❌ 試験日を入力してください'); return; }
-          try {
-              const res = await fetch(`${GAS_URL}?action=updateExamDate&examId=${encodeURIComponent(examId)}&examDate=${encodeURIComponent(examDate)}&reviewMinutes=${reviewMinutes}`);
-              const result = await res.json();
-              if (result.success) {
-                  examListData = null;
-                  editingExamId = null;
-                  await switchTab('exam');
-                  showToast('✅ 試験日程を更新しました');
-              } else {
-                  showToast('❌ エラー: ' + result.error);
+          await guardedAction('saveEditExam_' + examId, async () => {
+              try {
+                  const res = await fetch(`${GAS_URL}?action=updateExamDate&examId=${encodeURIComponent(examId)}&examDate=${encodeURIComponent(examDate)}&reviewMinutes=${reviewMinutes}`);
+                  const result = await res.json();
+                  if (result.success) {
+                      examListData = null;
+                      editingExamId = null;
+                      await switchTab('exam');
+                      showToast('✅ 試験日程を更新しました');
+                  } else {
+                      showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
               }
-          } catch (err) {
-              showToast('❌ 通信エラー');
-          }
+          });
       }
 
       async function deleteExam(examId) {
           if (!confirm('この試験日程を削除しますか？')) return;
-          try {
-              const res = await fetch(`${GAS_URL}?action=deleteExamDate&examId=${encodeURIComponent(examId)}`);
-              const result = await res.json();
-              if (result.success) {
-                  examListData = null;
-                  editingExamId = null;
-                  await switchTab('exam');
-                  showToast('✅ 削除しました');
-              } else {
-                  showToast('❌ エラー: ' + result.error);
+          await guardedAction('deleteExam_' + examId, async () => {
+              try {
+                  const res = await fetch(`${GAS_URL}?action=deleteExamDate&examId=${encodeURIComponent(examId)}`);
+                  const result = await res.json();
+                  if (result.success) {
+                      examListData = null;
+                      editingExamId = null;
+                      await switchTab('exam');
+                      showToast('✅ 削除しました');
+                  } else {
+                      showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
               }
-          } catch (err) {
-              showToast('❌ 通信エラー');
-          }
+          });
       }
 
       function showToast(msg) {
