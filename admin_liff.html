@@ -1256,27 +1256,28 @@
           const editFormHTML = editingExam ? `
               <div style="margin-top:12px;background:var(--bg-sub);border:1px solid var(--border);border-radius:12px;padding:14px 16px">
                   <div style="font-weight:600;font-size:13px;margin-bottom:10px;color:var(--ink2)">${editingExam.subjectName}（編集中）</div>
+                  <div style="margin-bottom:8px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">試験日</div>
+                      <input id="editExamDate_${editingExam.examId}" type="date" class="modal-select" style="width:100%;box-sizing:border-box" value="${editingExam.examDate}" />
+                  </div>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-                      <div>
-                          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">試験日</div>
-                          <input id="editExamDate_${editingExam.examId}" type="date" class="modal-select" style="width:100%;box-sizing:border-box" value="${editingExam.examDate}" />
-                      </div>
                       <div>
                           <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">コマ</div>
                           <select id="editExamPeriod_${editingExam.examId}" class="modal-select">
                               ${PERIOD_TIMES.map(pt => `<option value="${pt.period}" ${(editingExam.period || 1) == pt.period ? 'selected' : ''}>${pt.period}コマ（${pt.time}）</option>`).join('')}
                           </select>
                       </div>
-                  </div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-                      <div>
-                          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">復習時間（分/回）</div>
-                          <input id="editReviewMin_${editingExam.examId}" type="number" value="${editingExam.reviewMinutes}" min="10" max="120" class="modal-select" style="width:100%;box-sizing:border-box" />
-                      </div>
                       <div>
                           <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">復習コマ数</div>
-                          <input id="editReqSessions_${editingExam.examId}" type="number" value="${editingExam.requiredSessions || ''}" placeholder="全回" min="1" class="modal-select" style="width:100%;box-sizing:border-box" />
+                          <select id="editReqSessions_${editingExam.examId}" class="modal-select">
+                              <option value="">全回</option>
+                              ${Array.from({length:15},(_,i)=>`<option value="${i+1}" ${editingExam.requiredSessions === i+1 ? 'selected' : ''}>${i+1}コマ</option>`).join('')}
+                          </select>
                       </div>
+                  </div>
+                  <div style="margin-bottom:12px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">復習時間（分/回）</div>
+                      <input id="editReviewMin_${editingExam.examId}" type="number" value="${editingExam.reviewMinutes}" min="10" max="120" class="modal-select" style="width:100%;box-sizing:border-box" />
                   </div>
                   <div style="display:flex;gap:8px">
                       <button onclick="saveEditExam('${editingExam.examId}')" class="action-btn btn-start" style="flex:1;padding:8px;font-size:13px">保存</button>
@@ -1293,27 +1294,28 @@
                           ${availableSubjects.map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
                       </select>
                   </div>
+                  <div style="margin-bottom:10px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">試験日</div>
+                      <input id="examDate" type="date" class="modal-select" style="width:100%;box-sizing:border-box" />
+                  </div>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-                      <div>
-                          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">試験日</div>
-                          <input id="examDate" type="date" class="modal-select" style="width:100%;box-sizing:border-box" />
-                      </div>
                       <div>
                           <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">コマ</div>
                           <select id="examPeriod" class="modal-select">
                               ${PERIOD_TIMES.map(pt => `<option value="${pt.period}">${pt.period}コマ（${pt.time}）</option>`).join('')}
                           </select>
                       </div>
-                  </div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-                      <div>
-                          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">復習時間（分/回）</div>
-                          <input id="examReviewMin" type="number" value="45" min="10" max="120" class="modal-select" style="width:100%;box-sizing:border-box" />
-                      </div>
                       <div>
                           <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">復習コマ数</div>
-                          <input id="examReqSessions" type="number" placeholder="全回" min="1" class="modal-select" style="width:100%;box-sizing:border-box" />
+                          <select id="examReqSessions" class="modal-select">
+                              <option value="">全回</option>
+                              ${Array.from({length:15},(_,i)=>`<option value="${i+1}">${i+1}コマ</option>`).join('')}
+                          </select>
                       </div>
+                  </div>
+                  <div style="margin-bottom:14px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">復習時間（分/回）</div>
+                      <input id="examReviewMin" type="number" value="45" min="10" max="120" class="modal-select" style="width:100%;box-sizing:border-box" />
                   </div>
                   <button class="action-btn btn-start" onclick="addExam()" style="margin-bottom:20px">追加</button>`;
 
