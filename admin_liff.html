@@ -1206,17 +1206,23 @@
           if (exams.length === 0) {
               tableHTML = '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">試験日程はまだ登録されていません</div>';
           } else {
-              const cellStyle = `border:1px solid var(--border);padding:8px 10px;text-align:center`;
+              const ACCENT_BG   = '#e0d5c8';
+              const STRONG_LINE = '2px solid #a89880';
+              const cell  = `border:1px solid var(--border);padding:8px 10px;text-align:center;box-sizing:border-box`;
+              const hCell = `${cell};background:${ACCENT_BG};border-bottom:${STRONG_LINE}`;
+              const pCell = `${cell};background:${ACCENT_BG};border-right:${STRONG_LINE};width:44px;font-weight:700;font-size:14px;color:var(--ink2)`;
+              const dCell = `${cell};width:100px`;
+
               const dateHeaders = sortedDates.map(d =>
-                  `<th style="${cellStyle};font-weight:600;color:var(--ink2);font-size:12px;white-space:nowrap;min-width:90px;background:var(--bg-sub)">${formatExamDate(d)}</th>`
+                  `<th style="${hCell};font-weight:600;color:var(--ink2);font-size:12px;white-space:nowrap">${formatExamDate(d)}</th>`
               ).join('');
               const bodyRows = PERIOD_TIMES.map(pt => {
                   const cells = sortedDates.map(d => {
                       const e = cellMap[`${d}_${pt.period}`];
-                      if (!e) return `<td style="${cellStyle}"></td>`;
+                      if (!e) return `<td style="${dCell}"></td>`;
                       const isEditing = editingExamId === e.examId;
-                      if (isEditing) return `<td style="${cellStyle};background:var(--bg-sub)"></td>`;
-                      return `<td style="${cellStyle}">
+                      if (isEditing) return `<td style="${dCell};background:var(--bg-sub)"></td>`;
+                      return `<td style="${dCell}">
                           <div style="font-weight:600;font-size:12px;margin-bottom:4px;white-space:nowrap">${e.subjectName}</div>
                           <div style="font-size:10px;color:var(--ink3);margin-bottom:4px">${e.reviewMinutes}分/回</div>
                           <div style="display:flex;gap:4px;justify-content:center">
@@ -1226,16 +1232,16 @@
                       </td>`;
                   }).join('');
                   return `<tr>
-                      <td style="${cellStyle};font-weight:700;font-size:14px;color:var(--ink2);background:var(--bg-sub);width:36px">${pt.period}</td>
+                      <td style="${pCell}">${pt.period}</td>
                       ${cells}
                   </tr>`;
               }).join('');
               tableHTML = `
                   <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-                      <table style="border-collapse:collapse;font-size:13px;border:1px solid var(--border)">
+                      <table style="border-collapse:collapse;font-size:13px;border:1px solid var(--border);table-layout:fixed">
                           <thead>
                               <tr>
-                                  <th style="${cellStyle};font-weight:600;color:var(--ink3);font-size:12px;background:var(--bg-sub)">コマ</th>
+                                  <th style="${hCell};border-right:${STRONG_LINE};width:44px;color:var(--ink3);font-size:12px">コマ</th>
                                   ${dateHeaders}
                               </tr>
                           </thead>
