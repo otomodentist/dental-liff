@@ -252,6 +252,14 @@
       const LIFF_ID = '2009739219-9qVGb0Xm';
 
       let SUBJECTS = [];
+      const PERIOD_TIMES = [
+        { period: 1, time: '9:00-10:00' },
+        { period: 2, time: '10:30-11:30' },
+        { period: 3, time: '12:00-13:00' },
+        { period: 4, time: '13:30-14:30' },
+        { period: 5, time: '15:00-16:00' },
+        { period: 6, time: '16:00-17:00' },
+      ];
       let activeSemester = { grade: 4, semester: 'spring' };
       let selectedDay     = null;
       let selectedSubject = null;
@@ -1179,53 +1187,79 @@
           const registeredSubjects = new Set(exams.map(e => e.subjectName));
           const availableSubjects = SUBJECTS.filter(s => !registeredSubjects.has(s.name));
 
+          // 時間割グリッド構築
+          const sortedDates = [...new Set(exams.map(e => e.examDate))].sort();
+          const cellMap = {};
+          exams.forEach(e => { cellMap[`${e.examDate}_${e.period || 1}`] = e; });
+
           let tableHTML;
           if (exams.length === 0) {
               tableHTML = '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">試験日程はまだ登録されていません</div>';
           } else {
-              const rowsHTML = exams.map(e => {
-                  if (editingExamId === e.examId) {
-                      return `
-                          <tr style="border-bottom:1px solid var(--border2);background:var(--bg-sub)">
-                              <td style="padding:8px 12px;font-weight:600;font-size:12px;color:var(--ink2);white-space:nowrap">${e.subjectName}</td>
-                              <td style="padding:6px 8px">
-                                  <input id="editExamDate_${e.examId}" type="date" class="modal-select" style="width:130px;font-size:12px;padding:4px 8px" value="${e.examDate}" />
-                              </td>
-                              <td style="padding:6px 8px">
-                                  <input id="editReviewMin_${e.examId}" type="number" value="${e.reviewMinutes}" min="10" max="120" class="modal-select" style="width:68px;font-size:12px;padding:4px 8px" />
-                              </td>
-                              <td style="padding:6px 8px;white-space:nowrap">
-                                  <button onclick="saveEditExam('${e.examId}')" class="action-btn btn-start" style="font-size:11px;padding:4px 8px;margin-right:4px">保存</button>
-                                  <button onclick="cancelEditExam()" style="font-size:11px;padding:4px 8px;background:none;border:1px solid var(--border2);border-radius:8px;cursor:pointer">×</button>
-                              </td>
-                          </tr>`;
-                  }
-                  return `
-                      <tr style="border-bottom:1px solid var(--border2)">
-                          <td style="padding:10px 12px;font-weight:600;font-size:13px;white-space:nowrap">${e.subjectName}</td>
-                          <td style="padding:10px 12px;text-align:center;white-space:nowrap;font-size:13px">${formatExamDate(e.examDate)}</td>
-                          <td style="padding:10px 12px;text-align:center;white-space:nowrap;font-size:13px">${e.reviewMinutes}分</td>
-                          <td style="padding:10px 12px;text-align:center;white-space:nowrap">
-                              <button onclick="startEditExam('${e.examId}')" style="background:none;border:1px solid var(--border2);border-radius:6px;color:var(--ink2);font-size:11px;padding:3px 8px;cursor:pointer;margin-right:4px">編集</button>
-                              <button onclick="deleteExam('${e.examId}')" style="background:none;border:1px solid #e0695a;border-radius:6px;color:#e0695a;font-size:11px;padding:3px 8px;cursor:pointer">削除</button>
-                          </td>
-                      </tr>`;
+              const dateHeaders = sortedDates.map(d =>
+                  `<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--ink2);font-size:12px;white-space:nowrap;min-width:90px;border-left:1px solid var(--border2)">${formatExamDate(d)}</th>`
+              ).join('');
+              const bodyRows = PERIOD_TIMES.map(pt => {
+                  const cells = sortedDates.map(d => {
+                      const e = cellMap[`${d}_${pt.period}`];
+                      if (!e) return `<td style="border-left:1px solid var(--border2);border-bottom:1px solid var(--border2);padding:6px 8px;text-align:center"></td>`;
+                      const isEditing = editingExamId === e.examId;
+                      if (isEditing) return `<td style="border-left:1px solid var(--border2);border-bottom:1px solid var(--border2);padding:4px 6px;background:var(--bg-sub);text-align:center"></td>`;
+                      return `<td style="border-left:1px solid var(--border2);border-bottom:1px solid var(--border2);padding:6px 8px;text-align:center">
+                          <div style="font-weight:600;font-size:12px;margin-bottom:4px;white-space:nowrap">${e.subjectName}</div>
+                          <div style="font-size:10px;color:var(--ink3);margin-bottom:4px">${e.reviewMinutes}分/回</div>
+                          <div style="display:flex;gap:4px;justify-content:center">
+                              <button onclick="startEditExam('${e.examId}')" style="background:none;border:1px solid var(--border2);border-radius:5px;color:var(--ink2);font-size:10px;padding:2px 6px;cursor:pointer">編集</button>
+                              <button onclick="deleteExam('${e.examId}')" style="background:none;border:1px solid #e0695a;border-radius:5px;color:#e0695a;font-size:10px;padding:2px 6px;cursor:pointer">削除</button>
+                          </div>
+                      </td>`;
+                  }).join('');
+                  return `<tr>
+                      <td style="padding:8px 10px;white-space:nowrap;border-bottom:1px solid var(--border2);background:var(--bg-sub)">
+                          <div style="font-weight:600;font-size:12px;color:var(--ink2)">${pt.period}コマ</div>
+                          <div style="font-size:10px;color:var(--ink3)">${pt.time}</div>
+                      </td>
+                      ${cells}
+                  </tr>`;
               }).join('');
               tableHTML = `
                   <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-                      <table style="width:100%;border-collapse:collapse;min-width:400px">
+                      <table style="border-collapse:collapse;font-size:13px">
                           <thead>
-                              <tr style="background:var(--bg-sub);border-bottom:2px solid var(--border2)">
-                                  <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--ink3);font-size:12px;white-space:nowrap">科目名</th>
-                                  <th style="padding:8px 12px;text-align:center;font-weight:600;color:var(--ink3);font-size:12px;white-space:nowrap">試験日</th>
-                                  <th style="padding:8px 12px;text-align:center;font-weight:600;color:var(--ink3);font-size:12px;white-space:nowrap">復習</th>
-                                  <th style="padding:8px 12px;text-align:center;font-weight:600;color:var(--ink3);font-size:12px;white-space:nowrap">操作</th>
+                              <tr style="border-bottom:2px solid var(--border2)">
+                                  <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--ink3);font-size:12px;white-space:nowrap;background:var(--bg-sub)">コマ</th>
+                                  ${dateHeaders}
                               </tr>
                           </thead>
-                          <tbody>${rowsHTML}</tbody>
+                          <tbody>${bodyRows}</tbody>
                       </table>
                   </div>`;
           }
+
+          // 編集フォーム（editingExamId が設定されている場合）
+          const editingExam = exams.find(e => e.examId === editingExamId);
+          const editFormHTML = editingExam ? `
+              <div style="margin-top:12px;background:var(--bg-sub);border:1px solid var(--border2);border-radius:12px;padding:14px 16px">
+                  <div style="font-weight:600;font-size:13px;margin-bottom:10px;color:var(--ink2)">${editingExam.subjectName}（編集中）</div>
+                  <div style="margin-bottom:8px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">試験日</div>
+                      <input id="editExamDate_${editingExam.examId}" type="date" class="modal-select" style="width:100%;box-sizing:border-box" value="${editingExam.examDate}" />
+                  </div>
+                  <div style="margin-bottom:8px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">コマ</div>
+                      <select id="editExamPeriod_${editingExam.examId}" class="modal-select">
+                          ${PERIOD_TIMES.map(pt => `<option value="${pt.period}" ${(editingExam.period || 1) == pt.period ? 'selected' : ''}>${pt.period}コマ（${pt.time}）</option>`).join('')}
+                      </select>
+                  </div>
+                  <div style="margin-bottom:12px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">復習標準時間（分/回）</div>
+                      <input id="editReviewMin_${editingExam.examId}" type="number" value="${editingExam.reviewMinutes}" min="10" max="120" class="modal-select" style="width:100%;box-sizing:border-box" />
+                  </div>
+                  <div style="display:flex;gap:8px">
+                      <button onclick="saveEditExam('${editingExam.examId}')" class="action-btn btn-start" style="flex:1;padding:8px;font-size:13px">保存</button>
+                      <button onclick="cancelEditExam()" style="flex:1;padding:8px;font-size:13px;background:none;border:1px solid var(--border2);border-radius:10px;cursor:pointer">キャンセル</button>
+                  </div>
+              </div>` : '';
 
           const addFormHTML = availableSubjects.length === 0
               ? '<div style="padding:12px;background:var(--bg-sub);border-radius:10px;font-size:13px;color:var(--ink3);text-align:center">全科目の試験日程が登録済みです</div>'
@@ -1238,11 +1272,17 @@
                   </div>
                   <div style="margin-bottom:10px">
                       <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">試験日</div>
-                      <input id="examDate" type="date" class="modal-select" style="width:100%" />
+                      <input id="examDate" type="date" class="modal-select" style="width:100%;box-sizing:border-box" />
+                  </div>
+                  <div style="margin-bottom:10px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">コマ</div>
+                      <select id="examPeriod" class="modal-select">
+                          ${PERIOD_TIMES.map(pt => `<option value="${pt.period}">${pt.period}コマ（${pt.time}）</option>`).join('')}
+                      </select>
                   </div>
                   <div style="margin-bottom:14px">
                       <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">復習標準時間（分/回）</div>
-                      <input id="examReviewMin" type="number" value="45" min="10" max="120" class="modal-select" style="width:100%" />
+                      <input id="examReviewMin" type="number" value="45" min="10" max="120" class="modal-select" style="width:100%;box-sizing:border-box" />
                   </div>
                   <button class="action-btn btn-start" onclick="addExam()" style="margin-bottom:20px">追加</button>`;
 
@@ -1260,6 +1300,7 @@
                   ${addFormHTML}
                   <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:10px;color:var(--ink)">登録済み試験日程（${exams.length}件）</div>
                   <div class="card" style="padding:0;overflow:hidden">${tableHTML}</div>
+                  ${editFormHTML}
               </div>
           `;
       }
@@ -1285,11 +1326,12 @@
       async function addExam() {
           const subjectName = document.getElementById('examSubject').value;
           const examDate = document.getElementById('examDate').value;
+          const period = document.getElementById('examPeriod').value;
           const reviewMinutes = document.getElementById('examReviewMin').value;
           if (!subjectName || !examDate) { showToast('❌ 科目名と試験日を入力してください'); return; }
           await guardedAction('addExam', async () => {
               try {
-                  const res = await fetch(`${GAS_URL}?action=addExamDate&subjectName=${encodeURIComponent(subjectName)}&examDate=${encodeURIComponent(examDate)}&reviewMinutes=${reviewMinutes}`);
+                  const res = await fetch(`${GAS_URL}?action=addExamDate&subjectName=${encodeURIComponent(subjectName)}&examDate=${encodeURIComponent(examDate)}&period=${period}&reviewMinutes=${reviewMinutes}`);
                   const result = await res.json();
                   if (result.success) {
                       examListData = null;
@@ -1316,11 +1358,12 @@
 
       async function saveEditExam(examId) {
           const examDate = document.getElementById(`editExamDate_${examId}`).value;
+          const period = document.getElementById(`editExamPeriod_${examId}`).value;
           const reviewMinutes = document.getElementById(`editReviewMin_${examId}`).value;
           if (!examDate) { showToast('❌ 試験日を入力してください'); return; }
           await guardedAction('saveEditExam_' + examId, async () => {
               try {
-                  const res = await fetch(`${GAS_URL}?action=updateExamDate&examId=${encodeURIComponent(examId)}&examDate=${encodeURIComponent(examDate)}&reviewMinutes=${reviewMinutes}`);
+                  const res = await fetch(`${GAS_URL}?action=updateExamDate&examId=${encodeURIComponent(examId)}&examDate=${encodeURIComponent(examDate)}&period=${period}&reviewMinutes=${reviewMinutes}`);
                   const result = await res.json();
                   if (result.success) {
                       examListData = null;
