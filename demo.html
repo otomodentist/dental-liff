@@ -778,6 +778,38 @@ function demoAction() {
   alert('デモ版では操作できません。\n本番版ではこの機能が使えます。');
 }
 
+function buildDemoScheduleHTML(targetDate, label, accentColor) {
+  const typeLabel = { 'review': '復習', 're-review': '再復習' };
+  const rows = [];
+  DEMO_EXAMS.forEach(exam => {
+    const groups = DEMO_PLAN_GROUPS[exam.examId] || [];
+    let offset = 0;
+    groups.forEach(g => {
+      const start = offset + 1;
+      const end   = offset + g.count;
+      if (g.date === targetDate) {
+        const min = g.type === 'review'
+          ? g.count * exam.reviewMinutes
+          : g.count * Math.round(exam.reviewMinutes / 3);
+        rows.push({ subject: exam.subjectName, start, end, type: g.type, min });
+      }
+      offset += g.count;
+    });
+  });
+  if (rows.length === 0) return '';
+  const total = rows.reduce((s, r) => s + r.min, 0);
+  const rowsHTML = rows.map(r => `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:6px">
+      <div style="font-size:13px;font-weight:700;color:var(--ink)">${r.subject}</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:3px">第${r.start}〜${r.end}回　${typeLabel[r.type]}　${r.min}分</div>
+    </div>`).join('');
+  return `
+    <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:${accentColor};margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      <span>${label}</span><span style="font-size:11px;font-weight:400;color:var(--ink3)">計 ${total}分</span>
+    </div>
+    ${rowsHTML}`;
+}
+
 function buildReviewBarChartHTML(exams, progressBlocks) {
   if (!exams || exams.length === 0) return '';
   const maxRemaining = Math.max(1, ...exams.map(e => {
@@ -880,6 +912,10 @@ function buildStudyPlanHTML() {
       表示中：3年生 春学期の科目（9件）　授業最終日：${DEMO_LAST_CLASS_DATE}
     </div>
     ${buildReviewBarChartHTML(DEMO_EXAMS, DEMO_PROGRESS_BLOCKS)}
+    <div style="margin:0 16px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px">
+      ${buildDemoScheduleHTML('8/12 (火)', '今日 8/12', '#2d5a3d')}
+      ${buildDemoScheduleHTML('8/13 (水)', '明日 8/13', '#1a3a6b')}
+    </div>
     <div class="theory-card">
       <div class="theory-title">反復学習による効率化の根拠</div>
       <div class="theory-step">ステップ1（授業）：集中度スコアで授業の集中の質を向上</div>

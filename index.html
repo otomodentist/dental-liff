@@ -489,6 +489,7 @@ const chartInstances = {};
 // 学習計画
 let currentView = 'dashboard'; // 'dashboard' | 'studyPlan'
 let todayStudyItems = [];
+let tomorrowStudyItems = [];
 let studyPlanData = null;
 let examScheduleData = [];
 let progressBlocksData = {};
@@ -509,8 +510,9 @@ async function init() {
     try {
       const r = await fetch(`${GAS_URL}?action=getTodayStudyItems&userId=${encodeURIComponent(userId)}`);
       const d = await r.json();
-      todayStudyItems = d.todayItems || [];
-    } catch (e) { todayStudyItems = []; }
+      todayStudyItems    = d.todayItems    || [];
+      tomorrowStudyItems = d.tomorrowItems || [];
+    } catch (e) { todayStudyItems = []; tomorrowStudyItems = []; }
 
     renderApp();
   } catch (err) {
@@ -851,38 +853,77 @@ function closeLatestPopup() {
   document.getElementById('latestPopup').classList.remove('open');
 }
 
-// ===== 今日の学習セクション =====
-function renderTodaySection() {
-  if (todayStudyItems.length === 0) return '';
-  const typeLabel = { 'review': '復習', 're-review': '再復習' };
-  const items = todayStudyItems.map(item => `
-    <div class="today-item ${item.status === 'done' ? 'done' : ''}" id="today-${item.planId}">
-      <div class="today-item-info">
-        <div class="today-item-name">${item.subject} 第${item.sessionNumber}回</div>
-        <div class="today-item-meta">${typeLabel[item.type] || item.type}・${item.durationMin}分</div>
-      </div>
-      <button class="today-complete-btn" ${item.status === 'done' ? 'disabled' : ''}
-        onclick="completeTodayItem('${item.planId}', this)">
-        ${item.status === 'done' ? '完了済み' : '学習済み'}
-      </button>
-    </div>`).join('');
-  return `<div class="today-section"><div class="today-label">Today's Study</div>${items}</div>`;
+// ===== 今日・明日の学習セクション =====
+function groupStudyItems(items) {
+  const map = {};
+  items.forEach(item => {
+    const key = item.subject + '__' + item.type;
+    if (!map[key]) map[key] = { subject: item.subject, type: item.type, sessions: [], totalMin: 0, planIds: [], allDone: true };
+    map[key].sessions.push(item.sessionNumber);
+    map[key].totalMin += item.durationMin;
+    map[key].planIds.push(item.planId);
+    if (item.status !== 'done') map[key].allDone = false;
+  });
+  return Object.values(map);
 }
 
-async function completeTodayItem(planId, btn) {
+function renderDayRows(groups, withBtn) {
+  const typeLabel = { 'review': '復習', 're-review': '再復習' };
+  return groups.map(g => {
+    const nums = g.sessions.sort((a, b) => a - b);
+    const numStr = nums.length > 1 ? `第${nums[0]}〜${nums[nums.length - 1]}回` : `第${nums[0]}回`;
+    const btn = withBtn
+      ? `<button class="today-complete-btn${g.allDone ? ' done' : ''}" ${g.allDone ? 'disabled' : ''}
+           onclick="completeTodayGroup(${JSON.stringify(g.planIds)}, this)">
+           ${g.allDone ? '完了済み' : '学習済み'}
+         </button>`
+      : '';
+    return `
+      <div class="today-item${g.allDone ? ' done' : ''}">
+        <div class="today-item-info">
+          <div class="today-item-name">${g.subject}</div>
+          <div class="today-item-meta">${numStr}　${typeLabel[g.type] || g.type}　${g.totalMin}分</div>
+        </div>
+        ${btn}
+      </div>`;
+  }).join('');
+}
+
+function renderTodaySection() {
+  if (todayStudyItems.length === 0 && tomorrowStudyItems.length === 0) return '';
+  const todayGroups    = groupStudyItems(todayStudyItems);
+  const tomorrowGroups = groupStudyItems(tomorrowStudyItems);
+  const todayTotal    = todayStudyItems.reduce((s, i) => s + i.durationMin, 0);
+  const tomorrowTotal = tomorrowStudyItems.reduce((s, i) => s + i.durationMin, 0);
+
+  const todayHTML = todayGroups.length > 0
+    ? `<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+         <span>Today</span><span style="font-size:11px;letter-spacing:0;color:var(--text-muted);font-weight:400">計 ${todayTotal}分</span>
+       </div>
+       ${renderDayRows(todayGroups, true)}`
+    : `<div style="font-size:12px;color:var(--text-muted);padding:8px 0">今日の予定はありません</div>`;
+
+  const tomorrowHTML = tomorrowGroups.length > 0
+    ? `<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent2);font-weight:600;margin-top:16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+         <span>Tomorrow</span><span style="font-size:11px;letter-spacing:0;color:var(--text-muted);font-weight:400">計 ${tomorrowTotal}分</span>
+       </div>
+       ${renderDayRows(tomorrowGroups, false)}`
+    : '';
+
+  return `<div class="today-section">${todayHTML}${tomorrowHTML}</div>`;
+}
+
+async function completeTodayGroup(planIds, btn) {
   btn.disabled = true; btn.textContent = '記録中...';
   try {
-    const r = await fetch(`${GAS_URL}?action=markStudyComplete&userId=${encodeURIComponent(userId)}&planId=${encodeURIComponent(planId)}`);
-    const d = await r.json();
-    if (d.success) {
-      const el = document.getElementById('today-' + planId);
-      if (el) { el.classList.add('done'); btn.textContent = '完了済み'; }
-      // planDataも更新
+    for (const planId of planIds) {
+      await fetch(`${GAS_URL}?action=markStudyComplete&userId=${encodeURIComponent(userId)}&planId=${encodeURIComponent(planId)}`);
       const item = todayStudyItems.find(i => i.planId === planId);
       if (item) item.status = 'done';
-    } else {
-      btn.disabled = false; btn.textContent = '学習済み';
     }
+    const card = btn.closest('.today-item');
+    if (card) card.classList.add('done');
+    btn.classList.add('done'); btn.textContent = '完了済み';
   } catch (e) { btn.disabled = false; btn.textContent = '学習済み'; }
 }
 
