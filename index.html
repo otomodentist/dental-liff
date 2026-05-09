@@ -396,9 +396,6 @@
   .plan-item-btn { background: var(--accent); border: none; border-radius: 8px; color: #000; font-size: 11px; font-weight: 700; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
   .plan-item-btn.done { background: var(--surface2); color: var(--text-muted); cursor: default; }
   .plan-alert { margin: 0 20px 12px; padding: 12px 16px; background: rgba(255,107,138,0.12); border: 1px solid rgba(255,107,138,0.3); border-radius: 12px; font-size: 13px; color: var(--accent3); }
-  .theory-card { margin: 0 20px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
-  .theory-title { font-size: 12px; font-weight: 700; color: var(--text-dim); margin-bottom: 8px; }
-  .theory-step { font-size: 12px; color: var(--text-dim); line-height: 1.6; padding-left: 10px; border-left: 2px solid var(--accent2); margin-bottom: 6px; }
 
   /* 直近授業ボタン */
   .latest-btn {
@@ -707,6 +704,50 @@ function toggleSession(sessionNumber) {
       drawTimelineChart(`sessionChart-${sessionNumber}`, session.timeline, `session-${sessionNumber}`);
     });
   }
+}
+
+function buildExamTimetableHTML(exams) {
+  if (!exams || exams.length === 0) return '';
+  const sortedDates = [...new Set(exams.map(e => e.examDate))].sort();
+  const cellMap = {};
+  exams.forEach(e => { cellMap[`${e.examDate}_${e.period || 1}`] = e; });
+  const periods = [...new Set(exams.map(e => e.period || 1))].sort((a, b) => a - b);
+  const DAYS = ['日','月','火','水','木','金','土'];
+  function fmtD(d) {
+    const dt = new Date(d + 'T00:00:00');
+    return `${dt.getMonth()+1}/${dt.getDate()}（${DAYS[dt.getDay()]}）`;
+  }
+  const STRONG = '2px solid var(--border)';
+  const hBg = 'var(--surface2)';
+  const dateHeaders = sortedDates.map(d =>
+    `<th style="border:1px solid var(--border);padding:6px 8px;background:${hBg};font-size:11px;white-space:nowrap;font-weight:600;color:var(--text-dim)">${fmtD(d)}</th>`
+  ).join('');
+  const bodyRows = periods.map(p => {
+    const cells = sortedDates.map(d => {
+      const e = cellMap[`${d}_${p}`];
+      if (!e) return `<td style="border:1px solid var(--border);padding:6px 8px;min-width:80px"></td>`;
+      return `<td style="border:1px solid var(--border);padding:6px 8px;min-width:80px">
+        <div style="font-size:10px;font-weight:600;line-height:1.4;color:var(--text)">${e.subjectName}</div>
+      </td>`;
+    }).join('');
+    return `<tr>
+      <td style="border:1px solid var(--border);padding:6px 8px;background:${hBg};font-size:12px;font-weight:700;border-right:${STRONG};text-align:center;white-space:nowrap;color:var(--text-dim)">${p}コマ</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+  return `
+    <div style="margin:0 20px 16px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:6px">試験時間割</div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table style="border-collapse:collapse;font-size:12px">
+          <thead><tr>
+            <th style="border:1px solid var(--border);padding:6px 8px;background:${hBg};font-size:11px;color:var(--text-muted);border-right:${STRONG};border-bottom:${STRONG};white-space:nowrap">コマ</th>
+            ${dateHeaders}
+          </tr></thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
+      </div>
+    </div>`;
 }
 
 function formatDuration(min) {
@@ -1130,12 +1171,7 @@ function renderStudyPlanView() {
     </div>
     ${buildReviewBarChartHTML(exams, progressBlocks, 'openExamDetail')}
     ${noExamsHTML}
-    <div class="theory-card">
-      <div class="theory-title">反復学習による効率化の根拠</div>
-      <div class="theory-step">ステップ1（授業）：集中度スコアで授業の質を向上</div>
-      <div class="theory-step">ステップ2（復習）：復習時間を約1/2に短縮しつつ定着の質を向上</div>
-      <div class="theory-step">ステップ3（再復習）：復習時間を約1/3に短縮しながらさらに定着を強化</div>
-    </div>
+    ${buildExamTimetableHTML(exams)}
     <div class="footer-pad"></div>
   `;
 }

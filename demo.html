@@ -209,7 +209,7 @@
     }
     .plan-title { font-family: 'Kaisei Tokumin', serif; font-size: 16px; font-weight: 700; }
 
-    .theory-card {
+    .theory-card-unused {
       background: var(--surface2); border: 1px solid var(--border);
       border-radius: 12px; margin: 0 16px 12px; padding: 14px 16px;
     }
@@ -394,21 +394,159 @@ const DEMO_SUBJECTS = [
         ]
       },
     ]
+  },
+  {
+    name: '口腔生理学',
+    icon: '🧠',
+    sessions: [
+      {
+        sessionNumber: 1, avgScore: 72, answerCount: 4,
+        answers: [
+          { minutesElapsed: 7, accuracyScore: 80, concentrationScore: 80, responseTimeSec: 38,
+            questionText: '唾液の1日の平均分泌量はおよそ何mLか',
+            modelAnswer: '1,000〜1,500mL（安静時は約0.3mL/分）',
+            answerText: '1000〜1500mLです' },
+          { minutesElapsed: 20, accuracyScore: 65, concentrationScore: 59, responseTimeSec: 85,
+            questionText: '嚥下の3段階を順に答えなさい',
+            modelAnswer: '口腔期・咽頭期・食道期',
+            answerText: '口腔期、咽頭期、食道期' },
+          { minutesElapsed: 35, accuracyScore: 75, concentrationScore: 75, responseTimeSec: 45,
+            questionText: '耳下腺の分泌腺の種類を答えよ',
+            modelAnswer: '純漿液腺（セロシア性）',
+            answerText: '漿液腺です' },
+          { minutesElapsed: 50, accuracyScore: 68, concentrationScore: 51, responseTimeSec: 120,
+            questionText: '咀嚼運動で開口に働く筋を2つ挙げよ',
+            modelAnswer: '外側翼突筋下頭・顎二腹筋前腹（および顎舌骨筋・オトガイ舌骨筋）',
+            answerText: '外側翼突筋と顎二腹筋' },
+        ]
+      },
+      {
+        sessionNumber: 2, avgScore: 65, answerCount: 4,
+        answers: [
+          { minutesElapsed: 9, accuracyScore: 70, concentrationScore: 70, responseTimeSec: 50,
+            questionText: '唾液の主な機能を3つ挙げよ',
+            modelAnswer: '消化（アミラーゼ）・自浄作用・緩衝能・抗菌作用・潤滑など',
+            answerText: '消化、自浄、抗菌作用' },
+          { minutesElapsed: 24, accuracyScore: 60, concentrationScore: 54, responseTimeSec: 88,
+            questionText: '開口運動での下顎頭の動きを順序で説明せよ',
+            modelAnswer: '最初は蝶番運動（回転）→続いて前方滑走（並進）',
+            answerText: '回転してから前方に滑走します' },
+          { minutesElapsed: 38, accuracyScore: 75, concentrationScore: 75, responseTimeSec: 42,
+            questionText: '歯根膜の固有感覚受容器の名称を1つ答えよ',
+            modelAnswer: 'Ruffini終末（機械受容器）',
+            answerText: 'Ruffini終末' },
+          { minutesElapsed: 52, accuracyScore: 55, concentrationScore: 42, responseTimeSec: 145,
+            questionText: '食後に唾液分泌が増加する主な神経機序を述べよ',
+            modelAnswer: '咀嚼刺激→機械受容器→副交感神経（鼓索神経・大錐体神経）→漿液性唾液増加',
+            answerText: '副交感神経を介して分泌増加' },
+        ]
+      },
+      {
+        sessionNumber: 3, avgScore: 79, answerCount: 4,
+        answers: [
+          { minutesElapsed: 6, accuracyScore: 82, concentrationScore: 82, responseTimeSec: 35,
+            questionText: '唾液の正常pHの範囲を答えよ',
+            modelAnswer: 'pH 6.0〜7.4（平均約6.8）',
+            answerText: 'pH6〜7.4程度' },
+          { minutesElapsed: 21, accuracyScore: 78, concentrationScore: 74, responseTimeSec: 63,
+            questionText: '味覚の5基本味を全て答えよ',
+            modelAnswer: '甘味・酸味・塩味・苦味・うまみ',
+            answerText: '甘・酸・塩・苦・うまみ' },
+          { minutesElapsed: 36, accuracyScore: 85, concentrationScore: 85, responseTimeSec: 38,
+            questionText: '顎反射の求心路・遠心路の神経を答えよ',
+            modelAnswer: '求心路：三叉神経感覚枝、遠心路：三叉神経運動枝（咀嚼筋支配）',
+            answerText: '求心路三叉神経、遠心路三叉神経運動枝' },
+          { minutesElapsed: 49, accuracyScore: 71, concentrationScore: 67, responseTimeSec: 70,
+            questionText: 'ブラキシズムが起きやすい睡眠段階はどれか',
+            modelAnswer: 'REM睡眠（および睡眠段階2）',
+            answerText: 'REM睡眠です' },
+        ]
+      },
+    ]
+  },
+  {
+    name: '歯科薬理学',
+    icon: '💊',
+    sessions: [
+      {
+        sessionNumber: 1, avgScore: 68, answerCount: 4,
+        answers: [
+          { minutesElapsed: 8, accuracyScore: 72, concentrationScore: 72, responseTimeSec: 48,
+            questionText: '局所麻酔薬の作用機序を答えなさい',
+            modelAnswer: '電位依存性Naチャネルを遮断し、神経活動電位の発生・伝導を抑制する',
+            answerText: 'Naチャネルをブロックして神経伝達を抑制' },
+          { minutesElapsed: 22, accuracyScore: 65, concentrationScore: 57, responseTimeSec: 92,
+            questionText: '局所麻酔薬にエピネフリンを添加する目的を2つ答えよ',
+            modelAnswer: '①血管収縮→吸収遅延・作用時間延長、②全身移行量減少→毒性低下',
+            answerText: '作用時間延長と毒性低下' },
+          { minutesElapsed: 37, accuracyScore: 78, concentrationScore: 78, responseTimeSec: 42,
+            questionText: 'ペニシリン系抗菌薬の作用機序を答えよ',
+            modelAnswer: '細胞壁ペプチドグリカン合成を担うPBP（ペニシリン結合タンパク）を阻害',
+            answerText: '細胞壁合成阻害（PBP阻害）' },
+          { minutesElapsed: 51, accuracyScore: 57, concentrationScore: 43, responseTimeSec: 138,
+            questionText: 'NSAIDsの抗炎症・鎮痛作用の機序を述べよ',
+            modelAnswer: 'COX（シクロオキシゲナーゼ）を阻害し、プロスタグランジンの産生を抑制する',
+            answerText: 'COXを阻害してプロスタグランジンを抑制' },
+        ]
+      },
+      {
+        sessionNumber: 2, avgScore: 73, answerCount: 4,
+        answers: [
+          { minutesElapsed: 10, accuracyScore: 78, concentrationScore: 78, responseTimeSec: 40,
+            questionText: 'テトラサイクリン系抗菌薬の投与を避けるべき年齢は何歳以下か',
+            modelAnswer: '8歳以下（歯牙着色・エナメル質形成不全のリスク）',
+            answerText: '8歳以下' },
+          { minutesElapsed: 25, accuracyScore: 70, concentrationScore: 63, responseTimeSec: 80,
+            questionText: 'ビスホスホネート製剤服用患者で抜歯後に問題となる合併症を答えよ',
+            modelAnswer: '顎骨壊死（MRONJ：薬剤関連顎骨壊死）',
+            answerText: '顎骨壊死（MRONJ）' },
+          { minutesElapsed: 40, accuracyScore: 75, concentrationScore: 68, responseTimeSec: 73,
+            questionText: '口腔乾燥（ドライマウス）を起こす代表的な薬物を2つ挙げよ',
+            modelAnswer: '抗コリン薬・抗ヒスタミン薬・三環系抗うつ薬・降圧薬（利尿薬）など',
+            answerText: '抗コリン薬と抗ヒスタミン薬' },
+          { minutesElapsed: 53, accuracyScore: 69, concentrationScore: 55, responseTimeSec: 100,
+            questionText: 'ワルファリンの作用機序を述べよ',
+            modelAnswer: 'ビタミンK依存性凝固因子（Ⅱ・Ⅶ・Ⅸ・Ⅹ）の肝臓での生成を阻害する',
+            answerText: 'ビタミンK依存性凝固因子の産生阻害' },
+        ]
+      },
+      {
+        sessionNumber: 3, avgScore: 81, answerCount: 4,
+        answers: [
+          { minutesElapsed: 7, accuracyScore: 85, concentrationScore: 85, responseTimeSec: 32,
+            questionText: 'リドカインの歯科における最大許容量（血管収縮薬入り）は何mgか',
+            modelAnswer: '200mg（体重70kgの成人、2%リドカイン+エピネフリン製剤）',
+            answerText: '200mg' },
+          { minutesElapsed: 21, accuracyScore: 82, concentrationScore: 78, responseTimeSec: 58,
+            questionText: 'ステロイド薬長期投与の主な副作用を3つ挙げよ',
+            modelAnswer: '骨粗鬆症・易感染性・消化性潰瘍・副腎皮質機能抑制・糖尿病誘発など',
+            answerText: '骨粗鬆症、易感染性、消化性潰瘍' },
+          { minutesElapsed: 35, accuracyScore: 80, concentrationScore: 80, responseTimeSec: 45,
+            questionText: 'アナフィラキシーショック時に第一選択の薬物と投与経路を答えよ',
+            modelAnswer: 'アドレナリン（エピネフリン）0.3mg を大腿外側に筋肉注射',
+            answerText: 'アドレナリンを筋肉注射' },
+          { minutesElapsed: 48, accuracyScore: 77, concentrationScore: 72, responseTimeSec: 68,
+            questionText: '殺菌性抗菌薬と静菌性抗菌薬の違いを説明し各1例を挙げよ',
+            modelAnswer: '殺菌性：細菌を直接死滅（ペニシリン系・アミノグリコシド系など）、静菌性：増殖を抑制（テトラサイクリン系・マクロライド系など）',
+            answerText: '殺菌性はペニシリン系、静菌性はテトラサイクリン系' },
+        ]
+      },
+    ]
   }
 ];
 
 // ===== デモ 試験・学習計画データ（令和7年3年生春学期） =====
 const DEMO_LAST_CLASS_DATE = '2025-07-24'; // 授業最終日（全科目共通）
 const DEMO_EXAMS = [
-  { examId: 'ex1', subjectName: '基礎臨床統合歯学Ⅱ',               examDate: '2025-08-22', reviewMinutes: 45 },
-  { examId: 'ex2', subjectName: '病因・病態・診断（総論）',           examDate: '2025-08-25', reviewMinutes: 45 },
-  { examId: 'ex3', subjectName: '臨床医学（内科Ⅱ）',               examDate: '2025-08-26', reviewMinutes: 45 },
-  { examId: 'ex4', subjectName: '感染と免疫Ⅱ',                     examDate: '2025-08-26', reviewMinutes: 45 },
-  { examId: 'ex5', subjectName: '放射線・画像診断学（画像検査）Ⅱ',   examDate: '2025-08-27', reviewMinutes: 45 },
-  { examId: 'ex6', subjectName: '生体と薬物Ⅱ',                     examDate: '2025-08-27', reviewMinutes: 45 },
-  { examId: 'ex7', subjectName: '硬組織疾患の病態と治療Ⅱ',           examDate: '2025-08-28', reviewMinutes: 45 },
-  { examId: 'ex8', subjectName: '臨床医学（外科Ⅱ）',               examDate: '2025-08-28', reviewMinutes: 45 },
-  { examId: 'ex9', subjectName: '社会と歯学Ⅱ',                     examDate: '2025-08-29', reviewMinutes: 45 },
+  { examId: 'ex1', subjectName: '基礎臨床統合歯学Ⅱ',               examDate: '2025-08-22', reviewMinutes: 45, period: 2 },
+  { examId: 'ex2', subjectName: '病因・病態・診断（総論）',           examDate: '2025-08-25', reviewMinutes: 45, period: 1 },
+  { examId: 'ex3', subjectName: '臨床医学（内科Ⅱ）',               examDate: '2025-08-26', reviewMinutes: 45, period: 1 },
+  { examId: 'ex4', subjectName: '感染と免疫Ⅱ',                     examDate: '2025-08-26', reviewMinutes: 45, period: 3 },
+  { examId: 'ex5', subjectName: '放射線・画像診断学（画像検査）Ⅱ',   examDate: '2025-08-27', reviewMinutes: 45, period: 2 },
+  { examId: 'ex6', subjectName: '生体と薬物Ⅱ',                     examDate: '2025-08-27', reviewMinutes: 45, period: 4 },
+  { examId: 'ex7', subjectName: '硬組織疾患の病態と治療Ⅱ',           examDate: '2025-08-28', reviewMinutes: 45, period: 1 },
+  { examId: 'ex8', subjectName: '臨床医学（外科Ⅱ）',               examDate: '2025-08-28', reviewMinutes: 45, period: 3 },
+  { examId: 'ex9', subjectName: '社会と歯学Ⅱ',                     examDate: '2025-08-29', reviewMinutes: 45, period: 2 },
 ];
 
 // 全科目 15コマ参加済み
@@ -921,6 +1059,50 @@ function buildReviewBarChartHTML(exams, progressBlocks, onClickFn) {
     </div>`;
 }
 
+function buildExamTimetableHTML(exams) {
+  if (!exams || exams.length === 0) return '';
+  const sortedDates = [...new Set(exams.map(e => e.examDate))].sort();
+  const cellMap = {};
+  exams.forEach(e => { cellMap[`${e.examDate}_${e.period || 1}`] = e; });
+  const periods = [...new Set(exams.map(e => e.period || 1))].sort((a, b) => a - b);
+  const DAYS = ['日','月','火','水','木','金','土'];
+  function fmtD(d) {
+    const dt = new Date(d + 'T00:00:00');
+    return `${dt.getMonth()+1}/${dt.getDate()}（${DAYS[dt.getDay()]}）`;
+  }
+  const STRONG = '2px solid var(--border)';
+  const hBg = 'var(--surface2)';
+  const dateHeaders = sortedDates.map(d =>
+    `<th style="border:1px solid var(--border);padding:6px 8px;background:${hBg};font-size:11px;white-space:nowrap;font-weight:600;color:var(--ink2)">${fmtD(d)}</th>`
+  ).join('');
+  const bodyRows = periods.map(p => {
+    const cells = sortedDates.map(d => {
+      const e = cellMap[`${d}_${p}`];
+      if (!e) return `<td style="border:1px solid var(--border);padding:6px 8px;min-width:80px"></td>`;
+      return `<td style="border:1px solid var(--border);padding:6px 8px;min-width:80px;background:var(--surface)">
+        <div style="font-size:10px;font-weight:600;line-height:1.4;color:var(--ink)">${e.subjectName}</div>
+      </td>`;
+    }).join('');
+    return `<tr>
+      <td style="border:1px solid var(--border);padding:6px 8px;background:${hBg};font-size:12px;font-weight:700;border-right:${STRONG};text-align:center;white-space:nowrap;color:var(--ink2)">${p}コマ</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+  return `
+    <div style="margin:0 16px 16px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.5px;color:var(--ink3);margin-bottom:6px">試験時間割</div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table style="border-collapse:collapse;font-size:12px">
+          <thead><tr>
+            <th style="border:1px solid var(--border);padding:6px 8px;background:${hBg};font-size:11px;color:var(--ink3);border-right:${STRONG};border-bottom:${STRONG};white-space:nowrap">コマ</th>
+            ${dateHeaders}
+          </tr></thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
 function buildStudyPlanHTML() {
   return `
     <div class="demo-banner">
@@ -938,12 +1120,7 @@ function buildStudyPlanHTML() {
       ${buildDemoScheduleHTML('8/12 (火)', '今日 8/12', '#2d5a3d')}
       ${buildDemoScheduleHTML('8/13 (水)', '明日 8/13', '#1a3a6b')}
     </div>
-    <div class="theory-card">
-      <div class="theory-title">反復学習による効率化の根拠</div>
-      <div class="theory-step">ステップ1（授業）：集中度スコアで授業の集中の質を向上</div>
-      <div class="theory-step">ステップ2（復習）：復習時間を約1/2に短縮しつつ定着の質を向上</div>
-      <div class="theory-step">ステップ3（再復習）：復習時間を約1/3に短縮しながらさらに定着を強化</div>
-    </div>
+    ${buildExamTimetableHTML(DEMO_EXAMS)}
     <div style="height:100px"></div>
   `;
 }
