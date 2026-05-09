@@ -515,6 +515,13 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdx
 const DEMO_LIFF_ID = '2009739219-dSnPUVFj';
 const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/aFa7sK9mA7XP5u2e4zfbq02';
 
+function formatDuration(min) {
+  if (min < 60) return `${min}分`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h}時間` : `${h}時間${m}分`;
+}
+
 // ===== 状態 =====
 let demoUserId = null;
 let view = 'subjects'; // 'subjects' | 'sessions' | 'chart' | 'studyPlan'
@@ -584,16 +591,6 @@ function buildSubjectsHTML() {
       </div>`;
   }).join('');
   return `
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin:0 16px 12px;padding:12px 16px;display:flex;gap:20px">
-      <div>
-        <div style="font-size:11px;color:var(--ink3)">参加授業</div>
-        <div style="font-size:20px;font-weight:700">${DEMO_SUBJECTS.reduce((n, s) => n + s.sessions.length, 0)}回</div>
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--ink3)">科目数</div>
-        <div style="font-size:20px;font-weight:700">${DEMO_SUBJECTS.length}科目</div>
-      </div>
-    </div>
     <div class="section-label">科目一覧</div>
     ${html}
     <div class="section-label" style="margin-top:4px">試験対策</div>
@@ -812,7 +809,7 @@ function buildDemoExamDetailHTML() {
         <div class="plan-item-date">${g.date}</div>
         <div class="plan-item-info">
           <div class="plan-item-name">第${start}〜${end}回授業</div>
-          <div class="plan-item-type">${typeLabel[g.type]}・${min}分</div>
+          <div class="plan-item-type">${typeLabel[g.type]}・${formatDuration(min)}</div>
         </div>
         <button class="plan-item-btn ${allDone ? 'done' : ''}" onclick="demoAction()">
           ${allDone ? '完了✓' : '学習済み'}
@@ -871,11 +868,11 @@ function buildDemoScheduleHTML(targetDate, label, accentColor) {
   const rowsHTML = rows.map(r => `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:6px">
       <div style="font-size:13px;font-weight:700;color:var(--ink)">${r.subject}</div>
-      <div style="font-size:11px;color:var(--ink3);margin-top:3px">第${r.start}〜${r.end}回　${typeLabel[r.type]}　${r.min}分</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:3px">第${r.start}〜${r.end}回　${typeLabel[r.type]}　${formatDuration(r.min)}</div>
     </div>`).join('');
   return `
     <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:${accentColor};margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-      <span>${label}</span><span style="font-size:11px;font-weight:400;color:var(--ink3)">計 ${total}分</span>
+      <span>${label}</span><span style="font-size:11px;font-weight:400;color:var(--ink3)">計 ${formatDuration(total)}</span>
     </div>
     ${rowsHTML}`;
 }
@@ -925,52 +922,6 @@ function buildReviewBarChartHTML(exams, progressBlocks, onClickFn) {
 }
 
 function buildStudyPlanHTML() {
-  const typeLabel = { 'review': '復習', 're-review': '再復習' };
-
-  const examCardsHTML = DEMO_EXAMS.map(exam => {
-    // 実施コマ バッジ（15コマ全参加）
-    const attendedHTML = Array.from({ length: 15 }, (_, i) =>
-      `<span style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-size:10px;font-weight:600">第${i+1}回</span>`
-    ).join(' ');
-
-    // 計画アイテム（日付グループ）
-    const groups = DEMO_PLAN_GROUPS[exam.examId] || [];
-    const doneTotal = groups.reduce((s, g) => s + g.doneCount, 0);
-    const totalSessions = groups.reduce((s, g) => s + g.count, 0);
-
-    const planItemsHTML = groups.map(g => {
-      const allDone = g.doneCount >= g.count;
-      const min = g.type === 'review'
-        ? g.count * exam.reviewMinutes
-        : g.count * Math.round(exam.reviewMinutes / 3);
-      return `
-        <div class="plan-item ${allDone ? 'plan-item-done' : ''}">
-          <div class="plan-item-date">${g.date}</div>
-          <div class="plan-item-label">${typeLabel[g.type]} ×${g.count}コマ（${min}分）</div>
-          <button class="plan-item-btn ${allDone ? 'done' : ''}" onclick="demoAction()">
-            ${allDone ? '完了✓' : '学習済み'}
-          </button>
-        </div>`;
-    }).join('');
-
-    return `
-      <div class="plan-exam-card">
-        <div class="plan-exam-header">
-          <div style="flex:1;min-width:0">
-            <div class="plan-exam-name">${exam.subjectName}</div>
-            <div class="plan-exam-date">試験日：${exam.examDate}　復習：${exam.reviewMinutes}分/回</div>
-            <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">${attendedHTML}</div>
-            <div style="font-size:11px;color:var(--ink3);margin-top:6px">${doneTotal}/${totalSessions}コマ完了</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;margin-left:10px">
-            <button class="plan-generate-btn" onclick="demoAction()">リプラン</button>
-            <button class="plan-generate-btn" style="background:var(--accent-light);color:var(--accent);border-color:transparent" onclick="demoAction()">再生成</button>
-          </div>
-        </div>
-        ${planItemsHTML}
-      </div>`;
-  }).join('');
-
   return `
     <div class="demo-banner">
       <span class="demo-badge">DEMO</span>サービス体験中 — サンプルデータ（2025年8月12日時点）
@@ -993,7 +944,6 @@ function buildStudyPlanHTML() {
       <div class="theory-step">ステップ2（復習）：復習時間を約1/2に短縮しつつ定着の質を向上</div>
       <div class="theory-step">ステップ3（再復習）：復習時間を約1/3に短縮しながらさらに定着を強化</div>
     </div>
-    ${examCardsHTML}
     <div style="height:100px"></div>
   `;
 }
