@@ -57,7 +57,7 @@
 | Project ID | `1dfHpjEjSigxTJbSnuER99IKDBROzZ-ZXJ2XPiNJMfDsUZ9idejL35Cq8` |
 | Web App URL（Webhook & API） | `https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec` |
 | Deploy ID（`clasp deploy -i` に指定） | `AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug` |
-| 現在のバージョン | v46（2026/05/09） |
+| 現在のバージョン | v49（2026/05/09） |
 
 ### Google Sheets（Spreadsheet ID: `15UpJAol2SayyiEQDyOdKYX02eQQ4pMH4gq4SssJrYT4`）
 
@@ -115,7 +115,8 @@
 - `getSubjectMaster()` — アクティブ学年・学期の科目一覧
 - `getActiveSemester()` / `setActiveSemester(grade, semester)` — アクティブクール取得・設定
 - `getAdminStudentList()` — 学生一覧
-- `getStudentsByGradeAndSemester(grade, semester)` — 学年・学期でフィルタした学生一覧
+- `getAdminStudentListWithBilling()` — 課金ステータス込み学生一覧（登録管理タブ用）
+- `getStudentsByGradeAndSemester(grade, semester)` — 学年・学期フィルタ学生一覧（billingStatus付き、ダッシュボードタブ用）
 - `getStudentSessions(userId)` — 学生が参加したセッション一覧（latestAnswerAt付き、直近活動順）
 - `queryBySessionAndStudent(sessionId, userId)` — セッション×学生の回答詳細（問題文・模範解答付き）
 - `getLatestSessionData(userId)` — 直近終了セッションのサマリ
@@ -125,6 +126,12 @@
 - `updateExamDate(examId, examDate, reviewMinutes, period, requiredSessions)` — 試験日程更新
 - `deleteExamDate(examId)` — 試験日程削除
 - `generateStudyPlan(userId, examId, dailyAvailableHours)` — 学習計画生成（requiredSessionsで対象コマ数を制限）
+- `getStudyPlan(userId)` — 学習計画一覧取得
+- `getTodayStudyItems(userId)` — 今日・明日の学習予定（todayItems, tomorrowItems, pendingCount）
+- `markStudyComplete(userId, planId)` — 学習完了記録
+- `replanStudy(userId, dailyAvailableHours)` — 全科目の未完了分を今日から再スケジュール
+- `replanStudyForExam(userId, examId, dailyAvailableHours)` — 特定科目の未完了分を今日から再スケジュール
+- `getStudyPlanInitData(userId)` — 学習計画ビュー初期化（exams・plan・progressBlocks・attendedBySubject）
 - `getScheduledSessionStart_()` — コマ定刻に基づく授業開始時刻を返す（内部関数）
 
 **スプレッドシート操作**
@@ -270,3 +277,7 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 | 2026/05/03 | gas_richmenu.js.gsの未使用関数削除（251→182行） |
 | 2026/05/03 | CLAUDE.md全面更新 |
 | 2026/05/03 | LINEコマンド（`[授業開始]`/`[出題]`/`[授業終了]`）削除 — 操作はLIFF管理画面に統一 |
+| 2026/05/09 | admin_liff.html: ダッシュボードタブ名変更・課金ステータス未登録を赤表示（v47） |
+| 2026/05/09 | index.html・demo.html: 試験対策を横スクロール棒グラフ表示に変更・バータップで科目別編集画面へ遷移（v49） |
+| 2026/05/09 | index.html: Today/Tomorrow 学習スケジュールを科目・コマ番号・所要時間でまとめ表示（v48） |
+| 2026/05/09 | GAS: replanStudyForExam 追加・getTodayStudyItems に tomorrowItems 追加・getStudentsByGradeAndSemester に billingStatus 追加（v47〜49） |

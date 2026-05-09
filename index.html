@@ -376,17 +376,6 @@
   .exam-btn.disabled { opacity: 0.4; cursor: default; }
   .exam-btn-badge { font-size: 11px; background: var(--border); border-radius: 6px; padding: 2px 8px; color: var(--text-muted); }
 
-  /* 進捗ブロック */
-  .progress-section { padding: 0 20px 16px; }
-  .progress-subj { margin-bottom: 16px; }
-  .progress-subj-name { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
-  .progress-count { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 8px; }
-  .progress-count span { font-size: 12px; font-weight: 400; color: var(--text-dim); margin-left: 4px; }
-  .blocks-row { display: flex; gap: 3px; }
-  .block { flex: 1; height: 24px; border-radius: 3px; min-width: 0; }
-  .block.reviewed { background: var(--border); }
-  .block.pending { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
-  .block.unattended { background: var(--surface); border: 1px solid var(--border); }
 
   /* 学習計画ビュー */
   .plan-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; position: sticky; top: 0; background: var(--bg); z-index: 10; }
@@ -492,8 +481,6 @@ let todayStudyItems = [];
 let tomorrowStudyItems = [];
 let selectedExamId = null;
 let studyPlanData = null;
-let examScheduleData = [];
-let progressBlocksData = {};
 
 // ===== 初期化 =====
 async function init() {
@@ -938,9 +925,7 @@ async function openStudyPlanView() {
   try {
     const res = await fetch(`${GAS_URL}?action=getStudyPlanInitData&userId=${encodeURIComponent(userId)}`);
     studyPlanInitData = await res.json();
-    examScheduleData = studyPlanInitData.exams || [];
-    studyPlanData    = studyPlanInitData.plan  || [];
-    progressBlocksData = studyPlanInitData.progressBlocks || {};
+    studyPlanData = studyPlanInitData.plan || [];
   } catch (e) {
     studyPlanInitData = null;
   }
