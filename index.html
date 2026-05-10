@@ -537,7 +537,7 @@ function renderApp() {
 
   const subject = subjects[activeSubjectIndex];
   const allSessions = subject.sessions;
-  const avgScore = subject.averageScore;
+  const sustainScore = subject.sustainScore;
 
   const latestSession = allSessions[allSessions.length - 1];
 
@@ -586,7 +586,7 @@ function renderApp() {
       </div>
       <div class="summary-card accent4">
         <div class="summary-label">最新スコア</div>
-        <div class="summary-value">${latestSession ? latestSession.averageScore : '-'}<span class="summary-unit">点</span></div>
+        <div class="summary-value">${latestSession ? latestSession.sustainScore : '-'}<span class="summary-unit">点</span></div>
       </div>
     </div>
 
@@ -610,7 +610,7 @@ function renderApp() {
       <div class="chart-card">
         <div class="chart-card-title">
           <span>${subject.name}</span>
-          授業回ごとの平均集中度
+          授業回ごとの維持スコア
         </div>
         <div class="chart-wrap">
           <canvas id="historyChart"></canvas>
@@ -628,8 +628,8 @@ function renderApp() {
               <div class="session-meta">${s.timeline.length}問回答</div>
             </div>
             <div class="session-score">
-              <div class="score-badge ${s.averageScore >= 70 ? 'high' : s.averageScore >= 40 ? 'mid' : 'low'}">${s.averageScore}</div>
-              <div class="score-label">平均点</div>
+              <div class="score-badge ${s.sustainScore >= 70 ? 'high' : s.sustainScore >= 40 ? 'mid' : 'low'}">${s.sustainScore}</div>
+              <div class="score-label">維持スコア</div>
             </div>
             <div class="session-detail" id="detail-${s.sessionNumber}">
               <div class="session-detail-wrap">
@@ -824,7 +824,7 @@ function drawHistoryChart(canvasId, sessions) {
   if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
 
   const labels = sessions.map(s => `第${s.sessionNumber}回`);
-  const scores = sessions.map(s => s.averageScore);
+  const scores = sessions.map(s => s.sustainScore);
 
   chartInstances[canvasId] = new Chart(canvas, {
     type: 'bar',
@@ -846,7 +846,7 @@ function drawHistoryChart(canvasId, sessions) {
       scales: {
         ...CHART_DEFAULTS.scales,
         x: { ...CHART_DEFAULTS.scales.x, title: { display: true, text: '授業回', color: '#5a6080', font: { size: 10 } } },
-        y: { ...CHART_DEFAULTS.scales.y, title: { display: true, text: '平均集中度', color: '#5a6080', font: { size: 10 } } },
+        y: { ...CHART_DEFAULTS.scales.y, title: { display: true, text: '維持スコア', color: '#5a6080', font: { size: 10 } } },
       },
     },
   });
@@ -864,7 +864,7 @@ async function checkLatestSession() {
       content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)">終了した授業がまだありません</div>';
       return;
     }
-    const scoreColor = data.avgScore >= 70 ? 'var(--accent)' : data.avgScore >= 40 ? '#ffd666' : 'var(--accent3)';
+    const scoreColor = data.sustainScore >= 70 ? 'var(--accent)' : data.sustainScore >= 40 ? '#ffd666' : 'var(--accent3)';
     content.innerHTML = `
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px">
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">${data.subject}</div>
@@ -872,7 +872,7 @@ async function checkLatestSession() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div style="text-align:center">
             <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">集中度スコア</div>
-            <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:${scoreColor}">${data.avgScore}</div>
+            <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:${scoreColor}">${data.sustainScore}</div>
           </div>
           <div style="text-align:center">
             <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">回答問題数</div>
