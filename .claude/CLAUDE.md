@@ -57,7 +57,7 @@
 | Project ID | `1dfHpjEjSigxTJbSnuER99IKDBROzZ-ZXJ2XPiNJMfDsUZ9idejL35Cq8` |
 | Web App URL（Webhook & API） | `https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec` |
 | Deploy ID（`clasp deploy -i` に指定） | `AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug` |
-| 現在のバージョン | v61（2026/05/11） |
+| 現在のバージョン | v63（2026/05/11） |
 
 ### Google Sheets（Spreadsheet ID: `15UpJAol2SayyiEQDyOdKYX02eQQ4pMH4gq4SssJrYT4`）
 
@@ -99,8 +99,9 @@
 - `handleStudentAnswer(userId, text, replyToken, timestamp)` — GPT採点 → 集中度計算 → 保存 → 返信
 
 **採点**
-- `scoreAnswerWithGPT(answer, modelAnswer, question)` — GPT-4o-miniで正確性0〜100点採点（内容のみ評価）
+- `scoreAnswerWithGPT(answer, modelAnswer, question)` — GPT-4o-miniで正確性0〜100点採点。キーワード一致ではなく意味の正確性で判定。逆のこと・矛盾は0〜10点、似た言葉でも意味が異なれば0〜20点
 - `calculateSpeedMultiplier(responseTimeSec)` — 速度乗数算出（60秒以内=1.0、以降減衰、4.5分以降=0.3）
+- `geoMeanScore(scores)` — 集中度スコア配列の幾何平均を返す。一度でも低い回があると大きく引き下がり「維持」を評価する
 
 **セッション管理**
 - `adminStartSession(subjectName, sessionNumber)` — 授業開始（セッション作成 + 全員LINE通知）
@@ -117,10 +118,10 @@
 - `getAdminStudentList()` — 学生一覧
 - `getAdminStudentListWithBilling()` — 課金ステータス込み学生一覧（登録管理タブ用）
 - `getStudentsByGradeAndSemester(grade, semester)` — 学年・学期フィルタ学生一覧（billingStatus付き、ダッシュボードタブ用）
-- `getStudentSessions(userId)` — 学生が参加したセッション一覧（latestAnswerAt付き、直近活動順）
+- `getStudentSessions(userId)` — 学生が参加したセッション一覧（sustainScore・latestAnswerAt付き、直近活動順）
 - `queryBySessionAndStudent(sessionId, userId)` — セッション×学生の回答詳細（問題文・模範解答付き）
-- `getLatestSessionData(userId)` — 直近終了セッションのサマリ
-- `getDashboardData(userId)` — 科目・セッション別集計（学生LIFF用、latestAnswerAt付き・科目を直近活動順でソート）
+- `getLatestSessionData(userId)` — 直近終了セッションのサマリ（sustainScore付き）
+- `getDashboardData(userId)` — 科目・セッション別集計（学生LIFF用、sustainScore・latestAnswerAt付き・科目を直近活動順でソート）
 - `getExamSchedule()` — 試験日程一覧（startTime・requiredSessions含む）
 - `addExamDate(subjectName, examDate, reviewMinutes, startTime, requiredSessions)` — 試験日程追加
 - `updateExamDate(examId, examDate, reviewMinutes, startTime, requiredSessions)` — 試験日程更新
@@ -143,6 +144,10 @@
 - `replyMessage(replyToken, text)` — 返信
 - `multicastMessage(userIds, text)` — 最大500件ずつ分割してMulticast送信
 - `getLineProfile(userId)` — LINEプロフィール取得
+
+**朝のリマインダー（GASトリガー）**
+- `sendMorningReminders()` — 毎朝7時に当日の学習計画をLINE通知（GASタイムトリガーから実行）
+- `setupMorningReminderTrigger()` — 上記トリガーを登録（手動実行）
 
 **初回セットアップ（手動実行）**
 - `setupSpreadsheet()` — 全シート作成・ヘッダー設定
@@ -259,7 +264,6 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 
 - [ ] 学生用リッチメニュー画像を新規生成・更新
   - `openRichMenuGenerator()` → Save to Drive → `uploadRichMenuImage()` のFile IDを更新
-- [ ] 学生ダッシュボード（index.html）の集中度スコア表示機能実装
 - [ ] 科目マスタ追加・編集UIをadmin_liffに追加
 
 ---
@@ -286,3 +290,6 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 | 2026/05/11 | GAS: Sheets時刻自動変換バグ修正（getExamSchedule/addExamDate/updateExamDate） |
 | 2026/05/11 | admin_liff.html: 試験登録フォームのレイアウト整理（試験日+開始時間・復習時間+復習コマ数を横並び）・全入力欄中央揃え |
 | 2026/05/11 | demo.html: 表示科目を3科目に拡充・試験時間割グリッド追加・不要CSS削除 |
+| 2026/05/11 | GAS: GPT採点プロンプト厳格化（逆・矛盾=0〜10点、意味の正確性で判定）（v62） |
+| 2026/05/11 | GAS: `geoMeanScore()` 追加・全スコアを算術平均→幾何平均（維持スコア）に変更（v63） |
+| 2026/05/11 | index.html・admin_liff.html: `averageScore`/`avgScore` → `sustainScore`・ラベル「平均点」→「維持スコア」 |
