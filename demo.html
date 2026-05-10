@@ -538,15 +538,15 @@ const DEMO_SUBJECTS = [
 // ===== デモ 試験・学習計画データ（令和7年3年生春学期） =====
 const DEMO_LAST_CLASS_DATE = '2025-07-24'; // 授業最終日（全科目共通）
 const DEMO_EXAMS = [
-  { examId: 'ex1', subjectName: '基礎臨床統合歯学Ⅱ',               examDate: '2025-08-22', reviewMinutes: 45, period: 3 },
-  { examId: 'ex2', subjectName: '病因・病態・診断（総論）',           examDate: '2025-08-25', reviewMinutes: 45, period: 3 },
-  { examId: 'ex3', subjectName: '臨床医学（内科Ⅱ）',               examDate: '2025-08-26', reviewMinutes: 45, period: 2 },
-  { examId: 'ex4', subjectName: '感染と免疫Ⅱ',                     examDate: '2025-08-26', reviewMinutes: 45, period: 3 },
-  { examId: 'ex5', subjectName: '放射線・画像診断学（画像検査）Ⅱ',   examDate: '2025-08-27', reviewMinutes: 45, period: 2 },
-  { examId: 'ex6', subjectName: '生体と薬物Ⅱ',                     examDate: '2025-08-27', reviewMinutes: 45, period: 3 },
-  { examId: 'ex7', subjectName: '硬組織疾患の病態と治療Ⅱ',           examDate: '2025-08-28', reviewMinutes: 45, period: 2 },
-  { examId: 'ex8', subjectName: '臨床医学（外科Ⅱ）',               examDate: '2025-08-28', reviewMinutes: 45, period: 3 },
-  { examId: 'ex9', subjectName: '社会と歯学Ⅱ',                     examDate: '2025-08-29', reviewMinutes: 45, period: 3 },
+  { examId: 'ex1', subjectName: '基礎臨床統合歯学Ⅱ',               examDate: '2025-08-22', reviewMinutes: 45, startTime: '12:20' },
+  { examId: 'ex2', subjectName: '病因・病態・診断（総論）',           examDate: '2025-08-25', reviewMinutes: 45, startTime: '12:20' },
+  { examId: 'ex3', subjectName: '臨床医学（内科Ⅱ）',               examDate: '2025-08-26', reviewMinutes: 45, startTime: '10:40' },
+  { examId: 'ex4', subjectName: '感染と免疫Ⅱ',                     examDate: '2025-08-26', reviewMinutes: 45, startTime: '12:20' },
+  { examId: 'ex5', subjectName: '放射線・画像診断学（画像検査）Ⅱ',   examDate: '2025-08-27', reviewMinutes: 45, startTime: '10:40' },
+  { examId: 'ex6', subjectName: '生体と薬物Ⅱ',                     examDate: '2025-08-27', reviewMinutes: 45, startTime: '12:20' },
+  { examId: 'ex7', subjectName: '硬組織疾患の病態と治療Ⅱ',           examDate: '2025-08-28', reviewMinutes: 45, startTime: '10:40' },
+  { examId: 'ex8', subjectName: '臨床医学（外科Ⅱ）',               examDate: '2025-08-28', reviewMinutes: 45, startTime: '12:20' },
+  { examId: 'ex9', subjectName: '社会と歯学Ⅱ',                     examDate: '2025-08-29', reviewMinutes: 45, startTime: '12:20' },
 ];
 
 // 全科目 15コマ参加済み
@@ -1059,12 +1059,18 @@ function buildReviewBarChartHTML(exams, progressBlocks, onClickFn) {
     </div>`;
 }
 
+function addOneHour(t) {
+  const [h, m] = t.split(':').map(Number);
+  return `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 function buildExamTimetableHTML(exams) {
   if (!exams || exams.length === 0) return '';
   const sortedDates = [...new Set(exams.map(e => e.examDate))].sort();
   const cellMap = {};
-  exams.forEach(e => { cellMap[`${e.examDate}_${e.period || 1}`] = e; });
-  const periods = [...new Set(exams.map(e => e.period || 1))].sort((a, b) => a - b);
+  exams.forEach(e => { cellMap[`${e.examDate}_${e.startTime || ''}`] = e; });
+  const startTimes = [...new Set(exams.map(e => e.startTime || '').filter(Boolean))].sort();
+  if (startTimes.length === 0) return '';
   const DAYS = ['日','月','火','水','木','金','土'];
   function fmtD(d) {
     const dt = new Date(d + 'T00:00:00');
@@ -1075,16 +1081,16 @@ function buildExamTimetableHTML(exams) {
   const dateHeaders = sortedDates.map(d =>
     `<th style="border:1px solid var(--border);padding:6px 8px;background:${hBg};font-size:11px;white-space:nowrap;font-weight:600;color:var(--ink2)">${fmtD(d)}</th>`
   ).join('');
-  const bodyRows = periods.map(p => {
+  const bodyRows = startTimes.map(st => {
     const cells = sortedDates.map(d => {
-      const e = cellMap[`${d}_${p}`];
+      const e = cellMap[`${d}_${st}`];
       if (!e) return `<td style="border:1px solid var(--border);padding:6px 8px;min-width:80px"></td>`;
       return `<td style="border:1px solid var(--border);padding:6px 8px;min-width:80px;background:var(--surface)">
         <div style="font-size:10px;font-weight:600;line-height:1.4;color:var(--ink)">${e.subjectName}</div>
       </td>`;
     }).join('');
     return `<tr>
-      <td style="border:1px solid var(--border);padding:6px 8px;background:${hBg};font-size:12px;font-weight:700;border-right:${STRONG};text-align:center;white-space:nowrap;color:var(--ink2)">${p}コマ</td>
+      <td style="border:1px solid var(--border);padding:6px 8px;background:${hBg};font-size:11px;font-weight:700;border-right:${STRONG};white-space:nowrap;color:var(--ink2)">${st}〜${addOneHour(st)}</td>
       ${cells}
     </tr>`;
   }).join('');
@@ -1094,7 +1100,7 @@ function buildExamTimetableHTML(exams) {
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
         <table style="border-collapse:collapse;font-size:12px">
           <thead><tr>
-            <th style="border:1px solid var(--border);padding:6px 8px;background:${hBg};font-size:11px;color:var(--ink3);border-right:${STRONG};border-bottom:${STRONG};white-space:nowrap">コマ</th>
+            <th style="border:1px solid var(--border);padding:6px 8px;background:${hBg};font-size:11px;color:var(--ink3);border-right:${STRONG};border-bottom:${STRONG};white-space:nowrap">時刻</th>
             ${dateHeaders}
           </tr></thead>
           <tbody>${bodyRows}</tbody>

@@ -258,14 +258,10 @@
       const LIFF_ID = '2009739219-9qVGb0Xm';
 
       let SUBJECTS = [];
-      const PERIOD_TIMES = [
-        { period: 1, time: '9:00-10:00' },
-        { period: 2, time: '10:30-11:30' },
-        { period: 3, time: '12:00-13:00' },
-        { period: 4, time: '13:30-14:30' },
-        { period: 5, time: '15:00-16:00' },
-        { period: 6, time: '16:00-17:00' },
-      ];
+      function addOneHour(t) {
+        const [h, m] = t.split(':').map(Number);
+        return `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      }
       let activeSemester = { grade: 4, semester: 'spring' };
       let selectedDay     = null;
       let selectedSubject = null;
@@ -1206,7 +1202,8 @@
           // 時間割グリッド構築
           const sortedDates = [...new Set(exams.map(e => e.examDate))].sort();
           const cellMap = {};
-          exams.forEach(e => { cellMap[`${e.examDate}_${e.period || 1}`] = e; });
+          exams.forEach(e => { cellMap[`${e.examDate}_${e.startTime || ''}`] = e; });
+          const startTimes = [...new Set(exams.map(e => e.startTime || '').filter(Boolean))].sort();
 
           let tableHTML;
           if (exams.length === 0) {
@@ -1216,15 +1213,15 @@
               const STRONG_LINE = '2px solid #a89880';
               const cell  = `border:1px solid var(--border);padding:8px 10px;text-align:center;box-sizing:border-box`;
               const hCell = `${cell};background:${ACCENT_BG};border-bottom:${STRONG_LINE}`;
-              const pCell = `${cell};background:${ACCENT_BG};border-right:${STRONG_LINE};width:44px;font-weight:700;font-size:14px;color:var(--ink2)`;
+              const tCell = `${cell};background:${ACCENT_BG};border-right:${STRONG_LINE};font-weight:700;font-size:12px;color:var(--ink2);white-space:nowrap`;
               const dCell = `${cell};width:100px`;
 
               const dateHeaders = sortedDates.map(d =>
                   `<th style="${hCell};font-weight:600;color:var(--ink2);font-size:12px;white-space:nowrap">${formatExamDate(d)}</th>`
               ).join('');
-              const bodyRows = PERIOD_TIMES.map(pt => {
+              const bodyRows = startTimes.map(st => {
                   const cells = sortedDates.map(d => {
-                      const e = cellMap[`${d}_${pt.period}`];
+                      const e = cellMap[`${d}_${st}`];
                       if (!e) return `<td style="${dCell}"></td>`;
                       const isEditing = editingExamId === e.examId;
                       if (isEditing) return `<td style="${dCell};background:var(--bg-sub)"></td>`;
@@ -1238,16 +1235,16 @@
                       </td>`;
                   }).join('');
                   return `<tr>
-                      <td style="${pCell}">${pt.period}</td>
+                      <td style="${tCell}">${st}〜${addOneHour(st)}</td>
                       ${cells}
                   </tr>`;
               }).join('');
               tableHTML = `
                   <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-                      <table style="border-collapse:collapse;font-size:13px;border:1px solid var(--border);table-layout:fixed">
+                      <table style="border-collapse:collapse;font-size:13px;border:1px solid var(--border)">
                           <thead>
                               <tr>
-                                  <th style="${hCell};border-right:${STRONG_LINE};width:44px;color:var(--ink3);font-size:12px">コマ</th>
+                                  <th style="${hCell};border-right:${STRONG_LINE};color:var(--ink3);font-size:12px;white-space:nowrap">時刻</th>
                                   ${dateHeaders}
                               </tr>
                           </thead>
@@ -1267,10 +1264,8 @@
                   </div>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
                       <div>
-                          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">コマ</div>
-                          <select id="editExamPeriod_${editingExam.examId}" class="modal-select">
-                              ${PERIOD_TIMES.map(pt => `<option value="${pt.period}" ${(editingExam.period || 1) == pt.period ? 'selected' : ''}>${pt.period}コマ（${pt.time}）</option>`).join('')}
-                          </select>
+                          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">開始時間</div>
+                          <input id="editExamStartTime_${editingExam.examId}" type="time" class="modal-select" style="width:100%;box-sizing:border-box" value="${editingExam.startTime || ''}" />
                       </div>
                       <div>
                           <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">復習コマ数</div>
@@ -1305,10 +1300,8 @@
                   </div>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
                       <div>
-                          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">コマ</div>
-                          <select id="examPeriod" class="modal-select">
-                              ${PERIOD_TIMES.map(pt => `<option value="${pt.period}">${pt.period}コマ（${pt.time}）</option>`).join('')}
-                          </select>
+                          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">開始時間</div>
+                          <input id="examStartTime" type="time" class="modal-select" style="width:100%;box-sizing:border-box" value="09:00" />
                       </div>
                       <div>
                           <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">復習コマ数</div>
@@ -1378,16 +1371,16 @@
       async function addExam() {
           const subjectName = document.getElementById('examSubject').value;
           const examDate = document.getElementById('examDate').value;
-          const period = document.getElementById('examPeriod').value;
+          const startTime = document.getElementById('examStartTime').value;
           const reviewMinutes = document.getElementById('examReviewMin').value;
           const reqSessions = document.getElementById('examReqSessions').value;
           if (!subjectName || !examDate) { showToast('❌ 科目名と試験日を入力してください'); return; }
           await guardedAction('addExam', async () => {
               try {
-                  const res = await fetch(`${GAS_URL}?action=addExamDate&subjectName=${encodeURIComponent(subjectName)}&examDate=${encodeURIComponent(examDate)}&period=${period}&reviewMinutes=${reviewMinutes}&requiredSessions=${reqSessions}`);
+                  const res = await fetch(`${GAS_URL}?action=addExamDate&subjectName=${encodeURIComponent(subjectName)}&examDate=${encodeURIComponent(examDate)}&startTime=${encodeURIComponent(startTime)}&reviewMinutes=${reviewMinutes}&requiredSessions=${reqSessions}`);
                   const result = await res.json();
                   if (result.success) {
-                      examListData.exams.push({ examId: result.examId, subjectName, examDate, period: parseInt(period), reviewMinutes: parseInt(reviewMinutes), requiredSessions: reqSessions ? parseInt(reqSessions) : null });
+                      examListData.exams.push({ examId: result.examId, subjectName, examDate, startTime, reviewMinutes: parseInt(reviewMinutes), requiredSessions: reqSessions ? parseInt(reqSessions) : null });
                       renderApp();
                       showToast('✅ 学習計画を追加しました');
                   } else {
@@ -1411,17 +1404,17 @@
 
       async function saveEditExam(examId) {
           const examDate = document.getElementById(`editExamDate_${examId}`).value;
-          const period = document.getElementById(`editExamPeriod_${examId}`).value;
+          const startTime = document.getElementById(`editExamStartTime_${examId}`).value;
           const reviewMinutes = document.getElementById(`editReviewMin_${examId}`).value;
           const reqSessions = document.getElementById(`editReqSessions_${examId}`).value;
           if (!examDate) { showToast('❌ 試験日を入力してください'); return; }
           await guardedAction('saveEditExam_' + examId, async () => {
               try {
-                  const res = await fetch(`${GAS_URL}?action=updateExamDate&examId=${encodeURIComponent(examId)}&examDate=${encodeURIComponent(examDate)}&period=${period}&reviewMinutes=${reviewMinutes}&requiredSessions=${reqSessions}`);
+                  const res = await fetch(`${GAS_URL}?action=updateExamDate&examId=${encodeURIComponent(examId)}&examDate=${encodeURIComponent(examDate)}&startTime=${encodeURIComponent(startTime)}&reviewMinutes=${reviewMinutes}&requiredSessions=${reqSessions}`);
                   const result = await res.json();
                   if (result.success) {
                       const exam = examListData.exams.find(e => e.examId === examId);
-                      if (exam) { exam.examDate = examDate; exam.period = parseInt(period); exam.reviewMinutes = parseInt(reviewMinutes); exam.requiredSessions = reqSessions ? parseInt(reqSessions) : null; }
+                      if (exam) { exam.examDate = examDate; exam.startTime = startTime; exam.reviewMinutes = parseInt(reviewMinutes); exam.requiredSessions = reqSessions ? parseInt(reqSessions) : null; }
                       editingExamId = null;
                       renderApp();
                       showToast('✅ 学習計画を更新しました');
