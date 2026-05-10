@@ -293,3 +293,7 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 | 2026/05/11 | GAS: GPT採点プロンプト厳格化（逆・矛盾=0〜10点、意味の正確性で判定）（v62） |
 | 2026/05/11 | GAS: `geoMeanScore()` 追加・全スコアを算術平均→幾何平均（維持スコア）に変更（v63） |
 | 2026/05/11 | index.html・admin_liff.html: `averageScore`/`avgScore` → `sustainScore`・ラベル「平均点」→「維持スコア」 |
+| 2026/05/11 | index.html・admin_liff.html: SNSランキング機能追加（問題ごとのLIVEランキング・授業後セッションランキング）（v64〜65） |
+| 2026/05/11 | GAS: `getQuestionRanking(questionId)` / `getSessionRanking(sessionId)` 追加、`adminBroadcast` が questionId を返すよう変更 |
+| 2026/05/11 | GAS: `getActiveSession()` / `getInitData()` に currentQuestionId・currentQuestionText を追加 |
+| 2026/05/11 | demo.html: LIVEランキングカード・セッションランキングを静的デモデータで追加（授業中を想定、未回答者も「未回答」表示）|
