@@ -57,7 +57,7 @@
 | Project ID | `1dfHpjEjSigxTJbSnuER99IKDBROzZ-ZXJ2XPiNJMfDsUZ9idejL35Cq8` |
 | Web App URL（Webhook & API） | `https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec` |
 | Deploy ID（`clasp deploy -i` に指定） | `AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug` |
-| 現在のバージョン | v49（2026/05/09） |
+| 現在のバージョン | v61（2026/05/11） |
 
 ### Google Sheets（Spreadsheet ID: `15UpJAol2SayyiEQDyOdKYX02eQQ4pMH4gq4SssJrYT4`）
 
@@ -68,7 +68,7 @@
 | 問題マスタ | 問題ID, セッションID, 科目名, 授業回数, 経過分, 問題文, 模範解答, 出題時刻 |
 | 回答データ | 回答ID, 学生ID, セッションID, 問題ID, 科目名, 授業回数, 経過分, 回答テキスト, 正確性スコア, 回答時間(秒), 集中度スコア, 回答時刻 |
 | 科目マスタ | 科目名, 曜日, 学年, 学期（16科目, 学年4, spring） |
-| 試験日程 | 試験ID, 科目名, 試験日, 復習標準時間（分）, 作成日時, コマ, 復習必要コマ数 |
+| 試験日程 | 試験ID, 科目名, 試験日, 復習標準時間（分）, 作成日時, 開始時間（HH:mm文字列）, 復習必要コマ数 |
 | 学習計画 | 計画ID, userId, 試験ID, 科目名, セッションID, 授業回数, タイプ, 予定日, 所要時間（分）, 完了状態, 完了日時, リプラン回数 |
 
 ### Google Drive
@@ -121,9 +121,9 @@
 - `queryBySessionAndStudent(sessionId, userId)` — セッション×学生の回答詳細（問題文・模範解答付き）
 - `getLatestSessionData(userId)` — 直近終了セッションのサマリ
 - `getDashboardData(userId)` — 科目・セッション別集計（学生LIFF用、latestAnswerAt付き・科目を直近活動順でソート）
-- `getExamSchedule()` — 試験日程一覧（period・requiredSessions含む）
-- `addExamDate(subjectName, examDate, reviewMinutes, period, requiredSessions)` — 試験日程追加
-- `updateExamDate(examId, examDate, reviewMinutes, period, requiredSessions)` — 試験日程更新
+- `getExamSchedule()` — 試験日程一覧（startTime・requiredSessions含む）
+- `addExamDate(subjectName, examDate, reviewMinutes, startTime, requiredSessions)` — 試験日程追加
+- `updateExamDate(examId, examDate, reviewMinutes, startTime, requiredSessions)` — 試験日程更新
 - `deleteExamDate(examId)` — 試験日程削除
 - `generateStudyPlan(userId, examId, dailyAvailableHours)` — 学習計画生成（requiredSessionsで対象コマ数を制限）
 - `getStudyPlan(userId)` — 学習計画一覧取得
@@ -244,13 +244,14 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 ## 開発時の注意点
 
 1. **GASデプロイはDeploy IDを固定** — `clasp deploy -i <Deploy ID>` を使うこと。`-i` を省略すると新しいDeploy IDが生成され、LINE Webhook URLが変わる
-2. **GASファイルは .gitignore 対象** — `gas_main.js.js` / `gas_richmenu.js.js` はgit管理外。変更はclaspのみで反映
+2. **HTML変更は clasp push + git push の両方が必要** — `admin_liff.html` / `index.html` / `demo.html` はGitHub Pagesから配信される。clasp pushだけでは反映されない。`gas_main.js.js` / `gas_richmenu.js.js` はclaspのみでOK（.gitignore対象）
 3. **GASコールドスタート対策** — 初期化は必ず `getInitData()` 1回で行う。並列fetchは直列実行になりタイムアウトの原因になる
 4. **followイベントはhandleEventの先頭で処理** — `event.type !== 'message'` の前に書くこと
 5. **管理者コマンドはLINE User IDで判定** — `userId === CONFIG.ADMIN_USER_ID`
 6. **科目マスタのフィルタは ACTIVE_GRADE + ACTIVE_SEMESTER** — `getSubjectMaster()` / `getInitData()` 参照
 7. **LIFFキャッシュ** — LINE設定 → ストレージ → キャッシュ消去 で古いHTMLが表示される問題を解消できる
 8. **ダッシュボードフィルタはlocalStorage** — `FILTER_KEY = 'dashboardFilter'` で永続化。初回はactiveSemesterを自動適用
+9. **Sheets の時刻自動変換** — `appendRow` / `setValue` で "HH:mm" 文字列を書き込むと Sheets がDate型に自動変換する。書き込み前に `setNumberFormat('@STRING@')` を適用すること。読み取り時は `r[n] instanceof Date ? Utilities.formatDate(r[n], 'Asia/Tokyo', 'HH:mm') : String(r[n])` で文字列に戻す
 
 ---
 
@@ -281,3 +282,7 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 | 2026/05/09 | index.html・demo.html: 試験対策を横スクロール棒グラフ表示に変更・バータップで科目別編集画面へ遷移（v49） |
 | 2026/05/09 | index.html: Today/Tomorrow 学習スケジュールを科目・コマ番号・所要時間でまとめ表示（v48） |
 | 2026/05/09 | GAS: replanStudyForExam 追加・getTodayStudyItems に tomorrowItems 追加・getStudentsByGradeAndSemester に billingStatus 追加（v47〜49） |
+| 2026/05/11 | 試験日程のコマ番号表記を開始時間（HH:mm文字列）に変更。admin_liff・index・demo 全対応（v50〜61） |
+| 2026/05/11 | GAS: Sheets時刻自動変換バグ修正（getExamSchedule/addExamDate/updateExamDate） |
+| 2026/05/11 | admin_liff.html: 試験登録フォームのレイアウト整理（試験日+開始時間・復習時間+復習コマ数を横並び）・全入力欄中央揃え |
+| 2026/05/11 | demo.html: 表示科目を3科目に拡充・試験時間割グリッド追加・不要CSS削除 |
