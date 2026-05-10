@@ -418,6 +418,25 @@
   .latest-btn-label { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
   .latest-btn-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; }
 
+  /* 授業中ランキング */
+  .live-card { margin: 0 20px 16px; background: var(--surface); border: 1.5px solid var(--accent); border-radius: 16px; overflow: hidden; }
+  .live-card-header { background: var(--accent); padding: 10px 16px; display: flex; align-items: center; gap: 8px; }
+  .live-badge { background: #000; color: var(--accent); font-family: 'Syne',sans-serif; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 1px; }
+  .live-question { font-size: 13px; font-weight: 600; color: #000; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rank-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+  .rank-row:last-child { border-bottom: none; }
+  .rank-row.me { background: rgba(197,255,0,0.06); }
+  .rank-num { font-family: 'Syne',sans-serif; font-weight: 800; font-size: 15px; width: 22px; text-align: center; flex-shrink: 0; }
+  .rank-num.gold { color: #ffd700; }
+  .rank-num.silver { color: #b0b8c1; }
+  .rank-num.bronze { color: #cd7f32; }
+  .rank-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: var(--surface2); flex-shrink: 0; }
+  .rank-info { flex: 1; min-width: 0; }
+  .rank-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rank-sub { font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .rank-score { font-family: 'Syne',sans-serif; font-size: 18px; font-weight: 800; flex-shrink: 0; }
+  .rank-empty { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
   /* 直近授業ポップアップ */
   .latest-popup { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: flex-end; }
   .latest-popup.open { display: flex; }
@@ -479,6 +498,11 @@ let tomorrowStudyItems = [];
 let selectedExamId = null;
 let studyPlanData = null;
 
+// ランキング
+let activeSessionState = null;   // getActiveSession() の結果
+let questionRankingData = null;  // getQuestionRanking() の結果
+let rankingPollTimer = null;
+
 // ===== 初期化 =====
 async function init() {
   try {
@@ -489,7 +513,10 @@ async function init() {
     userId = profile.userId;
     profileData = profile;
 
-    dashboardData = await fetchDashboard(userId);
+    [dashboardData] = await Promise.all([
+      fetchDashboard(userId),
+      refreshActiveSession(),
+    ]);
 
     // 今日の学習項目を取得（計画がなければ空配列）
     try {
@@ -500,14 +527,112 @@ async function init() {
     } catch (e) { todayStudyItems = []; tomorrowStudyItems = []; }
 
     renderApp();
+    startRankingPoll();
   } catch (err) {
     showError(err.message);
   }
 }
 
+async function refreshActiveSession() {
+  try {
+    const r = await fetch(`${GAS_URL}?action=getActiveSession`);
+    activeSessionState = await r.json();
+  } catch (e) { activeSessionState = { isActive: false }; }
+}
+
+function startRankingPoll() {
+  if (rankingPollTimer) clearInterval(rankingPollTimer);
+  rankingPollTimer = setInterval(async () => {
+    const prevQId = activeSessionState?.session?.currentQuestionId;
+    await refreshActiveSession();
+    const curQId = activeSessionState?.session?.currentQuestionId;
+    if (curQId) {
+      try {
+        const r = await fetch(`${GAS_URL}?action=getQuestionRanking&questionId=${encodeURIComponent(curQId)}`);
+        questionRankingData = await r.json();
+      } catch (e) {}
+    } else {
+      questionRankingData = null;
+    }
+    // 問題が切り替わったか授業状態が変わったときのみ再描画
+    if (curQId !== prevQId || !activeSessionState?.isActive) renderApp();
+    else updateRankingCard();
+  }, 5000);
+}
+
 async function fetchDashboard(uid) {
   const res = await fetch(`${GAS_URL}?action=getDashboard&userId=${encodeURIComponent(uid)}`);
   return await res.json();
+}
+
+// ===== ランキング描画 =====
+function rankNumClass(r) { return r === 1 ? 'gold' : r === 2 ? 'silver' : r === 3 ? 'bronze' : ''; }
+
+function buildRankRowHTML(item, highlightUserId) {
+  const isMe = item.userId === highlightUserId;
+  const numCls = rankNumClass(item.rank);
+  const scoreColor = item.concentrationScore >= 70 ? 'var(--accent)' : item.concentrationScore >= 40 ? '#ffd666' : 'var(--accent3)';
+  return `
+    <div class="rank-row${isMe ? ' me' : ''}">
+      <div class="rank-num ${numCls}">${item.rank}</div>
+      <img class="rank-avatar" src="${item.pictureUrl}" onerror="this.style.display='none'" />
+      <div class="rank-info">
+        <div class="rank-name">${item.displayName}${isMe ? ' 👤' : ''}</div>
+        <div class="rank-sub">${item.answerText ? item.answerText.slice(0, 40) + (item.answerText.length > 40 ? '…' : '') : ''}</div>
+      </div>
+      <div class="rank-score" style="color:${scoreColor}">${item.concentrationScore}</div>
+    </div>`;
+}
+
+function buildSessionRankRowHTML(item, highlightUserId) {
+  const isMe = item.userId === highlightUserId;
+  const numCls = rankNumClass(item.rank);
+  const scoreColor = item.sustainScore >= 70 ? 'var(--accent)' : item.sustainScore >= 40 ? '#ffd666' : 'var(--accent3)';
+  return `
+    <div class="rank-row${isMe ? ' me' : ''}">
+      <div class="rank-num ${numCls}">${item.rank}</div>
+      <img class="rank-avatar" src="${item.pictureUrl}" onerror="this.style.display='none'" />
+      <div class="rank-info">
+        <div class="rank-name">${item.displayName}${isMe ? ' 👤' : ''}</div>
+        <div class="rank-sub">${item.answerCount}問回答</div>
+      </div>
+      <div class="rank-score" style="color:${scoreColor}">${item.sustainScore}</div>
+    </div>`;
+}
+
+function buildLiveRankingCardHTML() {
+  if (!activeSessionState?.isActive) return '';
+  const sess = activeSessionState.session;
+  if (!sess.currentQuestionId) {
+    return `<div class="live-card">
+      <div class="live-card-header">
+        <span class="live-badge">NOW</span>
+        <span class="live-question">${sess.subject} 第${sess.sessionNumber}回 授業中</span>
+      </div>
+      <div class="rank-empty">出題中の問題はありません</div>
+    </div>`;
+  }
+  const rows = questionRankingData?.ranking || [];
+  const rowsHTML = rows.length > 0
+    ? rows.map(item => buildRankRowHTML(item, userId)).join('')
+    : '<div class="rank-empty">まだ誰も回答していません</div>';
+  return `<div class="live-card" id="liveRankCard">
+    <div class="live-card-header">
+      <span class="live-badge">LIVE</span>
+      <span class="live-question">${sess.currentQuestionText || '問題出題中'}</span>
+    </div>
+    ${rowsHTML}
+  </div>`;
+}
+
+function updateRankingCard() {
+  const el = document.getElementById('liveRankCard');
+  if (!el) return;
+  const rows = questionRankingData?.ranking || [];
+  const rowsHTML = rows.length > 0
+    ? rows.map(item => buildRankRowHTML(item, userId)).join('')
+    : '<div class="rank-empty">まだ誰も回答していません</div>';
+  el.innerHTML = el.firstElementChild.outerHTML + rowsHTML;
 }
 
 // ===== レンダリング =====
@@ -561,6 +686,8 @@ function renderApp() {
         `).join('')}
       </div>
     </div>
+
+    ${buildLiveRankingCardHTML()}
 
     ${renderTodaySection()}
 
@@ -864,12 +991,12 @@ async function checkLatestSession() {
     }
     const scoreColor = data.sustainScore >= 70 ? 'var(--accent)' : data.sustainScore >= 40 ? '#ffd666' : 'var(--accent3)';
     content.innerHTML = `
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px">
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">${data.subject}</div>
         <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px">第${data.sessionNumber}回授業</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div style="text-align:center">
-            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">集中度スコア</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">維持スコア</div>
             <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:${scoreColor}">${data.sustainScore}</div>
           </div>
           <div style="text-align:center">
@@ -878,8 +1005,23 @@ async function checkLatestSession() {
           </div>
         </div>
       </div>
-      <div style="font-size:12px;color:var(--text-muted);text-align:center">詳細は下の「授業詳細」から確認できます</div>
+      <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;margin-bottom:8px">クラスランキング</div>
+      <div id="sessionRankingArea" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div class="rank-empty">読み込み中...</div>
+      </div>
     `;
+    // セッションランキングを非同期で取得
+    try {
+      const rr = await fetch(`${GAS_URL}?action=getSessionRanking&sessionId=${encodeURIComponent(data.sessionId)}`);
+      const rd = await rr.json();
+      const area = document.getElementById('sessionRankingArea');
+      if (area) {
+        const rows = rd.ranking || [];
+        area.innerHTML = rows.length > 0
+          ? rows.map(item => buildSessionRankRowHTML(item, userId)).join('')
+          : '<div class="rank-empty">ランキングデータなし</div>';
+      }
+    } catch (e) {}
   } catch (e) {
     content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)">データ取得に失敗しました</div>';
   }
