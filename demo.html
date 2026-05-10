@@ -674,6 +674,8 @@ const DEMO_QUESTION_RANKING = [
   { rank: 3, displayName: '鈴木 健太',  avatar: '📘', concentrationScore: 75, answerText: '10mm前後', isMe: false },
   { rank: 4, displayName: '田中 美咲',  avatar: '🌿', concentrationScore: 68, answerText: '約11mmだと思います', isMe: false },
   { rank: 5, displayName: '渡辺 直人',  avatar: '🔖', concentrationScore: 55, answerText: '歯冠の長さは平均で10mm程度と記憶しています', isMe: false },
+  { rank: null, displayName: '高橋 優',   avatar: '⭐', concentrationScore: null, answerText: null, isMe: false },
+  { rank: null, displayName: '小林 麻衣', avatar: '🎀', concentrationScore: null, answerText: null, isMe: false },
 ];
 
 const DEMO_SESSION_RANKING = [
@@ -701,19 +703,20 @@ function formatDuration(min) {
 function rankNumClass(r) { return r === 1 ? 'gold' : r === 2 ? 'silver' : r === 3 ? 'bronze' : ''; }
 
 function buildDemoRankRowHTML(item) {
+  const unanswered = item.concentrationScore === null;
   const numCls = rankNumClass(item.rank);
   const score = item.concentrationScore;
   const scoreColor = score >= 70 ? 'var(--accent)' : score >= 40 ? 'var(--warning)' : 'var(--danger)';
   const answerSlice = item.answerText ? item.answerText.slice(0, 40) + (item.answerText.length > 40 ? '…' : '') : '';
   return `
-    <div class="rank-row${item.isMe ? ' me' : ''}">
-      <div class="rank-num ${numCls}">${item.rank}</div>
+    <div class="rank-row${item.isMe ? ' me' : ''}${unanswered ? '' : ''}">
+      <div class="rank-num ${numCls}">${unanswered ? '—' : item.rank}</div>
       <div class="rank-avatar">${item.avatar}</div>
       <div class="rank-info">
         <div class="rank-name">${item.displayName}${item.isMe ? ' 👤' : ''}</div>
-        <div class="rank-sub">${answerSlice}</div>
+        <div class="rank-sub">${unanswered ? '未回答' : answerSlice}</div>
       </div>
-      <div class="rank-score" style="color:${scoreColor}">${score}</div>
+      <div class="rank-score" style="color:${unanswered ? 'var(--ink3)' : scoreColor};font-size:${unanswered ? '12px' : '18px'}">${unanswered ? '未回答' : score}</div>
     </div>`;
 }
 
@@ -874,13 +877,11 @@ function buildSessionsHTML() {
         <div class="session-score ${scoreClass(avg)}">${avg}</div>
       </div>`;
   }).join('');
-  const rankingHTML = selectedSubjectIdx === 0 ? buildDemoSessionRankingCardHTML() : '';
   return `
     <div class="detail-header">
       <button class="back-btn" onclick="goBack('subjects')">← 科目一覧</button>
       <div class="detail-title">${subj.name}</div>
     </div>
-    ${rankingHTML}
     <div class="section-label">授業一覧</div>
     ${html}`;
 }
