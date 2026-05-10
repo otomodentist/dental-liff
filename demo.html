@@ -252,6 +252,26 @@
       font-size: 11px; padding: 3px 8px; border-radius: 20px;
       background: #f0f0f0; color: #888; flex-shrink: 0;
     }
+
+    /* ===== ランキング ===== */
+    .live-card { margin: 0 16px 12px; background: var(--surface); border: 1.5px solid var(--accent); border-radius: 12px; overflow: hidden; }
+    .live-card-header { background: var(--accent); padding: 10px 16px; display: flex; align-items: center; gap: 8px; }
+    .live-badge { background: rgba(0,0,0,0.2); color: white; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 1px; }
+    .live-question { font-size: 13px; font-weight: 600; color: white; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rank-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-row.me { background: var(--accent-light); }
+    .rank-num { font-weight: 800; font-size: 15px; width: 22px; text-align: center; flex-shrink: 0; color: var(--ink2); }
+    .rank-num.gold { color: #c9a227; }
+    .rank-num.silver { color: #7a8a96; }
+    .rank-num.bronze { color: #8c5a2f; }
+    .rank-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent-light); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+    .rank-info { flex: 1; min-width: 0; }
+    .rank-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+    .rank-sub { font-size: 10px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+    .rank-score { font-size: 18px; font-weight: 800; flex-shrink: 0; }
+    .rank-empty { padding: 16px; text-align: center; font-size: 13px; color: var(--ink3); }
+    .rank-section-header { padding: 10px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
   </style>
 </head>
 <body>
@@ -641,6 +661,30 @@ const DEMO_PLAN_GROUPS = {
   ],
 };
 
+// ===== デモ ランキングデータ =====
+const DEMO_CURRENT_SESSION = {
+  subject: '口腔解剖学',
+  sessionNumber: 6,
+  currentQuestionText: '上顎中切歯の平均歯冠長を答えなさい'
+};
+
+const DEMO_QUESTION_RANKING = [
+  { rank: 1, displayName: '佐藤 花子',  avatar: '🌸', concentrationScore: 92, answerText: '約10.5mmです', isMe: false },
+  { rank: 2, displayName: '山田 太郎',  avatar: '👤', concentrationScore: 88, answerText: '10〜11mm程度', isMe: true  },
+  { rank: 3, displayName: '鈴木 健太',  avatar: '📘', concentrationScore: 75, answerText: '10mm前後', isMe: false },
+  { rank: 4, displayName: '田中 美咲',  avatar: '🌿', concentrationScore: 68, answerText: '約11mmだと思います', isMe: false },
+  { rank: 5, displayName: '渡辺 直人',  avatar: '🔖', concentrationScore: 55, answerText: '歯冠の長さは平均で10mm程度と記憶しています', isMe: false },
+];
+
+const DEMO_SESSION_RANKING = [
+  { rank: 1, displayName: '鈴木 健太',  avatar: '📘', sustainScore: 82, answerCount: 4, isMe: false },
+  { rank: 2, displayName: '山田 太郎',  avatar: '👤', sustainScore: 78, answerCount: 4, isMe: true  },
+  { rank: 3, displayName: '田中 美咲',  avatar: '🌿', sustainScore: 73, answerCount: 4, isMe: false },
+  { rank: 4, displayName: '佐藤 花子',  avatar: '🌸', sustainScore: 70, answerCount: 4, isMe: false },
+  { rank: 5, displayName: '高橋 優',    avatar: '⭐', sustainScore: 63, answerCount: 3, isMe: false },
+  { rank: 6, displayName: '渡辺 直人',  avatar: '🔖', sustainScore: 54, answerCount: 4, isMe: false },
+];
+
 // ===== 設定 =====
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec';
 const DEMO_LIFF_ID = '2009739219-dSnPUVFj';
@@ -651,6 +695,68 @@ function formatDuration(min) {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return m === 0 ? `${h}時間` : `${h}時間${m}分`;
+}
+
+// ===== ランキング =====
+function rankNumClass(r) { return r === 1 ? 'gold' : r === 2 ? 'silver' : r === 3 ? 'bronze' : ''; }
+
+function buildDemoRankRowHTML(item) {
+  const numCls = rankNumClass(item.rank);
+  const score = item.concentrationScore;
+  const scoreColor = score >= 70 ? 'var(--accent)' : score >= 40 ? 'var(--warning)' : 'var(--danger)';
+  const answerSlice = item.answerText ? item.answerText.slice(0, 40) + (item.answerText.length > 40 ? '…' : '') : '';
+  return `
+    <div class="rank-row${item.isMe ? ' me' : ''}">
+      <div class="rank-num ${numCls}">${item.rank}</div>
+      <div class="rank-avatar">${item.avatar}</div>
+      <div class="rank-info">
+        <div class="rank-name">${item.displayName}${item.isMe ? ' 👤' : ''}</div>
+        <div class="rank-sub">${answerSlice}</div>
+      </div>
+      <div class="rank-score" style="color:${scoreColor}">${score}</div>
+    </div>`;
+}
+
+function buildDemoSessionRankRowHTML(item) {
+  const numCls = rankNumClass(item.rank);
+  const score = item.sustainScore;
+  const scoreColor = score >= 70 ? 'var(--accent)' : score >= 40 ? 'var(--warning)' : 'var(--danger)';
+  return `
+    <div class="rank-row${item.isMe ? ' me' : ''}">
+      <div class="rank-num ${numCls}">${item.rank}</div>
+      <div class="rank-avatar">${item.avatar}</div>
+      <div class="rank-info">
+        <div class="rank-name">${item.displayName}${item.isMe ? ' 👤' : ''}</div>
+        <div class="rank-sub">${item.answerCount}問回答</div>
+      </div>
+      <div class="rank-score" style="color:${scoreColor}">${score}</div>
+    </div>`;
+}
+
+function buildDemoLiveRankingCardHTML() {
+  const rowsHTML = DEMO_QUESTION_RANKING.map(item => buildDemoRankRowHTML(item)).join('');
+  return `
+    <div class="live-card">
+      <div class="live-card-header">
+        <span class="live-badge">LIVE</span>
+        <span class="live-question">${DEMO_CURRENT_SESSION.subject} 第${DEMO_CURRENT_SESSION.sessionNumber}回 · ${DEMO_CURRENT_SESSION.currentQuestionText}</span>
+      </div>
+      ${rowsHTML}
+    </div>`;
+}
+
+function buildDemoSessionRankingCardHTML() {
+  const rowsHTML = DEMO_SESSION_RANKING.map(item => buildDemoSessionRankRowHTML(item)).join('');
+  const subj = DEMO_SUBJECTS[0]; // 口腔解剖学の最新授業
+  const latestSession = subj.sessions[subj.sessions.length - 1];
+  return `
+    <div style="margin:0 16px 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div class="rank-section-header">
+        <span style="font-size:13px;font-weight:700;color:var(--ink2)">クラスランキング</span>
+        <span style="font-size:11px;color:var(--ink3)">${subj.name} 第${latestSession.sessionNumber}回授業</span>
+      </div>
+      ${rowsHTML}
+    </div>`;
 }
 
 // ===== 状態 =====
@@ -722,6 +828,7 @@ function buildSubjectsHTML() {
       </div>`;
   }).join('');
   return `
+    ${buildDemoLiveRankingCardHTML()}
     <div class="section-label">科目一覧</div>
     ${html}
     <div class="section-label" style="margin-top:4px">試験対策</div>
@@ -767,11 +874,13 @@ function buildSessionsHTML() {
         <div class="session-score ${scoreClass(avg)}">${avg}</div>
       </div>`;
   }).join('');
+  const rankingHTML = selectedSubjectIdx === 0 ? buildDemoSessionRankingCardHTML() : '';
   return `
     <div class="detail-header">
       <button class="back-btn" onclick="goBack('subjects')">← 科目一覧</button>
       <div class="detail-title">${subj.name}</div>
     </div>
+    ${rankingHTML}
     <div class="section-label">授業一覧</div>
     ${html}`;
 }
