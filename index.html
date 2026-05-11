@@ -1005,13 +1005,20 @@ function drawTimelineChart(canvasId, timeline, instanceKey) {
     infoEl.className = 'chart-point-info'; // open クラスをリセット
   }
 
-  const points = timeline.map(t => ({ x: t.minutesElapsed, y: t.concentrationScore }));
+  // データをチャートポイント自体に埋め込む（onClick時にindexを経由せず直接取得）
+  const points = timeline.map(t => ({
+    x: t.minutesElapsed,
+    y: t.concentrationScore,
+    accuracyScore: t.accuracyScore,
+    responseTimeSec: t.responseTimeSec,
+  }));
 
   chartInstances[key] = new Chart(canvas, {
-    type: 'line',
+    type: 'scatter',
     data: {
       datasets: [{
         data: points,
+        showLine: true,
         borderColor: '#5de8b0',
         backgroundColor: 'rgba(93,232,176,0.08)',
         pointBackgroundColor: '#5de8b0',
@@ -1025,20 +1032,19 @@ function drawTimelineChart(canvasId, timeline, instanceKey) {
     },
     options: {
       ...CHART_DEFAULTS,
-      parsing: false,
       plugins: {
         legend: { display: false },
         tooltip: { enabled: false },
       },
-      onClick(event, elements) {
+      onClick(event, elements, chart) {
         if (!elements.length) return;
-        const t = timeline[elements[0].index];
-        const scoreColor = t.concentrationScore >= 70 ? 'var(--accent)' : t.concentrationScore >= 40 ? '#ffd666' : 'var(--accent3)';
+        const pt = chart.data.datasets[0].data[elements[0].index];
+        const scoreColor = pt.y >= 70 ? 'var(--accent)' : pt.y >= 40 ? '#ffd666' : 'var(--accent3)';
         infoEl.className = 'chart-point-info open';
         infoEl.innerHTML = `
-          <div class="chart-pi-time">${t.minutesElapsed}分経過</div>
-          <div class="chart-pi-score" style="color:${scoreColor}">${t.concentrationScore}<span style="font-size:12px;font-weight:400;color:var(--text-muted)"> / 100</span></div>
-          <div class="chart-pi-meta">正確性 ${t.accuracyScore ?? '-'}点 · 回答時間 ${t.responseTimeSec ?? '-'}秒</div>
+          <div class="chart-pi-time">${pt.x}分経過</div>
+          <div class="chart-pi-score" style="color:${scoreColor}">${pt.y}<span style="font-size:12px;font-weight:400;color:var(--text-muted)"> / 100</span></div>
+          <div class="chart-pi-meta">正確性 ${pt.accuracyScore ?? '-'}点 · 回答時間 ${pt.responseTimeSec ?? '-'}秒</div>
         `;
       },
       scales: {
