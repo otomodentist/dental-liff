@@ -535,21 +535,24 @@ let myNickname = '';
 
 // ===== 初期化 =====
 async function init() {
+  let step = 'liff.init';
   try {
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isLoggedIn()) { liff.login(); return; }
 
+    step = 'liff.getProfile';
     const profile = await liff.getProfile();
     userId = profile.userId;
     profileData = profile;
 
+    step = 'fetchDashboard';
     [dashboardData] = await Promise.all([
       fetchDashboard(userId),
       refreshActiveSession(),
       fetchNickname(userId),
     ]);
 
-    // 今日の学習項目を取得（計画がなければ空配列）
+    step = 'getTodayStudyItems';
     try {
       const r = await fetch(`${GAS_URL}?action=getTodayStudyItems&userId=${encodeURIComponent(userId)}`);
       const d = await r.json();
@@ -557,11 +560,12 @@ async function init() {
       tomorrowStudyItems = d.tomorrowItems || [];
     } catch (e) { todayStudyItems = []; tomorrowStudyItems = []; }
 
+    step = 'renderApp';
     renderApp();
     startRankingPoll();
     if (!myNickname) openNicknameModal();
   } catch (err) {
-    showError(err.message);
+    showError(`[${step}] ${err.message}`);
   }
 }
 
