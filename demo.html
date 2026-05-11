@@ -272,9 +272,30 @@
     .rank-score { font-size: 18px; font-weight: 800; flex-shrink: 0; }
     .rank-empty { padding: 16px; text-align: center; font-size: 13px; color: var(--ink3); }
     .rank-section-header { padding: 10px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+
+    /* ニックネームモーダル */
+    .nickname-modal { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;padding:24px; }
+    .nickname-modal.open { display:flex; }
+    .nickname-modal-card { background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;width:100%;max-width:380px; }
+    .nickname-modal-title { font-family:'Kaisei Tokumin',serif;font-size:18px;font-weight:700;margin-bottom:8px; }
+    .nickname-warning { font-size:12px;color:#c0392b;background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.2);border-radius:8px;padding:8px 12px;margin-bottom:16px;line-height:1.5; }
+    .nickname-input { width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--ink);font-size:15px;font-family:inherit;margin-bottom:14px;outline:none; }
+    .nickname-input:focus { border-color:var(--primary); }
+    .nickname-save-btn { width:100%;background:var(--primary);border:none;border-radius:10px;color:white;font-size:15px;font-weight:700;padding:13px;cursor:pointer;margin-bottom:10px; }
+    .nickname-skip-btn { width:100%;background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;padding:4px; }
   </style>
 </head>
 <body>
+
+<div id="demoNicknameModal" class="nickname-modal">
+  <div class="nickname-modal-card">
+    <div class="nickname-modal-title">ニックネームを設定</div>
+    <div class="nickname-warning">⚠️ 他の受講者が不快に感じるような表現は使用しないでください</div>
+    <input id="demoNicknameInput" class="nickname-input" type="text" maxlength="20" placeholder="例: タロ、ヒロシ" />
+    <button class="nickname-save-btn" onclick="saveDemoNickname()">保存する</button>
+    <button class="nickname-skip-btn" onclick="closeDemoNicknameModal()">あとで設定する</button>
+  </div>
+</div>
 
 <div id="pointDetailPopup" class="popup-overlay">
   <div class="popup-sheet">
@@ -294,7 +315,7 @@
 
 <script>
 // ===== サンプルデータ =====
-const DEMO_STUDENT = { name: '山田 太郎', grade: '3年生' };
+const DEMO_STUDENT = { name: '山田 太郎', nickname: 'ヤマタロ', grade: '3年生' };
 
 const DEMO_SUBJECTS = [
   {
@@ -669,22 +690,22 @@ const DEMO_CURRENT_SESSION = {
 };
 
 const DEMO_QUESTION_RANKING = [
-  { rank: 1, displayName: '佐藤 花子',  avatar: '🌸', concentrationScore: 92, answerText: '約10.5mmです', isMe: false },
-  { rank: 2, displayName: '山田 太郎',  avatar: '👤', concentrationScore: 88, answerText: '10〜11mm程度', isMe: true  },
-  { rank: 3, displayName: '鈴木 一郎',  avatar: '📘', concentrationScore: 75, answerText: '10mm前後', isMe: false },
-  { rank: 4, displayName: '田中 健二',  avatar: '🌿', concentrationScore: 68, answerText: '約11mmだと思います', isMe: false },
-  { rank: 5, displayName: '伊藤 次郎',  avatar: '🔖', concentrationScore: 55, answerText: '歯冠の長さは平均で10mm程度と記憶しています', isMe: false },
-  { rank: null, displayName: '高橋 三郎', avatar: '⭐', concentrationScore: null, answerText: null, isMe: false },
-  { rank: null, displayName: '中村 陽子', avatar: '🎀', concentrationScore: null, answerText: null, isMe: false },
+  { rank: 1, nickname: 'ハナコ',   displayName: '佐藤 花子',  avatar: '🌸', concentrationScore: 92, answerText: '約10.5mmです', isMe: false },
+  { rank: 2, nickname: 'ヤマタロ', displayName: '山田 太郎',  avatar: '👤', concentrationScore: 88, answerText: '10〜11mm程度', isMe: true  },
+  { rank: 3, nickname: 'イチロー',  displayName: '鈴木 一郎',  avatar: '📘', concentrationScore: 75, answerText: '10mm前後', isMe: false },
+  { rank: 4, nickname: 'ケンジ',   displayName: '田中 健二',  avatar: '🌿', concentrationScore: 68, answerText: '約11mmだと思います', isMe: false },
+  { rank: 5, nickname: 'ジロ',     displayName: '伊藤 次郎',  avatar: '🔖', concentrationScore: 55, answerText: '歯冠の長さは平均で10mm程度と記憶しています', isMe: false },
+  { rank: null, nickname: 'サブロー', displayName: '高橋 三郎', avatar: '⭐', concentrationScore: null, answerText: null, isMe: false },
+  { rank: null, nickname: 'ヨウコ',  displayName: '中村 陽子', avatar: '🎀', concentrationScore: null, answerText: null, isMe: false },
 ];
 
 const DEMO_SESSION_RANKING = [
-  { rank: 1, displayName: '鈴木 一郎',  avatar: '📘', sustainScore: 82, answerCount: 4, isMe: false },
-  { rank: 2, displayName: '山田 太郎',  avatar: '👤', sustainScore: 78, answerCount: 4, isMe: true  },
-  { rank: 3, displayName: '田中 健二',  avatar: '🌿', sustainScore: 73, answerCount: 4, isMe: false },
-  { rank: 4, displayName: '佐藤 花子',  avatar: '🌸', sustainScore: 70, answerCount: 4, isMe: false },
-  { rank: 5, displayName: '高橋 三郎',  avatar: '⭐', sustainScore: 63, answerCount: 3, isMe: false },
-  { rank: 6, displayName: '伊藤 次郎',  avatar: '🔖', sustainScore: 54, answerCount: 4, isMe: false },
+  { rank: 1, nickname: 'イチロー',  displayName: '鈴木 一郎',  avatar: '📘', sustainScore: 82, answerCount: 4, isMe: false },
+  { rank: 2, nickname: 'ヤマタロ', displayName: '山田 太郎',  avatar: '👤', sustainScore: 78, answerCount: 4, isMe: true  },
+  { rank: 3, nickname: 'ケンジ',   displayName: '田中 健二',  avatar: '🌿', sustainScore: 73, answerCount: 4, isMe: false },
+  { rank: 4, nickname: 'ハナコ',   displayName: '佐藤 花子',  avatar: '🌸', sustainScore: 70, answerCount: 4, isMe: false },
+  { rank: 5, nickname: 'サブロー', displayName: '高橋 三郎',  avatar: '⭐', sustainScore: 63, answerCount: 3, isMe: false },
+  { rank: 6, nickname: 'ジロ',     displayName: '伊藤 次郎',  avatar: '🔖', sustainScore: 54, answerCount: 4, isMe: false },
 ];
 
 // ===== 設定 =====
@@ -713,7 +734,7 @@ function buildDemoRankRowHTML(item) {
       <div class="rank-num ${numCls}">${unanswered ? '—' : item.rank}</div>
       <div class="rank-avatar">${item.avatar}</div>
       <div class="rank-info">
-        <div class="rank-name">${item.displayName}${item.isMe ? ' 👤' : ''}</div>
+        <div class="rank-name">${item.nickname || item.displayName}${item.isMe ? ' 👤' : ''}</div>
         <div class="rank-sub">${unanswered ? '未回答' : answerSlice}</div>
       </div>
       <div class="rank-score" style="color:${unanswered ? 'var(--ink3)' : scoreColor};font-size:${unanswered ? '12px' : '18px'}">${unanswered ? '未回答' : score}</div>
@@ -729,7 +750,7 @@ function buildDemoSessionRankRowHTML(item) {
       <div class="rank-num ${numCls}">${item.rank}</div>
       <div class="rank-avatar">${item.avatar}</div>
       <div class="rank-info">
-        <div class="rank-name">${item.displayName}${item.isMe ? ' 👤' : ''}</div>
+        <div class="rank-name">${item.nickname || item.displayName}${item.isMe ? ' 👤' : ''}</div>
         <div class="rank-sub">${item.answerCount}問回答</div>
       </div>
       <div class="rank-score" style="color:${scoreColor}">${score}</div>
@@ -765,6 +786,27 @@ function buildDemoSessionRankingCardHTML() {
 // ===== 状態 =====
 let demoUserId = null;
 let view = 'subjects'; // 'subjects' | 'sessions' | 'chart' | 'studyPlan'
+let demoNickname = localStorage.getItem('demo_nickname') || DEMO_STUDENT.nickname;
+
+function openDemoNicknameModal() {
+  const input = document.getElementById('demoNicknameInput');
+  if (input) input.value = demoNickname;
+  document.getElementById('demoNicknameModal').classList.add('open');
+}
+function closeDemoNicknameModal() {
+  document.getElementById('demoNicknameModal').classList.remove('open');
+}
+function saveDemoNickname() {
+  const val = (document.getElementById('demoNicknameInput').value || '').trim();
+  if (!val) { document.getElementById('demoNicknameInput').focus(); return; }
+  demoNickname = val;
+  localStorage.setItem('demo_nickname', val);
+  // ランキングデータの自分のエントリも更新
+  DEMO_QUESTION_RANKING.forEach(item => { if (item.isMe) item.nickname = val; });
+  DEMO_SESSION_RANKING.forEach(item => { if (item.isMe) item.nickname = val; });
+  closeDemoNicknameModal();
+  render();
+}
 let demoSelectedExamId = null;
 let selectedSubjectIdx = 0;
 let selectedSessionIdx = null;
@@ -793,7 +835,10 @@ function buildHTML() {
     <div class="profile-card">
       <div class="profile-avatar">👤</div>
       <div>
-        <div class="profile-name">${DEMO_STUDENT.name}</div>
+        <div class="username-row" style="display:flex;align-items:center;gap:6px">
+          <span class="profile-name">${demoNickname}</span>
+          <button onclick="openDemoNicknameModal()" style="background:none;border:none;font-size:13px;cursor:pointer;padding:0;color:#888">✏️</button>
+        </div>
         <div class="profile-meta">${DEMO_STUDENT.grade}</div>
       </div>
       <div class="demo-label">デモユーザー</div>

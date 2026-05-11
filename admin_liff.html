@@ -195,18 +195,31 @@
     }
     .toast.show { transform: translateX(-50%) translateY(0); }
 
-    .admin-rank-row { display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border); }
+    .admin-rank-row { display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer; }
     .admin-rank-row:last-child { border-bottom:none; }
+    .admin-rank-row:active { opacity:0.7; }
     .admin-rank-row.me { background:var(--accent-light); }
     .admin-rank-num { font-weight:800;font-size:15px;width:22px;text-align:center;flex-shrink:0;color:var(--ink3); }
     .admin-rank-num.gold { color:#c49a00; } .admin-rank-num.silver { color:#7a8a99; } .admin-rank-num.bronze { color:#9b6b3a; }
     .admin-rank-avatar { width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--surface2);flex-shrink:0; }
     .admin-rank-info { flex:1;min-width:0; }
     .admin-rank-name { font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .admin-rank-line { font-size:10px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px; }
     .admin-rank-answer { font-size:11px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px; }
     .admin-rank-scores { display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;gap:2px; }
     .admin-rank-main { font-weight:800;font-size:16px; }
     .admin-rank-sub { font-size:10px;color:var(--ink3); }
+    .student-line { font-size:11px;color:var(--ink3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+
+    /* 学生詳細パネル */
+    .student-panel-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:flex-end; }
+    .student-panel-overlay.open { display:flex; }
+    .student-panel { background:var(--surface);border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:85vh;overflow-y:auto; }
+    .student-panel-header { display:flex;align-items:center;gap:10px;margin-bottom:16px; }
+    .student-panel-avatar { width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--surface2);flex-shrink:0; }
+    .student-panel-avatar img { width:100%;height:100%;object-fit:cover; }
+    .student-panel-name { font-size:15px;font-weight:700;flex:1; }
+    .student-panel-close { background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer; }
 
     .tab-nav { display: flex; background: var(--accent); border-top: 1px solid rgba(255,255,255,0.15); }
     .tab-btn { flex: 1; padding: 10px 4px; background: none; border: none; color: rgba(255,255,255,0.6); font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
@@ -243,6 +256,20 @@
   <body>
     <div id="app">読み込み中...</div>
     <div id="toast" class="toast"></div>
+
+    <div id="studentPanelOverlay" class="student-panel-overlay" onclick="closeStudentDetailPanel(event)">
+      <div class="student-panel" onclick="event.stopPropagation()">
+        <div class="student-panel-header">
+          <div class="student-panel-avatar"><img id="studentPanelAvatar" src="" onerror="this.style.display='none'" /></div>
+          <div class="flex-col" style="flex:1;min-width:0">
+            <div class="student-panel-name" id="studentPanelName"></div>
+            <div class="student-line" id="studentPanelLine"></div>
+          </div>
+          <button class="student-panel-close" onclick="closeStudentDetailPanel()">✕</button>
+        </div>
+        <div id="studentPanelContent"><div class="empty-state">読み込み中...</div></div>
+      </div>
+    </div>
 
     <div id="pointDetailPopup" class="popup-overlay">
       <div class="popup-sheet">
@@ -285,6 +312,7 @@
       // ランキング
       let adminCurrentQuestionId = null;
       let adminRankingTimer = null;
+      let lastEndedSessionId = null;
 
       // ダッシュボード用
       let activeTab = 'session';
@@ -504,18 +532,20 @@
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 : `<button class='action-btn' style='background:var(--warning);color:white' onclick='openPauseModal()'>授業に集中させる</button>`
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               }
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             </div>
-            ${isSessionActive ? `
+            ${isSessionActive || lastEndedSessionId ? `
             <div class="section">
               <div class="section-header" style="display:flex;align-items:center;gap:8px">
                 <div class="section-num" style="background:#1a6bbd">7</div>
-                <div class="section-title">回答状況</div>
-                ${adminCurrentQuestionId ? '<div style="font-size:10px;color:var(--ink3);margin-left:auto">5秒ごとに自動更新</div>' : ''}
+                <div class="section-title">${isSessionActive ? '回答状況' : '授業終了 — セッションランキング'}</div>
+                ${isSessionActive && adminCurrentQuestionId ? '<div style="font-size:10px;color:var(--ink3);margin-left:auto">5秒ごとに自動更新</div>' : ''}
               </div>
               <div class="card" style="overflow:hidden">
                 <div id="adminRankingSection">
-                  ${adminCurrentQuestionId
-                    ? '<div style="padding:14px;font-size:13px;color:var(--ink3);text-align:center">読み込み中...</div>'
-                    : '<div style="padding:14px;font-size:13px;color:var(--ink3);text-align:center">問題が出題されると回答状況が表示されます</div>'}
+                  ${isSessionActive
+                    ? (adminCurrentQuestionId
+                        ? '<div style="padding:14px;font-size:13px;color:var(--ink3);text-align:center">読み込み中...</div>'
+                        : '<div style="padding:14px;font-size:13px;color:var(--ink3);text-align:center">問題が出題されると回答状況が表示されます</div>')
+                    : '<div style="padding:14px;font-size:13px;color:var(--ink3);text-align:center">読み込み中...</div>'}
                 </div>
               </div>
             </div>` : ''}
@@ -544,19 +574,40 @@
       // ===== ランキング =====
       function adminRankNumClass(r) { return r===1?'gold':r===2?'silver':r===3?'bronze':''; }
 
-      function buildAdminRankRowHTML(item) {
+      function buildAdminRankRowHTML(item, sessionId) {
         const cls = adminRankNumClass(item.rank);
         const scoreColor = item.concentrationScore>=70?'var(--accent)':item.concentrationScore>=40?'#b07d00':'#c0392b';
-        return `<div class="admin-rank-row">
+        const sid = sessionId || (activeSessionInfo && activeSessionInfo.sessionId) || '';
+        return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}')">
           <div class="admin-rank-num ${cls}">${item.rank}</div>
           <img class="admin-rank-avatar" src="${item.pictureUrl}" onerror="this.style.display='none'" />
           <div class="admin-rank-info">
-            <div class="admin-rank-name">${item.displayName}</div>
+            <div class="admin-rank-name">${item.nickname || item.displayName}</div>
+            ${item.nickname ? `<div class="admin-rank-line">${item.displayName}</div>` : ''}
             <div class="admin-rank-answer">${item.answerText ? item.answerText.slice(0,50)+(item.answerText.length>50?'…':'') : '（未回答）'}</div>
           </div>
           <div class="admin-rank-scores">
             <div class="admin-rank-main" style="color:${scoreColor}">${item.concentrationScore}</div>
             <div class="admin-rank-sub">正${item.accuracyScore} · ${item.responseTimeSec}秒</div>
+          </div>
+        </div>`;
+      }
+
+      function buildAdminSessionRankRowHTML(item, sessionId) {
+        const cls = adminRankNumClass(item.rank);
+        const scoreColor = item.sustainScore>=70?'var(--accent)':item.sustainScore>=40?'#b07d00':'#c0392b';
+        const sid = sessionId || '';
+        return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}')">
+          <div class="admin-rank-num ${cls}">${item.rank}</div>
+          <img class="admin-rank-avatar" src="${item.pictureUrl}" onerror="this.style.display='none'" />
+          <div class="admin-rank-info">
+            <div class="admin-rank-name">${item.nickname || item.displayName}</div>
+            ${item.nickname ? `<div class="admin-rank-line">${item.displayName}</div>` : ''}
+            <div class="admin-rank-answer">${item.answerCount}問回答</div>
+          </div>
+          <div class="admin-rank-scores">
+            <div class="admin-rank-main" style="color:${scoreColor}">${item.sustainScore}</div>
+            <div class="admin-rank-sub">維持スコア</div>
           </div>
         </div>`;
       }
@@ -596,9 +647,83 @@
         if (adminRankingTimer) { clearInterval(adminRankingTimer); adminRankingTimer = null; }
       }
 
+      async function fetchAndShowSessionRanking(sessionId) {
+        try {
+          const r = await fetch(`${GAS_URL}?action=getSessionRanking&sessionId=${encodeURIComponent(sessionId)}`);
+          const d = await r.json();
+          const el = document.getElementById('adminRankingSection');
+          if (!el) return;
+          const rows = d.ranking || [];
+          el.innerHTML = rows.length > 0
+            ? rows.map(item => buildAdminSessionRankRowHTML(item, sessionId)).join('')
+            : '<div style="padding:14px;font-size:13px;color:var(--ink3);text-align:center">回答データがありません</div>';
+        } catch (e) {}
+      }
+
+      async function openStudentDetailPanel(userId, sessionId) {
+        const overlay = document.getElementById('studentPanelOverlay');
+        const content = document.getElementById('studentPanelContent');
+        const nameEl  = document.getElementById('studentPanelName');
+        const lineEl  = document.getElementById('studentPanelLine');
+        const avatarEl = document.getElementById('studentPanelAvatar');
+
+        const student = studentListData && studentListData.students
+          ? studentListData.students.find(s => s.userId === userId) : null;
+        if (student) {
+          nameEl.textContent  = student.nickname || student.displayName || '学生';
+          lineEl.textContent  = student.nickname ? student.displayName : '';
+          avatarEl.src        = student.pictureUrl || '';
+        } else {
+          nameEl.textContent = '学生';
+          lineEl.textContent = '';
+          avatarEl.src = '';
+        }
+        content.innerHTML = '<div class="empty-state">読み込み中...</div>';
+        overlay.classList.add('open');
+
+        if (!sessionId) { content.innerHTML = '<div class="empty-state">セッションIDが不明です</div>'; return; }
+        try {
+          const r = await fetch(`${GAS_URL}?action=queryBySessionAndStudent&sessionId=${encodeURIComponent(sessionId)}&userId=${encodeURIComponent(userId)}`);
+          const d = await r.json();
+          const questions = d.questions || [];
+          if (questions.length === 0) {
+            content.innerHTML = '<div class="empty-state">この授業の回答データがありません</div>';
+            return;
+          }
+          const labels = questions.map((q, i) => `Q${i + 1}`);
+          const scores = questions.map(q => q.concentrationScore || 0);
+          const rows = questions.map((q, i) => `
+            <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+              <div style="font-size:11px;color:var(--ink3);margin-bottom:2px">Q${i+1} · 集中度 <strong style="color:${(q.concentrationScore||0)>=70?'var(--accent)':(q.concentrationScore||0)>=40?'#b07d00':'#c0392b'}">${q.concentrationScore||'—'}</strong></div>
+              <div style="font-size:12px;margin-bottom:2px">${q.questionText || ''}</div>
+              <div style="font-size:12px;color:var(--ink3)">${q.answerText || '（未回答）'}</div>
+            </div>`).join('');
+          content.innerHTML = `
+            <canvas id="studentPanelChart" style="margin-bottom:16px;max-height:180px"></canvas>
+            <div>${rows}</div>`;
+          setTimeout(() => {
+            const ctx = document.getElementById('studentPanelChart');
+            if (!ctx) return;
+            new Chart(ctx, {
+              type: 'bar',
+              data: { labels, datasets: [{ data: scores, backgroundColor: scores.map(s => s>=70?'#2ecc71':s>=40?'#f39c12':'#e74c3c'), borderRadius: 6 }] },
+              options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100, ticks: { color: '#888', font: { size: 10 } } }, x: { ticks: { color: '#888', font: { size: 10 } } } } }
+            });
+          }, 100);
+        } catch (e) {
+          content.innerHTML = '<div class="empty-state">データ取得失敗</div>';
+        }
+      }
+
+      function closeStudentDetailPanel(e) {
+        if (e && e.target !== document.getElementById('studentPanelOverlay')) return;
+        document.getElementById('studentPanelOverlay').classList.remove('open');
+      }
+
       async function switchTab(tab) {
           activeTab = tab;
           if (tab === 'session' && isSessionActive) startAdminRankingPoll();
+          else if (tab === 'session' && lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
           else stopAdminRankingPoll();
           if (tab === 'exam') {
               if (!examListData) {
@@ -739,7 +864,8 @@
                           ${s.pictureUrl ? `<img src="${s.pictureUrl}" alt="">` : '👤'}
                       </div>
                       <div class="student-info">
-                          <div class="student-name">${s.displayName || '名前なし'}</div>
+                          <div class="student-name">${s.nickname || s.displayName || '名前なし'}</div>
+                          ${s.nickname ? `<div class="student-line">${s.displayName}</div>` : ''}
                           <div class="student-meta" style="color:${statusColor}">${statusLabel}</div>
                       </div>
                       <div style="font-size:13px;color:var(--ink3)">▶</div>
@@ -773,7 +899,7 @@
 
       function renderStudentSessionsHTML() {
           const student = studentListData.students.find(s => s.userId === selectedStudentId);
-          const name = student ? (student.displayName || '名前なし') : '学生';
+          const name = student ? (student.nickname || student.displayName || '名前なし') : '学生';
 
           if (!studentSessionsData) {
               return `
@@ -854,7 +980,7 @@
 
       function renderSessionDetailHTML() {
           const student = studentListData.students.find(s => s.userId === selectedStudentId);
-          const studentName = student ? (student.displayName || '名前なし') : '学生';
+          const studentName = student ? (student.nickname || student.displayName || '名前なし') : '学生';
           const session = studentSessionsData && studentSessionsData.sessions
               ? studentSessionsData.sessions.find(s => s.sessionId === selectedSessionId)
               : null;
@@ -1093,11 +1219,13 @@
                   const res = await fetch(`${GAS_URL}?action=adminEndSession`);
                   const result = await res.json();
                   if (result.success) {
+                      lastEndedSessionId = activeSessionInfo ? activeSessionInfo.sessionId : null;
                       isSessionActive = false;
                       activeSessionInfo = null;
                       isDeliveryPaused = false;
                       adminCurrentQuestionId = null;
                       stopAdminRankingPoll();
+                      if (lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
                       showToast('✅ 授業を終了しました');
                       renderApp();
                   } else {
@@ -1196,7 +1324,8 @@
                       ${s.pictureUrl ? `<img src="${s.pictureUrl}" alt="">` : '👤'}
                   </div>
                   <div class="student-info">
-                      <div class="student-name">${s.displayName || '名前なし'}</div>
+                      <div class="student-name">${s.nickname || s.displayName || '名前なし'}</div>
+                      ${s.nickname ? `<div class="student-line">${s.displayName}</div>` : ''}
                       <div class="student-meta">${s.billingStatus}</div>
                   </div>
                   <button onclick="revokeAccess('${s.userId}')"
@@ -1211,7 +1340,8 @@
                       ${s.pictureUrl ? `<img src="${s.pictureUrl}" alt="">` : '👤'}
                   </div>
                   <div class="student-info">
-                      <div class="student-name">${s.displayName || '名前なし'}</div>
+                      <div class="student-name">${s.nickname || s.displayName || '名前なし'}</div>
+                      ${s.nickname ? `<div class="student-line">${s.displayName}</div>` : ''}
                       <div class="student-meta">未登録</div>
                   </div>
                   <button onclick="grantFreeAccess('${s.userId}')"

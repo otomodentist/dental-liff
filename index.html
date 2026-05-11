@@ -442,9 +442,36 @@
   .latest-popup.open { display: flex; }
   .latest-popup-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 20px 40px; width: 100%; }
   .latest-popup-close { float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+
+  /* ユーザー名エリア & ニックネーム編集 */
+  .username-row { display: flex; align-items: center; gap: 6px; }
+  .username { font-size: 16px; font-weight: 700; font-family: 'Syne', sans-serif; }
+  .edit-nick-btn { background: none; border: none; color: var(--text-muted); font-size: 13px; cursor: pointer; padding: 0; line-height: 1; }
+  .edit-nick-btn:active { opacity: 0.6; }
+
+  /* ニックネームモーダル */
+  .nickname-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; padding: 24px; }
+  .nickname-modal.open { display: flex; }
+  .nickname-modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 24px; width: 100%; max-width: 380px; }
+  .nickname-modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+  .nickname-warning { font-size: 12px; color: var(--accent3); background: rgba(255,107,138,0.1); border: 1px solid rgba(255,107,138,0.25); border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; line-height: 1.5; }
+  .nickname-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 15px; font-family: inherit; margin-bottom: 14px; outline: none; }
+  .nickname-input:focus { border-color: var(--accent); }
+  .nickname-save-btn { width: 100%; background: var(--accent); border: none; border-radius: 10px; color: #000; font-size: 15px; font-weight: 700; padding: 13px; cursor: pointer; margin-bottom: 10px; }
+  .nickname-skip-btn { width: 100%; background: none; border: none; color: var(--text-muted); font-size: 13px; cursor: pointer; padding: 4px; }
 </style>
 </head>
 <body>
+
+<div id="nicknameModal" class="nickname-modal">
+  <div class="nickname-modal-card">
+    <div class="nickname-modal-title">ニックネームを設定</div>
+    <div class="nickname-warning">⚠️ 他の受講者が不快に感じるような表現は使用しないでください</div>
+    <input id="nicknameInput" class="nickname-input" type="text" maxlength="20" placeholder="例: タロ、ヒロシ" />
+    <button class="nickname-save-btn" onclick="saveNickname()">保存する</button>
+    <button class="nickname-skip-btn" onclick="closeNicknameModal()">あとで設定する</button>
+  </div>
+</div>
 
 <div id="cancelModal" class="cancel-modal">
   <div class="cancel-modal-sheet">
@@ -503,6 +530,9 @@ let activeSessionState = null;   // getActiveSession() の結果
 let questionRankingData = null;  // getQuestionRanking() の結果
 let rankingPollTimer = null;
 
+// ニックネーム
+let myNickname = '';
+
 // ===== 初期化 =====
 async function init() {
   try {
@@ -516,6 +546,7 @@ async function init() {
     [dashboardData] = await Promise.all([
       fetchDashboard(userId),
       refreshActiveSession(),
+      fetchNickname(userId),
     ]);
 
     // 今日の学習項目を取得（計画がなければ空配列）
@@ -528,9 +559,41 @@ async function init() {
 
     renderApp();
     startRankingPoll();
+    if (!myNickname) openNicknameModal();
   } catch (err) {
     showError(err.message);
   }
+}
+
+async function fetchNickname(uid) {
+  try {
+    const r = await fetch(`${GAS_URL}?action=getNickname&userId=${encodeURIComponent(uid)}`);
+    const d = await r.json();
+    myNickname = d.nickname || '';
+  } catch (e) { myNickname = ''; }
+}
+
+function openNicknameModal() {
+  const modal = document.getElementById('nicknameModal');
+  const input = document.getElementById('nicknameInput');
+  if (input) input.value = myNickname || '';
+  modal.classList.add('open');
+}
+
+function closeNicknameModal() {
+  document.getElementById('nicknameModal').classList.remove('open');
+}
+
+async function saveNickname() {
+  const input = document.getElementById('nicknameInput');
+  const val = (input.value || '').trim();
+  if (!val) { input.focus(); return; }
+  try {
+    await fetch(`${GAS_URL}?action=setNickname&userId=${encodeURIComponent(userId)}&nickname=${encodeURIComponent(val)}`);
+    myNickname = val;
+    closeNicknameModal();
+    renderApp();
+  } catch (e) { alert('保存に失敗しました。もう一度お試しください。'); }
 }
 
 async function refreshActiveSession() {
@@ -577,7 +640,7 @@ function buildRankRowHTML(item, highlightUserId) {
       <div class="rank-num ${numCls}">${item.rank}</div>
       <img class="rank-avatar" src="${item.pictureUrl}" onerror="this.style.display='none'" />
       <div class="rank-info">
-        <div class="rank-name">${item.displayName}${isMe ? ' 👤' : ''}</div>
+        <div class="rank-name">${item.nickname || item.displayName}${isMe ? ' 👤' : ''}</div>
         <div class="rank-sub">${item.answerText ? item.answerText.slice(0, 40) + (item.answerText.length > 40 ? '…' : '') : ''}</div>
       </div>
       <div class="rank-score" style="color:${scoreColor}">${item.concentrationScore}</div>
@@ -593,7 +656,7 @@ function buildSessionRankRowHTML(item, highlightUserId) {
       <div class="rank-num ${numCls}">${item.rank}</div>
       <img class="rank-avatar" src="${item.pictureUrl}" onerror="this.style.display='none'" />
       <div class="rank-info">
-        <div class="rank-name">${item.displayName}${isMe ? ' 👤' : ''}</div>
+        <div class="rank-name">${item.nickname || item.displayName}${isMe ? ' 👤' : ''}</div>
         <div class="rank-sub">${item.answerCount}問回答</div>
       </div>
       <div class="rank-score" style="color:${scoreColor}">${item.sustainScore}</div>
@@ -648,7 +711,7 @@ function renderApp() {
           <div class="avatar"><img src="${profileData.pictureUrl}" onerror="this.style.display='none'" /></div>
           <div>
             <div class="greeting">こんにちは</div>
-            <div class="username">${profileData.displayName}</div>
+            <div class="username-row"><span class="username">${myNickname || profileData.displayName}</span><button class="edit-nick-btn" onclick="openNicknameModal()">✏️</button></div>
           </div>
         </div>
       </div>
