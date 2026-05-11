@@ -733,7 +733,7 @@ function renderApp() {
         <div class="avatar"><img src="${profileData.pictureUrl}" onerror="this.style.display='none'" /></div>
         <div>
           <div class="greeting">こんにちは</div>
-          <div class="username">${profileData.displayName}</div>
+          <div class="username-row"><span class="username">${myNickname || profileData.displayName}</span><button class="edit-nick-btn" onclick="openNicknameModal()">✏️</button></div>
         </div>
       </div>
       <div class="title-block">
