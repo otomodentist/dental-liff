@@ -1311,6 +1311,7 @@ async function initLiffAndRecord() {
     // LIFF未設定またはLIFF外からのアクセス → そのまま表示
   }
   render();
+  if (!localStorage.getItem('demo_nickname')) openDemoNicknameModal();
 }
 
 initLiffAndRecord();

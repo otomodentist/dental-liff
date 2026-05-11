@@ -545,6 +545,7 @@ let rankingPollTimer = null;
 
 // ニックネーム
 let myNickname = '';
+let myBillingStatus = '';
 
 // ===== 初期化 =====
 async function init() {
@@ -576,7 +577,8 @@ async function init() {
     step = 'renderApp';
     renderApp();
     startRankingPoll();
-    if (!myNickname) openNicknameModal();
+    const isPaid = myBillingStatus === '課金有効' || myBillingStatus === '管理者承認';
+    if (!myNickname && isPaid) openNicknameModal();
   } catch (err) {
     showError(`[${step}] ${err.message}`);
   }
@@ -587,7 +589,8 @@ async function fetchNickname(uid) {
     const r = await fetch(`${GAS_URL}?action=getNickname&userId=${encodeURIComponent(uid)}`);
     const d = await r.json();
     myNickname = d.nickname || '';
-  } catch (e) { myNickname = ''; }
+    myBillingStatus = d.billingStatus || '';
+  } catch (e) { myNickname = ''; myBillingStatus = ''; }
 }
 
 function openNicknameModal() {
