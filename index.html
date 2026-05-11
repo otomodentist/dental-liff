@@ -229,6 +229,19 @@
     height: 160px;
   }
 
+  .chart-point-info {
+    display: none;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-top: 8px;
+  }
+  .chart-point-info.open { display: block; }
+  .chart-pi-time { color: var(--text-muted); font-size: 11px; margin-bottom: 4px; }
+  .chart-pi-score { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 3px; }
+  .chart-pi-meta { color: var(--text-muted); font-size: 11px; }
+
   /* セッション一覧 */
   .session-list {
     display: flex;
@@ -980,20 +993,31 @@ function drawTimelineChart(canvasId, timeline, instanceKey) {
   const key = instanceKey || canvasId;
   if (chartInstances[key]) chartInstances[key].destroy();
 
-  const labels = ['0分', ...timeline.map(t => `${t.minutesElapsed}分`)];
-  const scores = [null, ...timeline.map(t => t.concentrationScore)];
+  // 情報パネルをcanvasの後に挿入（なければ作成）
+  const infoId = `${canvasId}-info`;
+  let infoEl = document.getElementById(infoId);
+  if (!infoEl) {
+    infoEl = document.createElement('div');
+    infoEl.id = infoId;
+    infoEl.className = 'chart-point-info';
+    canvas.parentNode.appendChild(infoEl);
+  } else {
+    infoEl.className = 'chart-point-info'; // open クラスをリセット
+  }
+
+  const points = timeline.map(t => ({ x: t.minutesElapsed, y: t.concentrationScore }));
 
   chartInstances[key] = new Chart(canvas, {
     type: 'line',
     data: {
-      labels,
       datasets: [{
-        data: scores,
+        data: points,
         borderColor: '#5de8b0',
         backgroundColor: 'rgba(93,232,176,0.08)',
         pointBackgroundColor: '#5de8b0',
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: 6,
+        pointHoverRadius: 9,
+        pointHitRadius: 20,
         borderWidth: 2,
         fill: true,
         tension: 0.4,
@@ -1001,9 +1025,36 @@ function drawTimelineChart(canvasId, timeline, instanceKey) {
     },
     options: {
       ...CHART_DEFAULTS,
+      parsing: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false },
+      },
+      onClick(event, elements) {
+        if (!elements.length) return;
+        const t = timeline[elements[0].index];
+        const scoreColor = t.concentrationScore >= 70 ? 'var(--accent)' : t.concentrationScore >= 40 ? '#ffd666' : 'var(--accent3)';
+        infoEl.className = 'chart-point-info open';
+        infoEl.innerHTML = `
+          <div class="chart-pi-time">${t.minutesElapsed}分経過</div>
+          <div class="chart-pi-score" style="color:${scoreColor}">${t.concentrationScore}<span style="font-size:12px;font-weight:400;color:var(--text-muted)"> / 100</span></div>
+          <div class="chart-pi-meta">正確性 ${t.accuracyScore ?? '-'}点 · 回答時間 ${t.responseTimeSec ?? '-'}秒</div>
+        `;
+      },
       scales: {
-        ...CHART_DEFAULTS.scales,
-        x: { ...CHART_DEFAULTS.scales.x, title: { display: true, text: '経過時間', color: '#5a6080', font: { size: 10 } } },
+        x: {
+          type: 'linear',
+          min: 0,
+          max: 90,
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#5a6080',
+            font: { size: 10 },
+            stepSize: 15,
+            callback: v => `${v}分`,
+          },
+          title: { display: true, text: '経過時間（分）', color: '#5a6080', font: { size: 10 } },
+        },
         y: { ...CHART_DEFAULTS.scales.y, title: { display: true, text: '集中度', color: '#5a6080', font: { size: 10 } } },
       },
     },

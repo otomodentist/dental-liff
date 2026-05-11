@@ -130,6 +130,11 @@
         display: flex; align-items: center; gap: 10px;
         background: var(--surface); margin: 12px 16px;
         padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border);
+        transition: background 0.3s, border-color 0.3s;
+    }
+    .status-bar.active-session {
+        background: rgba(34,197,94,0.1);
+        border-color: rgba(34,197,94,0.4);
     }
     .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
     .status-dot.active  { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.2); }
@@ -314,6 +319,22 @@
       let adminRankingTimer = null;
       let lastEndedSessionId = null;
 
+      // 自動終了タイマー
+      let autoEndTimer = null;
+      function scheduleAutoEnd(sessionStartTimeEpoch) {
+          clearAutoEndTimer();
+          const endAt = sessionStartTimeEpoch + 90 * 60 * 1000;
+          const remaining = endAt - Date.now();
+          if (remaining > 0) {
+              autoEndTimer = setTimeout(endSession, remaining);
+          } else {
+              endSession();
+          }
+      }
+      function clearAutoEndTimer() {
+          if (autoEndTimer) { clearTimeout(autoEndTimer); autoEndTimer = null; }
+      }
+
       // ダッシュボード用
       let activeTab = 'session';
       let studentListData = null;
@@ -366,7 +387,12 @@
                     localStorage.setItem(FILTER_KEY, JSON.stringify(dashboardFilter));
                 }
                 renderApp();
-                if (isSessionActive) startAdminRankingPoll();
+                if (isSessionActive) {
+                    startAdminRankingPoll();
+                    if (activeSessionInfo && activeSessionInfo.sessionStartTimeEpoch) {
+                        scheduleAutoEnd(activeSessionInfo.sessionStartTimeEpoch);
+                    }
+                }
           } catch (err) {
                 showError(err.message);
           }
@@ -382,7 +408,7 @@
               <div class="header-label">Admin Panel</div>
               <div class="header-title">授業管理パネル</div>
               <div class="tab-nav">
-                <button class="tab-btn ${activeTab === 'session' ? 'active' : ''}" onclick="switchTab('session')">授業管理</button>
+                <button class="tab-btn ${activeTab === 'session' ? 'active' : ''}" onclick="switchTab('session')">問題配信</button>
                 <button class="tab-btn ${activeTab === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">ダッシュボード</button>
                 <button class="tab-btn ${activeTab === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">登録管理</button>
                 <button class="tab-btn ${activeTab === 'exam' ? 'active' : ''}" onclick="switchTab('exam')">学習計画</button>
@@ -428,7 +454,7 @@
                                                       </div>
                                                             <button class="btn-semester-change" onclick="openSessionSemesterEdit()">変更</button>
                                                                 </div>
-                                                                    <div class="status-bar">
+                                                                    <div class="status-bar ${isSessionActive ? 'active-session' : ''}">
                                                                           <div class="status-dot ${isSessionActive ? 'active' : 'inactive'}"></div>
                                                                                 <div class="status-text">
                                                                                         ${isSessionActive
@@ -559,7 +585,7 @@
               <div class="header-label">Admin Panel</div>
               <div class="header-title">授業管理パネル</div>
               <div class="tab-nav">
-                <button class="tab-btn ${activeTabName === 'session' ? 'active' : ''}" onclick="switchTab('session')">授業管理</button>
+                <button class="tab-btn ${activeTabName === 'session' ? 'active' : ''}" onclick="switchTab('session')">問題配信</button>
                 <button class="tab-btn ${activeTabName === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">ダッシュボード</button>
                 <button class="tab-btn ${activeTabName === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">登録管理</button>
                 <button class="tab-btn ${activeTabName === 'exam' ? 'active' : ''}" onclick="switchTab('exam')">学習計画</button>
@@ -1200,7 +1226,9 @@
                   const result = await res.json();
                   if (result.success) {
                       isSessionActive   = true;
-                      activeSessionInfo = { subject: selectedSubject, sessionNumber: selectedSession };
+                      const startEpoch = result.sessionStartTimeEpoch || Date.now();
+                      activeSessionInfo = { subject: selectedSubject, sessionNumber: selectedSession, sessionStartTimeEpoch: startEpoch };
+                      scheduleAutoEnd(startEpoch);
                       selectedDay = selectedSubject = selectedSession = null;
                       showToast(`✅ ${activeSessionInfo.subject} 第${activeSessionInfo.sessionNumber}回 開始しました`);
                       renderApp();
@@ -1214,6 +1242,7 @@
       }
 
       async function endSession() {
+          clearAutoEndTimer();
           await guardedAction('endSession', async () => {
               try {
                   const res = await fetch(`${GAS_URL}?action=adminEndSession`);
