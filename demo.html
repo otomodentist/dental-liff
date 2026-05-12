@@ -289,12 +289,11 @@
 
 <div id="demoNicknameModal" class="nickname-modal">
   <div class="nickname-modal-card">
-    <div class="nickname-modal-title">ニックネームを設定</div>
-    <div style="font-size:12px;color:var(--ink3);margin-bottom:14px">ランキング表示時に他のユーザーに表示されます</div>
+    <div class="nickname-modal-title" id="nicknameModalTitle">ユーザーネームを設定</div>
+    <input id="demoNicknameInput" class="nickname-input" type="text" maxlength="20" placeholder="例: ぽんすけ、タロ" />
     <div class="nickname-warning">⚠️ 他の受講者が不快に感じるような表現は使用しないでください</div>
-    <input id="demoNicknameInput" class="nickname-input" type="text" maxlength="20" placeholder="例: タロ、ヒロシ" />
-    <button class="nickname-save-btn" onclick="saveDemoNickname()">決定</button>
-    <div style="text-align:center;font-size:11px;color:var(--ink3);margin-top:8px">ユーザーネームは後から変更できます</div>
+    <div id="nicknameFirstNote" style="text-align:center;font-size:11px;color:var(--ink3);margin-top:10px;margin-bottom:2px">ユーザーネームは後から変更できます</div>
+    <button class="nickname-save-btn" id="nicknameSaveBtn" onclick="saveDemoNickname()" style="margin-top:14px">登録</button>
   </div>
 </div>
 
@@ -789,10 +788,14 @@ let demoUserId = null;
 let view = 'subjects'; // 'subjects' | 'sessions' | 'chart' | 'studyPlan'
 let demoNickname = localStorage.getItem('demo_nickname') || DEMO_STUDENT.nickname;
 
-function openDemoNicknameModal() {
+function openDemoNicknameModal(isFirst) {
   const input = document.getElementById('demoNicknameInput');
-  if (input) input.value = demoNickname;
+  if (input) input.value = isFirst ? '' : demoNickname;
+  document.getElementById('nicknameModalTitle').textContent = isFirst ? 'ユーザーネームを設定' : 'ユーザーネームを変更';
+  document.getElementById('nicknameSaveBtn').textContent = isFirst ? '登録' : '決定';
+  document.getElementById('nicknameFirstNote').style.display = isFirst ? 'block' : 'none';
   document.getElementById('demoNicknameModal').classList.add('open');
+  setTimeout(() => { if (input) input.focus(); }, 100);
 }
 function closeDemoNicknameModal() {
   document.getElementById('demoNicknameModal').classList.remove('open');
@@ -838,7 +841,7 @@ function buildHTML() {
       <div>
         <div class="username-row" style="display:flex;align-items:center;gap:6px">
           <span class="profile-name">${demoNickname}</span>
-          <button onclick="openDemoNicknameModal()" style="background:none;border:none;font-size:13px;cursor:pointer;padding:0;color:#888">編集</button>
+          <button onclick="openDemoNicknameModal(false)" style="background:none;border:none;font-size:13px;cursor:pointer;padding:0;color:#888">編集</button>
         </div>
         <div class="profile-meta">${DEMO_STUDENT.grade}</div>
       </div>
@@ -856,24 +859,23 @@ function scoreClass(s) {
   return s >= 70 ? 'score-high' : s >= 40 ? 'score-mid' : 'score-low';
 }
 
+function geoMean(scores) {
+  if (!scores.length) return 0;
+  const logSum = scores.reduce((s, v) => s + Math.log(Math.max(v, 1)), 0);
+  return Math.round(Math.exp(logSum / scores.length));
+}
 function buildSubjectsHTML() {
-  const avgAll = Math.round(
-    DEMO_SUBJECTS.reduce((sum, subj) => {
-      const allScores = subj.sessions.flatMap(s => s.answers.map(a => a.concentrationScore));
-      return sum + allScores.reduce((a, b) => a + b, 0) / allScores.length;
-    }, 0) / DEMO_SUBJECTS.length
-  );
   const html = DEMO_SUBJECTS.map((subj, idx) => {
     const allScores = subj.sessions.flatMap(s => s.answers.map(a => a.concentrationScore));
-    const avg = Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length);
+    const score = geoMean(allScores);
     return `
       <div class="subject-card" onclick="selectSubject(${idx})">
         <div class="subject-icon">${subj.icon}</div>
         <div style="flex:1">
           <div class="subject-name">${subj.name}</div>
-          <div class="subject-meta">${subj.sessions.length}回授業 / 平均集中度</div>
+          <div class="subject-meta">${subj.sessions.length}回授業 / 集中度スコア</div>
         </div>
-        <div class="subject-score ${scoreClass(avg)}">${avg}</div>
+        <div class="subject-score ${scoreClass(score)}">${score}</div>
       </div>`;
   }).join('');
   return `
