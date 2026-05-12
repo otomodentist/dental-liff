@@ -610,7 +610,8 @@ async function init() {
     const isPaid = myBillingStatus === '課金有効' || myBillingStatus === '管理者承認';
     if (!myNickname && isPaid) openNicknameModal();
   } catch (err) {
-    showError(`[${step}] ${err.message}`);
+    const detail = [err.code, err.name, err.status].filter(Boolean).join('/');
+    showError(`[${step}] ${err.message}${detail ? ' (' + detail + ')' : ''}`);
   }
 }
 
