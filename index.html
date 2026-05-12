@@ -575,7 +575,17 @@ async function init() {
     if (!liff.isLoggedIn()) { liff.login(); return; }
 
     step = 'liff.getProfile';
-    const profile = await liff.getProfile();
+    let profile;
+    try {
+      profile = await liff.getProfile();
+    } catch (profileErr) {
+      const idToken = liff.getDecodedIDToken();
+      if (idToken && idToken.sub) {
+        profile = { userId: idToken.sub, displayName: idToken.name || 'ユーザー', pictureUrl: idToken.picture || '' };
+      } else {
+        throw profileErr;
+      }
+    }
     userId = profile.userId;
     profileData = profile;
 
