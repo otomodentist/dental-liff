@@ -453,8 +453,15 @@
   /* 直近授業ポップアップ */
   .latest-popup { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: flex-end; }
   .latest-popup.open { display: flex; }
-  .latest-popup-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 20px 40px; width: 100%; }
+  .latest-popup-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 20px 40px; width: 100%; max-height: 80vh; overflow-y: auto; }
   .latest-popup-close { float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+
+  /* ユーザーグラフポップアップ */
+  .user-graph-popup { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 110; align-items: flex-end; }
+  .user-graph-popup.open { display: flex; }
+  .user-graph-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 20px 40px; width: 100%; max-height: 70vh; overflow-y: auto; }
+  .rank-row { cursor: pointer; }
+  .rank-row:active { background: rgba(0,0,0,0.04); }
 
   /* ユーザー名エリア & ニックネーム編集 */
   .username-row { display: flex; align-items: center; gap: 6px; }
@@ -513,6 +520,14 @@
   </div>
 </div>
 
+<div id="userGraphPopup" class="user-graph-popup">
+  <div class="user-graph-sheet">
+    <button class="latest-popup-close" onclick="closeUserGraphPopup()">✕</button>
+    <div id="userGraphTitle" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;margin-bottom:16px"></div>
+    <div id="userGraphContent" style="position:relative;height:220px"></div>
+  </div>
+</div>
+
 <div id="app">
   <div class="loading" id="loading">
     <div class="spinner"></div>
@@ -546,6 +561,11 @@ let rankingPollTimer = null;
 // ニックネーム
 let myNickname = '';
 let myBillingStatus = '';
+
+// ランキング個人グラフ
+let currentRankingSessionId = null;
+let currentRankingData = null;
+let userGraphChart = null;
 
 // ===== 初期化 =====
 async function init() {
@@ -672,7 +692,7 @@ function buildSessionRankRowHTML(item, highlightUserId) {
   const numCls = rankNumClass(item.rank);
   const scoreColor = item.sustainScore >= 70 ? 'var(--accent)' : item.sustainScore >= 40 ? '#ffd666' : 'var(--accent3)';
   return `
-    <div class="rank-row${isMe ? ' me' : ''}">
+    <div class="rank-row${isMe ? ' me' : ''}" onclick="openUserGraph('${item.userId}')">
       <div class="rank-num ${numCls}">${item.rank}</div>
       <img class="rank-avatar" src="${item.pictureUrl}" onerror="this.style.display='none'" />
       <div class="rank-info">
@@ -1138,17 +1158,20 @@ async function checkLatestSession() {
       </div>
     `;
     // セッションランキングを非同期で取得
+    currentRankingSessionId = data.sessionId;
     try {
       const rr = await fetch(`${GAS_URL}?action=getSessionRanking&sessionId=${encodeURIComponent(data.sessionId)}`);
       const rd = await rr.json();
+      currentRankingData = rd.ranking || [];
       const area = document.getElementById('sessionRankingArea');
       if (area) {
-        const rows = rd.ranking || [];
-        area.innerHTML = rows.length > 0
-          ? rows.map(item => buildSessionRankRowHTML(item, userId)).join('')
+        area.innerHTML = currentRankingData.length > 0
+          ? currentRankingData.map(item => buildSessionRankRowHTML(item, userId)).join('')
           : '<div class="rank-empty">ランキングデータなし</div>';
       }
-    } catch (e) {}
+    } catch (e) {
+      currentRankingData = [];
+    }
   } catch (e) {
     content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)">データ取得に失敗しました</div>';
   }
@@ -1156,6 +1179,61 @@ async function checkLatestSession() {
 
 function closeLatestPopup() {
   document.getElementById('latestPopup').classList.remove('open');
+}
+
+async function openUserGraph(targetUserId) {
+  if (!currentRankingSessionId) return;
+  const popup = document.getElementById('userGraphPopup');
+  const titleEl = document.getElementById('userGraphTitle');
+  const content = document.getElementById('userGraphContent');
+  const rankItem = (currentRankingData || []).find(i => i.userId === targetUserId);
+  const name = rankItem ? (rankItem.nickname || rankItem.displayName) : '学生';
+  titleEl.textContent = `${name} の集中度グラフ`;
+  content.innerHTML = '<canvas id="userGraphCanvas"></canvas>';
+  popup.classList.add('open');
+  try {
+    const r = await fetch(`${GAS_URL}?action=queryBySessionAndStudent&sessionId=${encodeURIComponent(currentRankingSessionId)}&userId=${encodeURIComponent(targetUserId)}`);
+    const data = await r.json();
+    const answers = data.answers || [];
+    if (userGraphChart) { userGraphChart.destroy(); userGraphChart = null; }
+    if (answers.length === 0) {
+      content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">回答データなし</div>';
+      return;
+    }
+    const chartData = [{x: 0, y: null}, ...answers.map(a => ({x: a.minutesElapsed, y: a.concentrationScore}))];
+    userGraphChart = new Chart(document.getElementById('userGraphCanvas'), {
+      type: 'line',
+      data: {
+        datasets: [{
+          data: chartData,
+          borderColor: '#2d5a3d',
+          backgroundColor: 'rgba(45,90,61,0.08)',
+          pointBackgroundColor: [null, ...answers.map(a => a.answered ? '#2d5a3d' : '#aaa')],
+          pointRadius: 8,
+          hitRadius: 20,
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { type: 'linear', min: 0, max: 90, ticks: { callback: v => `${v}分`, stepSize: 15, font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+          y: { min: 0, max: 100, ticks: { stepSize: 25, font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        },
+      },
+    });
+  } catch (e) {
+    titleEl.textContent = 'データ取得に失敗しました';
+  }
+}
+
+function closeUserGraphPopup() {
+  document.getElementById('userGraphPopup').classList.remove('open');
+  if (userGraphChart) { userGraphChart.destroy(); userGraphChart = null; }
 }
 
 // ===== 今日・明日の学習セクション =====
