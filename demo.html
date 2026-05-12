@@ -497,6 +497,27 @@ const DEMO_SUBJECTS = [
             answerText: '上顎第一大臼歯の近心舌側咬頭' },
         ]
       },
+      {
+        sessionNumber: 6, avgScore: 76, answerCount: 4,
+        answers: [
+          { minutesElapsed: 13, accuracyScore: 88, concentrationScore: 88, responseTimeSec: 30,
+            questionText: '歯根膜の主線維で最も多いのは？',
+            modelAnswer: '斜走線維（oblique fibers）で、全主線維の約70%を占める',
+            answerText: '斜走線維が最も多く約70%' },
+          { minutesElapsed: 37, accuracyScore: 70, concentrationScore: 63, responseTimeSec: 78,
+            questionText: '乳歯の歯式（上下左右）を答えよ',
+            modelAnswer: '乳中切歯・乳側切歯・乳犬歯・第一乳臼歯・第二乳臼歯（各象限5本、計20本）',
+            answerText: '各象限5本で合計20本' },
+          { minutesElapsed: 65, accuracyScore: 90, concentrationScore: 85, responseTimeSec: 42,
+            questionText: 'エナメル小柱の走行方向を述べよ',
+            modelAnswer: 'エナメル質表面から歯髄方向に向かってほぼ垂直に走行し、頸部では歯根方向に傾く',
+            answerText: '歯髄に向かってほぼ垂直に走行する' },
+          { minutesElapsed: 84, accuracyScore: 58, concentrationScore: 47, responseTimeSec: 125,
+            questionText: 'ヒトの永久歯の総数を答えよ',
+            modelAnswer: '32本（智歯4本を含む）、智歯欠如の場合は28本',
+            answerText: '28本から32本' },
+        ]
+      },
     ]
   },
   {
@@ -755,8 +776,9 @@ const DEMO_PLAN_GROUPS = {
 // ===== デモ ランキングデータ =====
 const DEMO_CURRENT_SESSION = {
   subject: '口腔解剖学',
-  sessionNumber: 6,
-  currentQuestionText: '上顎中切歯の平均歯冠長を答えなさい'
+  sessionNumber: 7,
+  currentQuestionText: '上顎中切歯の平均歯冠長を答えなさい',
+  currentModelAnswer: '平均約10mm（歯冠長の基準値：上顎中切歯 10〜11mm）'
 };
 
 const DEMO_QUESTION_RANKING = [
@@ -837,7 +859,14 @@ function buildDemoLiveRankingCardHTML() {
     <div class="live-card" style="padding-bottom:0;overflow:hidden">
       <div class="live-card-header">
         <span class="live-badge">LIVE</span>
-        <span class="live-question">${DEMO_CURRENT_SESSION.subject} 第${DEMO_CURRENT_SESSION.sessionNumber}回 · ${DEMO_CURRENT_SESSION.currentQuestionText}</span>
+        <span class="live-question">${DEMO_CURRENT_SESSION.subject} 第${DEMO_CURRENT_SESSION.sessionNumber}回</span>
+      </div>
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
+        <div style="font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:4px">出題中の問題</div>
+        <div style="font-size:13px;font-weight:600;color:var(--ink)">${DEMO_CURRENT_SESSION.currentQuestionText}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:6px;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;line-height:1.5">
+          <span style="font-weight:700">模範解答：</span>${DEMO_CURRENT_SESSION.currentModelAnswer}
+        </div>
       </div>
       ${rowsHTML}
       ${toggleBtn}
@@ -896,11 +925,17 @@ let expandedSessionNum = null;
 let demoCharts = {};
 
 // ===== レンダリング =====
+let demoTopChart = null;
 function render() {
+  closePopup();
+  if (demoTopChart) { demoTopChart.destroy(); demoTopChart = null; }
   const app = document.getElementById('app');
   app.innerHTML = buildHTML();
   if (view === 'chart' && selectedSessionIdx !== null) {
     setTimeout(drawChart, 80);
+  }
+  if (view === 'subjects' && mainTab === 'dashboard') {
+    setTimeout(drawTopChart, 80);
   }
 }
 
@@ -982,19 +1017,38 @@ function buildSubjectsHTML() {
       </button>
     </div>`;
   }
+  // 直近授業（口腔解剖学 第6回）チャートカード
+  const latestSubj = DEMO_SUBJECTS[0];
+  const latestSess = latestSubj.sessions[latestSubj.sessions.length - 1];
+  const topChartCard = `
+    <div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">直近授業</div>
+          <div style="font-size:14px;font-weight:700;color:var(--ink);margin-top:2px">${latestSubj.name}　第${latestSess.sessionNumber}回</div>
+        </div>
+        <div style="font-size:11px;color:var(--ink3)">${latestSess.answers.length}問回答</div>
+      </div>
+      <div style="height:190px;position:relative;padding:8px 8px 4px"><canvas id="demoTopChartCanvas"></canvas></div>
+      <div id="demoTopPointInfo" style="display:none;margin:0 12px 10px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:12px"></div>
+    </div>`;
+
   // 科目ごとにセッションをグループ化（管理画面ダッシュボード仕様）
   const subjectGroupsHTML = DEMO_SUBJECTS.map((subj, subjectIdx) =>
-    `<div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">${subj.name}</div>` +
+    `<div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">${subj.name}</div>` +
     subj.sessions.slice().reverse().map((sess, i) => {
       const score = geoMean(sess.answers.map(a => a.concentrationScore));
       const realIdx = subj.sessions.length - 1 - i;
       return `
-        <div class="student-item" onclick="selectSessionFromDashboard(${subjectIdx},${realIdx})">
-          <div class="student-info">
-            <div class="student-name">第${sess.sessionNumber}回授業</div>
-            <div class="student-meta">${sess.answers.length}問回答</div>
+        <div style="margin:0 16px 6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="selectSessionFromDashboard(${subjectIdx},${realIdx})">
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:700;color:var(--ink)">第${sess.sessionNumber}回授業</div>
+            <div style="font-size:11px;color:var(--ink3);margin-top:2px">${sess.answers.length}問回答</div>
           </div>
-          <div class="student-score ${scoreClass(score)}">${score}</div>
+          <div style="text-align:right">
+            <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">集中度スコア</div>
+            <div style="font-size:20px;font-weight:700" class="${scoreClass(score)}">${score}</div>
+          </div>
         </div>`;
     }).join('')
   ).join('');
@@ -1002,8 +1056,9 @@ function buildSubjectsHTML() {
   return `
     ${tabBar}
     ${buildDemoLiveRankingCardHTML()}
-    <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">授業履歴</div>
-    <div class="student-list">${subjectGroupsHTML}</div>
+    ${topChartCard}
+    <div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">授業履歴</div>
+    <div>${subjectGroupsHTML}</div>
     <div style="height:16px"></div>`;
 }
 
@@ -1138,6 +1193,58 @@ function showPointDetail(idx) {
 
 function closePopup() {
   document.getElementById('pointDetailPopup').classList.remove('open');
+}
+
+function drawTopChart() {
+  const canvas = document.getElementById('demoTopChartCanvas');
+  if (!canvas) return;
+  const latestSubj = DEMO_SUBJECTS[0];
+  const sess = latestSubj.sessions[latestSubj.sessions.length - 1];
+  const answers = sess.answers;
+  demoTopChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      datasets: [{
+        data: answers.map(a => ({ x: a.minutesElapsed, y: a.concentrationScore })),
+        borderColor: '#2d5a3d',
+        backgroundColor: 'rgba(45,90,61,0.08)',
+        pointBackgroundColor: answers.map(() => '#2d5a3d'),
+        pointRadius: 8, pointHoverRadius: 10,
+        borderWidth: 2, fill: true, tension: 0.3,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false },
+      },
+      scales: {
+        x: { type: 'linear', min: 0, max: 90, ticks: { font: { size: 10 }, stepSize: 15, callback: v => `${v}分` }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        y: { min: 0, max: 100, ticks: { font: { size: 10 }, stepSize: 25 }, grid: { color: 'rgba(0,0,0,0.05)' } },
+      },
+      onClick: (e, elements) => {
+        if (elements.length === 0) return;
+        const idx = elements[0].index;
+        const a = answers[idx];
+        const infoEl = document.getElementById('demoTopPointInfo');
+        if (!infoEl) return;
+        infoEl.style.display = 'block';
+        infoEl.innerHTML = `
+          <div style="font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:4px">問${idx+1}（${a.minutesElapsed}分経過）</div>
+          <div style="color:var(--ink);margin-bottom:4px">${a.questionText}</div>
+          <div style="color:var(--ink3);font-size:11px;margin-bottom:4px"><span style="font-weight:700">模範解答：</span>${a.modelAnswer}</div>
+          <div style="color:var(--ink2);font-size:11px"><span style="font-weight:700">あなたの回答：</span>${a.answerText}</div>
+          <div style="margin-top:6px;display:flex;gap:8px">
+            <span style="background:var(--accent-light);color:var(--accent);font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px">集中度 ${a.concentrationScore}</span>
+            <span style="background:var(--surface);border:1px solid var(--border);font-size:11px;color:var(--ink3);padding:2px 8px;border-radius:4px">回答 ${a.responseTimeSec}秒</span>
+          </div>`;
+        // ポイントの色を更新
+        demoTopChart.data.datasets[0].pointBackgroundColor = answers.map((_, i) => i === idx ? '#e65c00' : '#2d5a3d');
+        demoTopChart.update('none');
+      },
+    },
+  });
 }
 
 function selectSessionFromDashboard(subjectIdx, sessionIdx) {
