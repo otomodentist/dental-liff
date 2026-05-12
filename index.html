@@ -7,478 +7,214 @@
 <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Kaisei+Tokumin:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet" />
 
 <style>
   :root {
-    --bg: #0a0c10;
-    --surface: #12151c;
-    --surface2: #1a1e28;
-    --border: #252a38;
-    --accent: #5de8b0;
-    --accent2: #4da6ff;
-    --accent3: #ff6b8a;
-    --text: #e8eaf2;
-    --text-muted: #5a6080;
-    --text-dim: #8890b0;
+    --bg: #f5f0e8;
+    --surface: #ffffff;
+    --surface2: #faf7f2;
+    --border: #e0d8cc;
+    --accent: #2d5a3d;
+    --accent-light: #e8f2eb;
+    --ink: #1a1208;
+    --ink2: #4a3f2f;
+    --ink3: #8a7a68;
+    --text: #1a1208;
+    --text-muted: #8a7a68;
+    --text-dim: #4a3f2f;
+    --accent2: #1a6bbd;
+    --accent3: #c0392b;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
+    padding-bottom: 40px;
   }
 
   /* ヘッダー */
-  .header {
-    padding: 20px 20px 0;
-    position: relative;
-  }
+  .header { background: var(--accent); color: white; padding: 16px 20px 12px; }
+  .header-label { font-size: 10px; opacity: 0.7; letter-spacing: 0.1em; }
+  .header-title { font-family: 'Kaisei Tokumin', serif; font-size: 18px; font-weight: 700; color: white; flex: 1; }
 
-  .header-top {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 4px;
-  }
-
-  .avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-
-  .avatar img { width: 100%; height: 100%; object-fit: cover; }
-
-  .greeting { font-size: 13px; color: var(--text-dim); }
-  .username { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
-
-  .title-block {
-    margin: 20px 20px 0;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .title-label {
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--accent);
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-
-  .title-main {
-    font-family: 'Syne', sans-serif;
-    font-size: 26px;
-    font-weight: 800;
-    line-height: 1.1;
-  }
+  /* タブナビ */
+  .tab-nav { display: flex; background: var(--accent); border-top: 1px solid rgba(255,255,255,0.15); padding-bottom: 6px; }
+  .tab-btn { flex: 1; padding: 10px 4px; background: none; border: none; color: rgba(255,255,255,0.6); font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .tab-btn.active { color: white; border-bottom-color: white; font-weight: 700; }
 
   /* ローディング */
-  .loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 60vh;
-    gap: 16px;
-  }
-
-  .spinner {
-    width: 40px; height: 40px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
+  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; gap: 16px; }
+  .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* 科目タブ */
-  .tabs-wrapper {
-    padding: 20px 20px 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .tabs-wrapper::-webkit-scrollbar { display: none; }
-
-  .tabs {
-    display: flex;
-    gap: 8px;
-    min-width: max-content;
-  }
-
-  .tab {
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 500;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text-dim);
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .tab.active {
-    background: var(--accent);
-    color: #000;
-    border-color: var(--accent);
-    font-weight: 700;
-  }
+  /* 科目タブ（横スクロールピル） */
+  .subj-tabs-wrapper { padding: 12px 16px 0; overflow-x: auto; scrollbar-width: none; }
+  .subj-tabs-wrapper::-webkit-scrollbar { display: none; }
+  .subj-tabs { display: flex; gap: 8px; min-width: max-content; }
+  .subj-tab { padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; border: 1px solid var(--border); background: transparent; color: var(--ink3); cursor: pointer; transition: all 0.2s; white-space: nowrap; font-family: inherit; }
+  .subj-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
 
   /* サマリーカード */
-  .summary-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    padding: 16px 20px;
-  }
-
-  .summary-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 16px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .summary-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-  }
-
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 16px 0; }
+  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; position: relative; overflow: hidden; }
+  .summary-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
   .summary-card.accent1::before { background: var(--accent); }
   .summary-card.accent2::before { background: var(--accent2); }
   .summary-card.accent3::before { background: var(--accent3); }
-  .summary-card.accent4::before { background: #ffd666; }
-
-  .summary-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-    letter-spacing: 0.5px;
-  }
-
-  .summary-value {
-    font-family: 'Syne', sans-serif;
-    font-size: 28px;
-    font-weight: 800;
-    line-height: 1;
-  }
-
-  .summary-unit {
-    font-size: 13px;
-    font-weight: 400;
-    color: var(--text-dim);
-    margin-left: 3px;
-  }
+  .summary-card.accent4::before { background: #d97706; }
+  .summary-label { font-size: 11px; color: var(--ink3); margin-bottom: 4px; font-weight: 600; letter-spacing: 0.05em; }
+  .summary-value { font-size: 26px; font-weight: 700; color: var(--ink); line-height: 1; margin-top: 4px; }
+  .summary-unit { font-size: 13px; font-weight: 400; color: var(--ink3); margin-left: 2px; }
 
   /* セクション */
-  .section {
-    padding: 0 20px 20px;
-  }
-
-  .section-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
+  .section { padding: 0 16px 16px; }
+  .section-title { font-size: 12px; font-weight: 700; color: var(--ink3); letter-spacing: 0.05em; margin-bottom: 10px; padding-top: 14px; }
 
   /* チャート */
-  .chart-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-
-  .chart-card-title {
-    font-size: 13px;
-    color: var(--text-dim);
-    margin-bottom: 12px;
-  }
-
-  .chart-card-title span {
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    font-size: 16px;
-    color: var(--text);
-    display: block;
-  }
-
-  .chart-wrap {
-    position: relative;
-    height: 160px;
-  }
-
-  .chart-point-info {
-    display: none;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 12px;
-    margin-top: 8px;
-  }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; overflow: hidden; }
+  .chart-card-title { font-size: 13px; color: var(--ink3); margin-bottom: 10px; }
+  .chart-card-title span { font-weight: 700; font-size: 15px; color: var(--ink); display: block; }
+  .chart-wrap { position: relative; height: 160px; }
+  .chart-point-info { display: none; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-top: 8px; }
   .chart-point-info.open { display: block; }
-  .chart-pi-time { color: var(--text-muted); font-size: 11px; margin-bottom: 4px; }
-  .chart-pi-score { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 3px; }
-  .chart-pi-meta { color: var(--text-muted); font-size: 11px; }
+  .chart-pi-time { color: var(--ink3); font-size: 11px; margin-bottom: 4px; }
+  .chart-pi-score { font-size: 22px; font-weight: 700; margin-bottom: 3px; }
+  .chart-pi-meta { color: var(--ink3); font-size: 11px; }
 
   /* セッション一覧 */
-  .session-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .session-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-  }
-
-  .session-item.expanded {
-    border-color: var(--accent);
-    background: var(--surface2);
-  }
-
+  .session-list { display: flex; flex-direction: column; gap: 8px; }
+  .session-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+  .session-item.expanded { border-color: var(--accent); background: var(--accent-light); }
   .session-item:active { opacity: 0.8; }
-
   .session-info { flex: 1; }
-
-  .session-name {
-    font-family: 'Syne', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 2px;
-  }
-
-  .session-meta {
-    font-size: 12px;
-    color: var(--text-dim);
-  }
-
-  .session-score {
-    text-align: right;
-  }
-
-  .score-badge {
-    font-family: 'Syne', sans-serif;
-    font-size: 22px;
-    font-weight: 800;
-  }
-
+  .session-name { font-size: 14px; font-weight: 700; margin-bottom: 2px; color: var(--ink); }
+  .session-meta { font-size: 12px; color: var(--ink3); }
+  .session-score { text-align: right; }
+  .score-badge { font-size: 22px; font-weight: 700; }
   .score-badge.high { color: var(--accent); }
-  .score-badge.mid { color: #ffd666; }
+  .score-badge.mid { color: #d97706; }
   .score-badge.low { color: var(--accent3); }
-
-  .score-label {
-    font-size: 10px;
-    color: var(--text-muted);
-  }
-
-  /* セッション詳細チャート */
-  .session-detail {
-    display: none;
-    padding: 12px 0 4px;
-    border-top: 1px solid var(--border);
-    margin-top: 12px;
-  }
-
+  .score-label { font-size: 10px; color: var(--ink3); }
+  .session-detail { display: none; padding: 12px 0 4px; border-top: 1px solid var(--border); margin-top: 12px; }
   .session-detail.open { display: block; }
-
-  .session-detail-wrap {
-    position: relative;
-    height: 120px;
-  }
+  .session-detail-wrap { position: relative; height: 120px; }
 
   /* エラー */
-  .error-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--text-dim);
-  }
-
+  .error-state { text-align: center; padding: 40px 20px; color: var(--ink3); }
   .error-state .icon { font-size: 40px; margin-bottom: 12px; }
 
   /* フッター余白 */
   .footer-pad { height: 40px; }
 
-  /* アカウント管理セクション */
-  .account-section {
-    padding: 0 20px 20px;
-    margin-top: 8px;
-  }
-  .account-section-title {
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    font-weight: 600;
-    margin-bottom: 12px;
-  }
-  .cancel-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 14px;
-    background: rgba(255,107,138,0.12);
-    border: 1px solid rgba(255,107,138,0.4);
-    border-radius: 14px;
-    color: var(--accent3);
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
+  /* アカウント管理 */
+  .account-section { padding: 0 16px 20px; margin-top: 8px; }
+  .account-section-title { font-size: 11px; letter-spacing: 0.05em; color: var(--ink3); font-weight: 700; margin-bottom: 12px; padding-top: 14px; }
+  .cancel-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.3); border-radius: 12px; color: var(--accent3); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; }
   .cancel-btn:active { opacity: 0.8; }
 
   /* 解約確認モーダル */
-  .cancel-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: flex-end; }
+  .cancel-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; }
   .cancel-modal.open { display: flex; }
-  .cancel-modal-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 24px 20px 40px; width: 100%; }
-  .cancel-modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; margin-bottom: 16px; color: var(--accent3); }
-  .cancel-modal-body { font-size: 14px; color: var(--text-dim); line-height: 1.7; margin-bottom: 24px; }
+  .cancel-modal-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 24px 20px max(40px,env(safe-area-inset-bottom)); width: 100%; }
+  .cancel-modal-title { font-family: 'Kaisei Tokumin', serif; font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--accent3); }
+  .cancel-modal-body { font-size: 14px; color: var(--ink2); line-height: 1.7; margin-bottom: 24px; }
   .cancel-modal-body ul { padding-left: 20px; margin-top: 8px; }
   .cancel-modal-btns { display: flex; gap: 10px; }
-  .cancel-modal-btns .btn-keep { flex: 1; padding: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; }
-  .cancel-modal-btns .btn-confirm-cancel { flex: 1; padding: 14px; background: var(--accent3); border: none; border-radius: 12px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .cancel-modal-btns .btn-keep { flex: 1; padding: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .cancel-modal-btns .btn-confirm-cancel { flex: 1; padding: 14px; background: var(--accent3); border: none; border-radius: 12px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
 
-  /* 今日の学習セクション */
-  .today-section { padding: 14px 20px; border-bottom: 1px solid var(--border); }
-  .today-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 10px; }
+  /* 今日の学習 */
+  .today-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .today-label { font-size: 11px; letter-spacing: 0.05em; color: var(--accent); font-weight: 700; margin-bottom: 10px; }
   .today-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
   .today-item.done { opacity: 0.45; }
   .today-item-info { flex: 1; }
-  .today-item-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-  .today-item-meta { font-size: 11px; color: var(--text-muted); }
-  .today-complete-btn { background: var(--accent); border: none; border-radius: 8px; color: #000; font-size: 12px; font-weight: 700; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
-  .today-complete-btn:disabled { background: var(--surface2); color: var(--text-muted); cursor: default; }
+  .today-item-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; color: var(--ink); }
+  .today-item-meta { font-size: 11px; color: var(--ink3); }
+  .today-complete-btn { background: var(--accent); border: none; border-radius: 8px; color: white; font-size: 12px; font-weight: 700; padding: 6px 12px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+  .today-complete-btn:disabled { background: var(--surface2); color: var(--ink3); cursor: default; }
 
-  /* 試験対策セクション */
-  .exam-section { padding: 0 20px 20px; }
-  .exam-section-title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 12px; }
-  .exam-btn { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text); width: 100%; margin-bottom: 8px; }
-  .exam-btn.primary { background: rgba(93,232,176,0.12); border-color: rgba(93,232,176,0.4); color: var(--accent); }
+  /* 試験対策 */
+  .exam-section { padding: 0 16px 20px; }
+  .exam-section-title { font-size: 12px; font-weight: 700; color: var(--ink3); margin-bottom: 10px; padding-top: 14px; }
+  .exam-btn { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); font-size: 14px; font-weight: 600; cursor: pointer; color: var(--ink); width: 100%; margin-bottom: 8px; font-family: inherit; }
+  .exam-btn.primary { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
   .exam-btn.disabled { opacity: 0.4; cursor: default; }
-  .exam-btn-badge { font-size: 11px; background: var(--border); border-radius: 6px; padding: 2px 8px; color: var(--text-muted); }
-
+  .exam-btn-badge { font-size: 11px; background: var(--border); border-radius: 6px; padding: 2px 8px; color: var(--ink3); }
 
   /* 学習計画ビュー */
-  .plan-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; position: sticky; top: 0; background: var(--bg); z-index: 10; }
-  .plan-back-btn { background: none; border: none; color: var(--accent); font-size: 14px; font-weight: 600; cursor: pointer; padding: 0; }
-  .plan-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; }
-  .plan-exam-card { margin: 12px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .plan-header { padding: 14px 16px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  .plan-back-btn { background: none; border: none; color: var(--accent); font-size: 14px; font-weight: 600; cursor: pointer; padding: 0; font-family: inherit; }
+  .plan-title { font-family: 'Kaisei Tokumin', serif; font-size: 18px; font-weight: 700; color: var(--ink); }
+  .plan-exam-card { margin: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
   .plan-exam-header { padding: 12px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-  .plan-exam-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+  .plan-exam-name { font-size: 15px; font-weight: 700; color: var(--ink); }
   .plan-exam-date { font-size: 12px; color: var(--accent3); margin-top: 2px; }
-  .plan-generate-btn { background: var(--accent); border: none; border-radius: 8px; color: #000; font-size: 12px; font-weight: 700; padding: 6px 14px; cursor: pointer; }
+  .plan-generate-btn { background: var(--accent); border: none; border-radius: 8px; color: white; font-size: 12px; font-weight: 700; padding: 6px 14px; cursor: pointer; font-family: inherit; }
   .plan-item { padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
   .plan-item:last-child { border-bottom: none; }
-  .plan-item-date { font-size: 11px; color: var(--text-muted); width: 60px; flex-shrink: 0; }
+  .plan-item-date { font-size: 11px; color: var(--ink3); width: 60px; flex-shrink: 0; }
   .plan-item-info { flex: 1; }
-  .plan-item-name { font-size: 13px; font-weight: 600; }
-  .plan-item-type { font-size: 11px; color: var(--text-muted); }
+  .plan-item-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .plan-item-type { font-size: 11px; color: var(--ink3); }
   .plan-item.done .plan-item-name { text-decoration: line-through; opacity: 0.5; }
-  .plan-item-btn { background: var(--accent); border: none; border-radius: 8px; color: #000; font-size: 11px; font-weight: 700; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
-  .plan-item-btn.done { background: var(--surface2); color: var(--text-muted); cursor: default; }
-  .plan-alert { margin: 0 20px 12px; padding: 12px 16px; background: rgba(255,107,138,0.12); border: 1px solid rgba(255,107,138,0.3); border-radius: 12px; font-size: 13px; color: var(--accent3); }
+  .plan-item-btn { background: var(--accent); border: none; border-radius: 8px; color: white; font-size: 11px; font-weight: 700; padding: 5px 10px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+  .plan-item-btn.done { background: var(--surface2); color: var(--ink3); cursor: default; }
+  .plan-alert { margin: 0 16px 12px; padding: 12px 16px; background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.25); border-radius: 12px; font-size: 13px; color: var(--accent3); }
 
   /* 直近授業ボタン */
-  .latest-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 14px 16px;
-    margin: 0 20px 16px;
-    cursor: pointer;
-    width: calc(100% - 40px);
-    text-align: left;
-    transition: border-color 0.2s;
-  }
+  .latest-btn { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin: 12px 16px 0; cursor: pointer; width: calc(100% - 32px); text-align: left; transition: border-color 0.2s; font-family: inherit; }
   .latest-btn:active { opacity: 0.8; }
   .latest-btn-icon { font-size: 22px; }
   .latest-btn-text { flex: 1; }
-  .latest-btn-label { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
-  .latest-btn-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; }
+  .latest-btn-label { font-size: 11px; color: var(--ink3); margin-bottom: 2px; }
+  .latest-btn-title { font-size: 14px; font-weight: 700; color: var(--ink); }
 
   /* 授業中ランキング */
-  .live-card { margin: 0 20px 16px; background: var(--surface); border: 1.5px solid var(--accent); border-radius: 16px; overflow: hidden; }
+  .live-card { margin: 14px 16px 12px; background: var(--surface); border: 1.5px solid var(--accent); border-radius: 12px; overflow: hidden; }
   .live-card-header { background: var(--accent); padding: 10px 16px; display: flex; align-items: center; gap: 8px; }
-  .live-badge { background: #000; color: var(--accent); font-family: 'Syne',sans-serif; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 1px; }
-  .live-question { font-size: 13px; font-weight: 600; color: #000; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .rank-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+  .live-badge { background: rgba(255,255,255,0.2); color: white; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 1px; }
+  .live-question { font-size: 13px; font-weight: 600; color: white; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rank-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
   .rank-row:last-child { border-bottom: none; }
-  .rank-row.me { background: rgba(197,255,0,0.06); }
-  .rank-num { font-family: 'Syne',sans-serif; font-weight: 800; font-size: 15px; width: 22px; text-align: center; flex-shrink: 0; }
-  .rank-num.gold { color: #ffd700; }
-  .rank-num.silver { color: #b0b8c1; }
-  .rank-num.bronze { color: #cd7f32; }
+  .rank-row.me { background: var(--accent-light); }
+  .rank-row:active { background: var(--surface2); }
+  .rank-num { font-weight: 700; font-size: 15px; width: 22px; text-align: center; flex-shrink: 0; color: var(--ink2); }
+  .rank-num.gold { color: #c8960c; }
+  .rank-num.silver { color: #7a7a7a; }
+  .rank-num.bronze { color: #9a5a28; }
   .rank-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: var(--surface2); flex-shrink: 0; }
   .rank-info { flex: 1; min-width: 0; }
-  .rank-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .rank-sub { font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
-  .rank-score { font-family: 'Syne',sans-serif; font-size: 18px; font-weight: 800; flex-shrink: 0; }
-  .rank-empty { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+  .rank-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+  .rank-sub { font-size: 10px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .rank-score { font-size: 18px; font-weight: 700; flex-shrink: 0; }
+  .rank-empty { padding: 20px; text-align: center; color: var(--ink3); font-size: 13px; }
 
-  /* 直近授業ポップアップ */
-  .latest-popup { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: flex-end; }
+  /* ポップアップ */
+  .latest-popup { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: flex-end; }
   .latest-popup.open { display: flex; }
   .latest-popup-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 20px 40px; width: 100%; max-height: 80vh; overflow-y: auto; }
-  .latest-popup-close { float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
-
-  /* ユーザーグラフポップアップ */
-  .user-graph-popup { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 110; align-items: flex-end; }
+  .latest-popup-close { float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--ink3); }
+  .user-graph-popup { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 110; align-items: flex-end; }
   .user-graph-popup.open { display: flex; }
   .user-graph-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 20px 40px; width: 100%; max-height: 70vh; overflow-y: auto; }
-  .rank-row { cursor: pointer; }
-  .rank-row:active { background: rgba(0,0,0,0.04); }
-
-  /* ユーザー名エリア & ニックネーム編集 */
-  .username-row { display: flex; align-items: center; gap: 6px; }
-  .username { font-size: 16px; font-weight: 700; font-family: 'Syne', sans-serif; }
-  .edit-nick-btn { background: none; border: none; color: var(--text-muted); font-size: 13px; cursor: pointer; padding: 0; line-height: 1; }
-  .edit-nick-btn:active { opacity: 0.6; }
 
   /* ニックネームモーダル */
-  .nickname-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; padding: 24px; }
+  .nickname-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; justify-content: center; }
   .nickname-modal.open { display: flex; }
-  .nickname-modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 24px; width: 100%; max-width: 380px; }
-  .nickname-modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; margin-bottom: 8px; }
-  .nickname-warning { font-size: 12px; color: var(--accent3); background: rgba(255,107,138,0.1); border: 1px solid rgba(255,107,138,0.25); border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; line-height: 1.5; }
-  .nickname-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 15px; font-family: inherit; margin-bottom: 14px; outline: none; }
+  .nickname-modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px 20px 0 0; padding: 24px; width: 100%; max-width: 480px; padding-bottom: max(24px,env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto; }
+  .nickname-modal-title { font-family: 'Kaisei Tokumin', serif; font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
+  .nickname-warning { font-size: 12px; color: var(--accent3); background: rgba(192,57,43,0.07); border: 1px solid rgba(192,57,43,0.2); border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; line-height: 1.5; }
+  .nickname-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--ink); font-size: 15px; font-family: inherit; margin-bottom: 14px; outline: none; }
   .nickname-input:focus { border-color: var(--accent); }
-  .nickname-save-btn { width: 100%; background: var(--accent); border: none; border-radius: 10px; color: #000; font-size: 15px; font-weight: 700; padding: 13px; cursor: pointer; margin-bottom: 10px; }
-  .nickname-skip-btn { width: 100%; background: none; border: none; color: var(--text-muted); font-size: 13px; cursor: pointer; padding: 4px; }
+  .nickname-save-btn { width: 100%; background: var(--accent); border: none; border-radius: 10px; color: white; font-size: 15px; font-weight: 700; padding: 13px; cursor: pointer; margin-bottom: 10px; font-family: inherit; }
+  .nickname-skip-btn { width: 100%; background: none; border: none; color: var(--ink3); font-size: 13px; cursor: pointer; padding: 4px; font-family: inherit; }
 </style>
 </head>
 <body>
@@ -571,6 +307,9 @@ let myNickname = '';
 let myBillingStatus = '';
 let myAvatarUrl = '';
 let pendingAvatarDataUrl = '';
+
+// メインタブ
+let mainTab = 'dashboard'; // 'dashboard' | 'plan'
 
 // ランキング個人グラフ
 let currentRankingSessionId = null;
@@ -711,7 +450,7 @@ function rankNumClass(r) { return r === 1 ? 'gold' : r === 2 ? 'silver' : r === 
 function buildRankRowHTML(item, highlightUserId) {
   const isMe = item.userId === highlightUserId;
   const numCls = rankNumClass(item.rank);
-  const scoreColor = item.concentrationScore >= 70 ? 'var(--accent)' : item.concentrationScore >= 40 ? '#ffd666' : 'var(--accent3)';
+  const scoreColor = item.concentrationScore >= 70 ? '#2d5a3d' : item.concentrationScore >= 40 ? '#d97706' : '#c0392b';
   return `
     <div class="rank-row${isMe ? ' me' : ''}">
       <div class="rank-num ${numCls}">${item.rank}</div>
@@ -727,7 +466,7 @@ function buildRankRowHTML(item, highlightUserId) {
 function buildSessionRankRowHTML(item, highlightUserId) {
   const isMe = item.userId === highlightUserId;
   const numCls = rankNumClass(item.rank);
-  const scoreColor = item.sustainScore >= 70 ? 'var(--accent)' : item.sustainScore >= 40 ? '#ffd666' : 'var(--accent3)';
+  const scoreColor = item.sustainScore >= 70 ? '#2d5a3d' : item.sustainScore >= 40 ? '#d97706' : '#c0392b';
   return `
     <div class="rank-row${isMe ? ' me' : ''}" onclick="openUserGraph('${item.userId}')">
       <div class="rank-num ${numCls}">${item.rank}</div>
@@ -782,14 +521,17 @@ function renderApp() {
   const subjects = dashboardData.subjects || [];
 
   if (subjects.length === 0) {
+    const _n = myNickname || profileData.displayName;
+    const _a = myAvatarUrl || profileData.pictureUrl;
     app.innerHTML = `
       <div class="header">
-        <div class="header-top">
-          <div class="avatar"><img src="${myAvatarUrl || profileData.pictureUrl}" onerror="this.style.display='none'" /></div>
-          <div>
-            <div class="greeting">こんにちは</div>
-            <div class="username-row"><span class="username">${myNickname || profileData.displayName}</span><button class="edit-nick-btn" onclick="openNicknameModal()">編集</button></div>
+        <div class="header-label">授業のオトモ</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0">
+            <img src="${_a}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'" />
           </div>
+          <div class="header-title">${_n}</div>
+          <button onclick="openNicknameModal()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;padding:3px 10px;color:white;font-family:inherit">編集</button>
         </div>
       </div>
       <div class="error-state">
@@ -803,43 +545,32 @@ function renderApp() {
   const subject = subjects[activeSubjectIndex];
   const allSessions = subject.sessions;
   const latestSession = allSessions[allSessions.length - 1];
+  const name = myNickname || profileData.displayName;
+  const avatarSrc = myAvatarUrl || profileData.pictureUrl;
 
-  app.innerHTML = `
+  const headerHTML = `
     <div class="header">
-      <div class="header-top">
-        <div class="avatar"><img src="${myAvatarUrl || profileData.pictureUrl}" onerror="this.style.display='none'" /></div>
-        <div>
-          <div class="greeting">こんにちは</div>
-          <div class="username-row"><span class="username">${myNickname || profileData.displayName}</span><button class="edit-nick-btn" onclick="openNicknameModal()">編集</button></div>
+      <div class="header-label">授業のオトモ</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0">
+          <img src="${avatarSrc}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'" />
         </div>
-      </div>
-      <div class="title-block">
-        <div class="title-label">Concentration Monitor</div>
-        <div class="title-main">集中度<br>ダッシュボード</div>
+        <div class="header-title">${name}</div>
+        <button onclick="openNicknameModal()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;padding:3px 10px;color:white;font-family:inherit">編集</button>
       </div>
     </div>
+    <div class="tab-nav">
+      <button class="tab-btn ${mainTab === 'dashboard' ? 'active' : ''}" onclick="switchMainTab('dashboard')">集中度スコア</button>
+      <button class="tab-btn ${mainTab === 'plan' ? 'active' : ''}" onclick="switchMainTab('plan')">学習計画</button>
+    </div>`;
 
-    <div class="tabs-wrapper">
-      <div class="tabs">
-        ${subjects.map((s, i) => `
-          <button class="tab ${i === activeSubjectIndex ? 'active' : ''}" onclick="switchSubject(${i})">${s.name}</button>
-        `).join('')}
-      </div>
-    </div>
-
+  const dashboardHTML = `
     ${buildLiveRankingCardHTML()}
-
-    ${renderTodaySection()}
-
-    <button class="latest-btn" onclick="checkLatestSession()">
-      <div class="latest-btn-icon">🔔</div>
-      <div class="latest-btn-text">
-        <div class="latest-btn-label">LATEST CLASS</div>
-        <div class="latest-btn-title">直近終了した授業を確認する</div>
+    <div class="subj-tabs-wrapper">
+      <div class="subj-tabs">
+        ${subjects.map((s, i) => `<button class="subj-tab ${i === activeSubjectIndex ? 'active' : ''}" onclick="switchSubject(${i})">${s.name}</button>`).join('')}
       </div>
-      <div style="font-size:13px;color:var(--text-muted)">▶</div>
-    </button>
-
+    </div>
     <div class="summary-grid">
       <div class="summary-card accent2">
         <div class="summary-label">回答数</div>
@@ -854,35 +585,21 @@ function renderApp() {
         <div class="summary-value">${latestSession ? latestSession.sustainScore : '-'}<span class="summary-unit">点</span></div>
       </div>
     </div>
-
     <div class="section">
       <div class="section-title">最新授業の集中度推移</div>
       ${latestSession ? `
         <div class="chart-card">
-          <div class="chart-card-title">
-            <span>第${latestSession.sessionNumber}回授業</span>
-            授業経過時間ごとの集中度
-          </div>
-          <div class="chart-wrap">
-            <canvas id="latestChart"></canvas>
-          </div>
-        </div>
-      ` : ''}
+          <div class="chart-card-title"><span>第${latestSession.sessionNumber}回授業</span>授業経過時間ごとの集中度</div>
+          <div class="chart-wrap"><canvas id="latestChart"></canvas></div>
+        </div>` : ''}
     </div>
-
     <div class="section">
       <div class="section-title">授業別スコア履歴</div>
       <div class="chart-card">
-        <div class="chart-card-title">
-          <span>${subject.name}</span>
-          授業回ごとの維持スコア
-        </div>
-        <div class="chart-wrap">
-          <canvas id="historyChart"></canvas>
-        </div>
+        <div class="chart-card-title"><span>${subject.name}</span>授業回ごとの維持スコア</div>
+        <div class="chart-wrap"><canvas id="historyChart"></canvas></div>
       </div>
     </div>
-
     <div class="section">
       <div class="section-title">授業詳細</div>
       <div class="session-list" id="sessionList">
@@ -897,46 +614,58 @@ function renderApp() {
               <div class="score-label">維持スコア</div>
             </div>
             <div class="session-detail" id="detail-${s.sessionNumber}">
-              <div class="session-detail-wrap">
-                <canvas id="sessionChart-${s.sessionNumber}"></canvas>
-              </div>
+              <div class="session-detail-wrap"><canvas id="sessionChart-${s.sessionNumber}"></canvas></div>
             </div>
-          </div>
-        `).join('')}
+          </div>`).join('')}
       </div>
     </div>
+    <button class="latest-btn" onclick="checkLatestSession()">
+      <div class="latest-btn-icon">🔔</div>
+      <div class="latest-btn-text">
+        <div class="latest-btn-label">直近終了した授業</div>
+        <div class="latest-btn-title">成績・クラスランキングを確認する</div>
+      </div>
+      <div style="font-size:13px;color:var(--ink3)">▶</div>
+    </button>
+    <div class="footer-pad"></div>`;
 
+  const planHTML = `
+    ${renderTodaySection()}
     <div class="exam-section">
-      <div class="exam-section-title">Study Plan</div>
+      <div class="exam-section-title">学習計画</div>
       <button class="exam-btn primary" onclick="openStudyPlanView()">
-        定期試験対策
+        定期試験
         <span style="font-size:13px">▶</span>
       </button>
       <button class="exam-btn disabled" disabled>
-        CBT対策
+        CBT
         <span class="exam-btn-badge">開発中</span>
       </button>
       <button class="exam-btn disabled" disabled>
-        国試対策
+        国家試験
         <span class="exam-btn-badge">開発中</span>
       </button>
     </div>
-
     <div class="account-section">
-      <div class="account-section-title">Account</div>
+      <div class="account-section-title">アカウント</div>
       <button class="cancel-btn" onclick="showCancelModal()">
         サブスクリプションを解約する
       </button>
     </div>
+    <div class="footer-pad"></div>`;
 
-    <div class="footer-pad"></div>
-  `;
+  app.innerHTML = headerHTML + (mainTab === 'plan' ? planHTML : dashboardHTML);
 
   // チャート描画
   requestAnimationFrame(() => {
     if (latestSession) drawTimelineChart('latestChart', latestSession.timeline);
     drawHistoryChart('historyChart', allSessions);
   });
+}
+
+function switchMainTab(tab) {
+  mainTab = tab;
+  renderApp();
 }
 
 function switchSubject(index) {
@@ -1033,13 +762,13 @@ const CHART_DEFAULTS = {
   plugins: { legend: { display: false } },
   scales: {
     x: {
-      grid: { color: 'rgba(255,255,255,0.04)' },
-      ticks: { color: '#5a6080', font: { size: 10 } },
+      grid: { color: 'rgba(0,0,0,0.05)' },
+      ticks: { color: '#8a7a68', font: { size: 10 } },
     },
     y: {
       min: 0, max: 100,
-      grid: { color: 'rgba(255,255,255,0.04)' },
-      ticks: { color: '#5a6080', font: { size: 10 }, stepSize: 25 },
+      grid: { color: 'rgba(0,0,0,0.05)' },
+      ticks: { color: '#8a7a68', font: { size: 10 }, stepSize: 25 },
     },
   },
   animation: { duration: 600, easing: 'easeOutCubic' },
@@ -1079,9 +808,9 @@ function drawTimelineChart(canvasId, timeline, instanceKey) {
       datasets: [{
         data: points,
         showLine: true,
-        borderColor: '#5de8b0',
-        backgroundColor: 'rgba(93,232,176,0.08)',
-        pointBackgroundColor: '#5de8b0',
+        borderColor: '#2d5a3d',
+        backgroundColor: 'rgba(45,90,61,0.08)',
+        pointBackgroundColor: '#2d5a3d',
         pointRadius: 6,
         pointHoverRadius: 9,
         pointHitRadius: 20,
@@ -1099,7 +828,7 @@ function drawTimelineChart(canvasId, timeline, instanceKey) {
       onClick(event, elements, chart) {
         if (!elements.length) return;
         const pt = chart.data.datasets[0].data[elements[0].index];
-        const scoreColor = pt.y >= 70 ? 'var(--accent)' : pt.y >= 40 ? '#ffd666' : 'var(--accent3)';
+        const scoreColor = pt.y >= 70 ? '#2d5a3d' : pt.y >= 40 ? '#d97706' : '#c0392b';
         infoEl.className = 'chart-point-info open';
         infoEl.innerHTML = `
           <div class="chart-pi-time">${pt.x}分経過</div>
@@ -1112,16 +841,16 @@ function drawTimelineChart(canvasId, timeline, instanceKey) {
           type: 'linear',
           min: 0,
           max: 90,
-          grid: { color: 'rgba(255,255,255,0.04)' },
+          grid: { color: 'rgba(0,0,0,0.05)' },
           ticks: {
-            color: '#5a6080',
+            color: '#8a7a68',
             font: { size: 10 },
             stepSize: 15,
             callback: v => `${v}分`,
           },
-          title: { display: true, text: '経過時間（分）', color: '#5a6080', font: { size: 10 } },
+          title: { display: true, text: '経過時間（分）', color: '#8a7a68', font: { size: 10 } },
         },
-        y: { ...CHART_DEFAULTS.scales.y, title: { display: true, text: '集中度', color: '#5a6080', font: { size: 10 } } },
+        y: { ...CHART_DEFAULTS.scales.y, title: { display: true, text: '集中度', color: '#8a7a68', font: { size: 10 } } },
       },
     },
   });
@@ -1142,9 +871,9 @@ function drawHistoryChart(canvasId, sessions) {
       datasets: [{
         data: scores,
         backgroundColor: scores.map(s =>
-          s >= 70 ? 'rgba(93,232,176,0.7)' :
-          s >= 40 ? 'rgba(255,214,102,0.7)' :
-                    'rgba(255,107,138,0.7)'
+          s >= 70 ? 'rgba(45,90,61,0.75)' :
+          s >= 40 ? 'rgba(217,119,6,0.75)' :
+                    'rgba(192,57,43,0.75)'
         ),
         borderRadius: 6,
         borderSkipped: false,
@@ -1154,8 +883,8 @@ function drawHistoryChart(canvasId, sessions) {
       ...CHART_DEFAULTS,
       scales: {
         ...CHART_DEFAULTS.scales,
-        x: { ...CHART_DEFAULTS.scales.x, title: { display: true, text: '授業回', color: '#5a6080', font: { size: 10 } } },
-        y: { ...CHART_DEFAULTS.scales.y, title: { display: true, text: '維持スコア', color: '#5a6080', font: { size: 10 } } },
+        x: { ...CHART_DEFAULTS.scales.x, title: { display: true, text: '授業回', color: '#8a7a68', font: { size: 10 } } },
+        y: { ...CHART_DEFAULTS.scales.y, title: { display: true, text: '維持スコア', color: '#8a7a68', font: { size: 10 } } },
       },
     },
   });
