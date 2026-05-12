@@ -7,7 +7,7 @@
   <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Kaisei+Tokumin:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Kaisei+Tokumin:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   
   <style>
     :root {
@@ -237,6 +237,62 @@
     /* 管理者マイページビュー */
     .admin-mypage-back { display:flex;align-items:center;gap:6px;background:var(--accent);color:#fff;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;border:none;width:100%; }
 
+    /* ===== adminmp: index.html と同一ダークテーマ（スコープ済み） ===== */
+    .adminmp { background:#0a0c10; color:#e8eaf2; font-family:'DM Sans',sans-serif; min-height:calc(100vh - 44px); padding-bottom:40px; overflow-x:hidden; }
+    .adminmp * { box-sizing:border-box; margin:0; padding:0; }
+    .adminmp .mp-header { padding:20px 20px 0; }
+    .adminmp .mp-header-top { display:flex; align-items:center; gap:12px; margin-bottom:4px; }
+    .adminmp .mp-avatar { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#5de8b0,#4da6ff); overflow:hidden; flex-shrink:0; }
+    .adminmp .mp-avatar img { width:100%; height:100%; object-fit:cover; }
+    .adminmp .mp-greeting { font-size:13px; color:#8890b0; }
+    .adminmp .mp-username { font-family:'Syne',sans-serif; font-size:18px; font-weight:700; }
+    .adminmp .mp-title-block { margin:20px 20px 0; padding-bottom:16px; border-bottom:1px solid #252a38; }
+    .adminmp .mp-title-label { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#5de8b0; font-weight:600; margin-bottom:4px; }
+    .adminmp .mp-title-main { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; line-height:1.1; }
+    .adminmp .mp-tabs-wrapper { padding:20px 20px 0; overflow-x:auto; scrollbar-width:none; }
+    .adminmp .mp-tabs-wrapper::-webkit-scrollbar { display:none; }
+    .adminmp .mp-tabs { display:flex; gap:8px; min-width:max-content; }
+    .adminmp .mp-tab { padding:8px 16px; border-radius:20px; font-size:13px; font-weight:500; border:1px solid #252a38; background:transparent; color:#8890b0; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+    .adminmp .mp-tab.active { background:#5de8b0; color:#000; border-color:#5de8b0; font-weight:700; }
+    .adminmp .mp-summary-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:16px 20px; }
+    .adminmp .mp-summary-card { background:#12151c; border:1px solid #252a38; border-radius:16px; padding:16px; position:relative; overflow:hidden; }
+    .adminmp .mp-summary-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+    .adminmp .mp-summary-card.a1::before { background:#5de8b0; }
+    .adminmp .mp-summary-card.a2::before { background:#4da6ff; }
+    .adminmp .mp-summary-card.a3::before { background:#ff6b8a; }
+    .adminmp .mp-summary-card.a4::before { background:#ffd666; }
+    .adminmp .mp-summary-label { font-size:11px; color:#5a6080; margin-bottom:6px; letter-spacing:0.5px; }
+    .adminmp .mp-summary-value { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; line-height:1; }
+    .adminmp .mp-summary-unit { font-size:13px; font-weight:400; color:#8890b0; margin-left:3px; }
+    .adminmp .mp-section { padding:0 20px 20px; }
+    .adminmp .mp-section-title { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#8890b0; letter-spacing:1px; text-transform:uppercase; margin-bottom:12px; }
+    .adminmp .mp-chart-card { background:#12151c; border:1px solid #252a38; border-radius:16px; padding:16px; margin-bottom:16px; }
+    .adminmp .mp-chart-card-title { font-size:13px; color:#8890b0; margin-bottom:12px; }
+    .adminmp .mp-chart-card-title span { font-family:'Syne',sans-serif; font-weight:700; font-size:16px; color:#e8eaf2; display:block; }
+    .adminmp .mp-chart-wrap { position:relative; height:160px; }
+    .adminmp .mp-chart-point-info { display:none; background:#1a1e28; border:1px solid #252a38; border-radius:10px; padding:10px 12px; margin-top:8px; }
+    .adminmp .mp-chart-point-info.open { display:block; }
+    .adminmp .mp-chart-pi-time { color:#5a6080; font-size:11px; margin-bottom:4px; }
+    .adminmp .mp-chart-pi-score { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; margin-bottom:3px; }
+    .adminmp .mp-chart-pi-meta { color:#5a6080; font-size:11px; }
+    .adminmp .mp-session-list { display:flex; flex-direction:column; gap:10px; }
+    .adminmp .mp-session-item { background:#12151c; border:1px solid #252a38; border-radius:14px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:border-color 0.2s,background 0.2s; flex-wrap:wrap; gap:0; }
+    .adminmp .mp-session-item.expanded { border-color:#5de8b0; background:#1a1e28; }
+    .adminmp .mp-session-item:active { opacity:0.8; }
+    .adminmp .mp-session-info { flex:1; }
+    .adminmp .mp-session-name { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; margin-bottom:2px; }
+    .adminmp .mp-session-meta { font-size:12px; color:#8890b0; }
+    .adminmp .mp-session-score { text-align:right; }
+    .adminmp .mp-score-badge { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; }
+    .adminmp .mp-score-badge.high { color:#5de8b0; }
+    .adminmp .mp-score-badge.mid { color:#ffd666; }
+    .adminmp .mp-score-badge.low { color:#ff6b8a; }
+    .adminmp .mp-score-label { font-size:10px; color:#5a6080; }
+    .adminmp .mp-session-detail { display:none; padding:12px 0 4px; border-top:1px solid #252a38; margin-top:12px; width:100%; }
+    .adminmp .mp-session-detail.open { display:block; }
+    .adminmp .mp-session-detail-wrap { position:relative; height:120px; }
+    .adminmp .mp-footer-pad { height:40px; }
+
     .tab-nav { display: flex; background: var(--accent); border-top: 1px solid rgba(255,255,255,0.15); }
     .tab-btn { flex: 1; padding: 10px 4px; background: none; border: none; color: rgba(255,255,255,0.6); font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
     .tab-btn.active { color: white; border-bottom-color: white; font-weight: 700; }
@@ -345,10 +401,8 @@
       // マイページビュー
       let adminMyPageStudentId = null;
       let adminMyPageData = null;
-      let adminMyPageSubjectName = null;
-      let adminMyPageSessionId = null;
-      let adminMyPageSessionData = null;
-      let adminMyPageChart = null;
+      let adminMyPageSubjectIdx = 0;
+      let adminMyPageCharts = {};
       let myPageSelectorStudents = [];
 
       // 自動終了タイマー
@@ -823,17 +877,13 @@
         document.getElementById('myPageSelectorOverlay').classList.remove('open');
         adminMyPageStudentId = uid;
         adminMyPageData = null;
-        adminMyPageSubjectName = null;
-        adminMyPageSessionId = null;
-        adminMyPageSessionData = null;
-        if (adminMyPageChart) { adminMyPageChart.destroy(); adminMyPageChart = null; }
+        adminMyPageSubjectIdx = 0;
+        Object.values(adminMyPageCharts).forEach(c => c && c.destroy());
+        adminMyPageCharts = {};
         renderAdminMyPageView();
         try {
-          const [dashRes, sessionRes] = await Promise.all([
-            fetch(`${GAS_URL}?action=getDashboard&userId=${encodeURIComponent(uid)}`),
-            fetch(`${GAS_URL}?action=getStudentSessions&userId=${encodeURIComponent(uid)}`),
-          ]);
-          adminMyPageData = { dashboard: await dashRes.json(), sessions: await sessionRes.json() };
+          const res = await fetch(`${GAS_URL}?action=getDashboard&userId=${encodeURIComponent(uid)}`);
+          adminMyPageData = { dashboard: await res.json() };
         } catch (e) {}
         renderAdminMyPageView();
       }
@@ -841,10 +891,9 @@
       function closeAdminMyPage() {
         adminMyPageStudentId = null;
         adminMyPageData = null;
-        adminMyPageSubjectName = null;
-        adminMyPageSessionId = null;
-        adminMyPageSessionData = null;
-        if (adminMyPageChart) { adminMyPageChart.destroy(); adminMyPageChart = null; }
+        adminMyPageSubjectIdx = 0;
+        Object.values(adminMyPageCharts).forEach(c => c && c.destroy());
+        adminMyPageCharts = {};
         renderApp();
       }
 
@@ -861,189 +910,230 @@
           return;
         }
 
-        // ===== 授業詳細グラフビュー =====
-        if (adminMyPageSessionId !== null) {
-          const sessions = (adminMyPageData.sessions && adminMyPageData.sessions.sessions) || [];
-          const sess = sessions.find(s => s.sessionId === adminMyPageSessionId);
-          const sessLabel = sess ? `${sess.subject} 第${sess.sessionNumber}回` : '授業詳細';
-          if (!adminMyPageSessionData) {
-            app.innerHTML = backBtn + `
-              <div class="detail-header">
-                <button class="back-btn" onclick="adminMyPageBackToSessions()">← 授業一覧</button>
-                <div class="detail-name">${sessLabel}</div>
-              </div>
-              <div class="empty-state">読み込み中...</div>`;
-            return;
-          }
-          const answers = adminMyPageSessionData.answers || [];
-          const answersHTML = answers.map((a, i) => `
-            <div class="student-item" onclick="showAdminMyPagePointDetail(${i})">
-              <div style="width:28px;height:28px;border-radius:50%;background:var(--surface2);color:var(--ink2);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">問${i+1}</div>
-              <div class="student-info">
-                <div class="student-name" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.questionText || '（問題文なし）'}</div>
-                <div class="student-meta">回答時間: ${a.responseTimeSec != null ? a.responseTimeSec + '秒' : '未回答'}</div>
-              </div>
-              <div class="student-score ${scoreClass(a.concentrationScore)}" style="font-size:16px">${a.concentrationScore}</div>
-            </div>`).join('');
-          app.innerHTML = backBtn + `
-            <div class="detail-header">
-              <button class="back-btn" onclick="adminMyPageBackToSessions()">← 授業一覧</button>
-              <div class="detail-name">${name} · ${sessLabel}</div>
-            </div>
-            <div style="padding:4px 16px 0;font-size:12px;color:var(--ink3)">集中度スコアの推移（点をタップで詳細）</div>
-            <div class="chart-container"><canvas id="adminMyPageChartCanvas"></canvas></div>
-            ${answers.length === 0 ? '<div class="empty-state">回答データなし</div>' : answersHTML}`;
-          setTimeout(() => drawAdminMyPageChart(), 80);
-          return;
-        }
-
-        // ===== 授業一覧ビュー =====
-        if (adminMyPageSubjectName !== null) {
-          const sessions = (adminMyPageData.sessions && adminMyPageData.sessions.sessions) || [];
-          const subjSessions = sessions
-            .filter(s => s.subject === adminMyPageSubjectName)
-            .sort((a, b) => b.sessionNumber - a.sessionNumber);
-          const listHTML = subjSessions.length === 0
-            ? '<div class="empty-state">授業データがありません</div>'
-            : subjSessions.map(s => `
-                <div class="student-item" onclick="adminMyPageSelectSession('${s.sessionId}')">
-                  <div class="student-info">
-                    <div class="student-name">第${s.sessionNumber}回</div>
-                    <div class="student-meta">${s.answerCount}問回答</div>
-                  </div>
-                  <div class="student-score ${scoreClass(s.sustainScore)}">${s.sustainScore}</div>
-                </div>`).join('');
-          app.innerHTML = backBtn + `
-            <div class="detail-header">
-              <button class="back-btn" onclick="adminMyPageBackToSubjects()">← 科目一覧</button>
-              <div class="detail-name">${adminMyPageSubjectName}</div>
-            </div>
-            <div class="student-list" style="margin-top:4px">${listHTML}</div>`;
-          return;
-        }
-
-        // ===== 科目一覧ビュー =====
         const subjects = adminMyPageData.dashboard.subjects || [];
-        const subjectHTML = subjects.length === 0
-          ? '<div class="empty-state">回答データがありません</div>'
-          : subjects.map(s => `
-              <div class="student-item" onclick="adminMyPageSelectSubject(${JSON.stringify(s.name)})">
-                <div class="student-info">
-                  <div class="student-name">${s.name}</div>
-                  <div class="student-meta">${s.totalAnswers}問回答 · ${s.sessions.length}授業参加</div>
-                </div>
-                <div class="student-score ${scoreClass(s.sustainScore)}">${s.sustainScore}</div>
-              </div>`).join('');
-        app.innerHTML = backBtn + `
-          <div style="padding:12px 16px 4px;display:flex;align-items:center;gap:12px">
-            <img src="${st.pictureUrl}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--surface2)" onerror="this.style.display='none'" />
-            <div>
-              <div style="font-size:15px;font-weight:700">${name}</div>
-              ${st.nickname ? `<div style="font-size:11px;color:var(--ink3)">${st.displayName}</div>` : ''}
-            </div>
-          </div>
-          <div style="padding:4px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">科目別 維持スコア</div>
-          <div class="student-list">${subjectHTML}</div>`;
-      }
-
-      function adminMyPageSelectSubject(subjectName) {
-        adminMyPageSubjectName = subjectName;
-        renderAdminMyPageView();
-      }
-
-      function adminMyPageBackToSubjects() {
-        adminMyPageSubjectName = null;
-        adminMyPageSessionId = null;
-        adminMyPageSessionData = null;
-        if (adminMyPageChart) { adminMyPageChart.destroy(); adminMyPageChart = null; }
-        renderAdminMyPageView();
-      }
-
-      async function adminMyPageSelectSession(sessionId) {
-        adminMyPageSessionId = sessionId;
-        adminMyPageSessionData = null;
-        if (adminMyPageChart) { adminMyPageChart.destroy(); adminMyPageChart = null; }
-        renderAdminMyPageView();
-        try {
-          const r = await fetch(`${GAS_URL}?action=getUserSessionGraph&sessionId=${encodeURIComponent(sessionId)}&targetUserId=${encodeURIComponent(adminMyPageStudentId)}`);
-          adminMyPageSessionData = await r.json();
-        } catch (e) {
-          showToast('❌ データ取得失敗');
-          adminMyPageSessionId = null;
+        if (subjects.length === 0) {
+          app.innerHTML = backBtn + `<div style="padding:40px 20px;text-align:center;color:#8890b0;background:#0a0c10;min-height:calc(100vh - 44px)">回答データがありません</div>`;
+          return;
         }
+
+        const subject = subjects[adminMyPageSubjectIdx] || subjects[0];
+        const allSessions = subject.sessions || [];
+        const latestSession = allSessions[allSessions.length - 1];
+
+        const tabsHTML = subjects.map((s, i) => `
+          <button class="mp-tab ${i === adminMyPageSubjectIdx ? 'active' : ''}" onclick="switchAdminMypageSubject(${i})">${s.name}</button>`).join('');
+
+        const sessionListHTML = allSessions.length === 0
+          ? '<div style="text-align:center;padding:20px;color:#8890b0">授業データなし</div>'
+          : allSessions.slice().reverse().map(s => `
+              <div class="mp-session-item" id="ampsession-${s.sessionNumber}" onclick="toggleAdminMypageSession(${s.sessionNumber})">
+                <div class="mp-session-info">
+                  <div class="mp-session-name">第${s.sessionNumber}回授業</div>
+                  <div class="mp-session-meta">${s.timeline ? s.timeline.length : 0}問回答</div>
+                </div>
+                <div class="mp-session-score">
+                  <div class="mp-score-badge ${s.sustainScore >= 70 ? 'high' : s.sustainScore >= 40 ? 'mid' : 'low'}">${s.sustainScore}</div>
+                  <div class="mp-score-label">維持スコア</div>
+                </div>
+                <div class="mp-session-detail" id="ampdetail-${s.sessionNumber}">
+                  <div class="mp-session-detail-wrap">
+                    <canvas id="ampChart-${s.sessionNumber}"></canvas>
+                  </div>
+                </div>
+              </div>`).join('');
+
+        app.innerHTML = backBtn + `
+          <div class="adminmp">
+            <div class="mp-header">
+              <div class="mp-header-top">
+                <div class="mp-avatar"><img src="${st.pictureUrl}" onerror="this.style.display='none'" /></div>
+                <div>
+                  <div class="mp-greeting">閲覧中（管理者）</div>
+                  <div class="mp-username">${name}</div>
+                </div>
+              </div>
+              <div class="mp-title-block">
+                <div class="mp-title-label">Concentration Monitor</div>
+                <div class="mp-title-main">集中度<br>ダッシュボード</div>
+              </div>
+            </div>
+
+            <div class="mp-tabs-wrapper">
+              <div class="mp-tabs">${tabsHTML}</div>
+            </div>
+
+            <div class="mp-summary-grid">
+              <div class="mp-summary-card a2">
+                <div class="mp-summary-label">回答数</div>
+                <div class="mp-summary-value">${subject.totalAnswers}<span class="mp-summary-unit">問</span></div>
+              </div>
+              <div class="mp-summary-card a3">
+                <div class="mp-summary-label">授業回数</div>
+                <div class="mp-summary-value">${allSessions.length}<span class="mp-summary-unit">回</span></div>
+              </div>
+              <div class="mp-summary-card a4">
+                <div class="mp-summary-label">最新スコア</div>
+                <div class="mp-summary-value">${latestSession ? latestSession.sustainScore : '-'}<span class="mp-summary-unit">点</span></div>
+              </div>
+            </div>
+
+            ${latestSession ? `
+            <div class="mp-section">
+              <div class="mp-section-title">最新授業の集中度推移</div>
+              <div class="mp-chart-card">
+                <div class="mp-chart-card-title">
+                  <span>第${latestSession.sessionNumber}回授業</span>
+                  授業経過時間ごとの集中度
+                </div>
+                <div class="mp-chart-wrap">
+                  <canvas id="ampLatestChart"></canvas>
+                </div>
+              </div>
+            </div>` : ''}
+
+            <div class="mp-section">
+              <div class="mp-section-title">授業別スコア履歴</div>
+              <div class="mp-chart-card">
+                <div class="mp-chart-card-title">
+                  <span>${subject.name}</span>
+                  授業回ごとの維持スコア
+                </div>
+                <div class="mp-chart-wrap">
+                  <canvas id="ampHistoryChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="mp-section">
+              <div class="mp-section-title">授業詳細</div>
+              <div class="mp-session-list">${sessionListHTML}</div>
+            </div>
+
+            <div class="mp-footer-pad"></div>
+          </div>`;
+
+        requestAnimationFrame(() => {
+          if (latestSession) drawAdminMypageTimelineChart('ampLatestChart', latestSession.timeline || []);
+          drawAdminMypageHistoryChart('ampHistoryChart', allSessions);
+        });
+      }
+
+      function switchAdminMypageSubject(idx) {
+        adminMyPageSubjectIdx = idx;
+        Object.values(adminMyPageCharts).forEach(c => c && c.destroy());
+        adminMyPageCharts = {};
         renderAdminMyPageView();
       }
 
-      function adminMyPageBackToSessions() {
-        adminMyPageSessionId = null;
-        adminMyPageSessionData = null;
-        if (adminMyPageChart) { adminMyPageChart.destroy(); adminMyPageChart = null; }
-        closePointDetail();
-        renderAdminMyPageView();
+      function toggleAdminMypageSession(sessionNumber) {
+        const subject = (adminMyPageData.dashboard.subjects || [])[adminMyPageSubjectIdx];
+        if (!subject) return;
+        const session = subject.sessions.find(s => s.sessionNumber === sessionNumber);
+        const detailEl = document.getElementById(`ampdetail-${sessionNumber}`);
+        const itemEl = document.getElementById(`ampsession-${sessionNumber}`);
+        if (!detailEl || !itemEl) return;
+        const isOpen = detailEl.classList.contains('open');
+        if (isOpen) {
+          detailEl.classList.remove('open');
+          itemEl.classList.remove('expanded');
+          const key = `amp-session-${sessionNumber}`;
+          if (adminMyPageCharts[key]) { adminMyPageCharts[key].destroy(); delete adminMyPageCharts[key]; }
+        } else {
+          detailEl.classList.add('open');
+          itemEl.classList.add('expanded');
+          requestAnimationFrame(() => {
+            drawAdminMypageTimelineChart(`ampChart-${sessionNumber}`, (session && session.timeline) || [], `amp-session-${sessionNumber}`);
+          });
+        }
       }
 
-      function drawAdminMyPageChart() {
-        const canvas = document.getElementById('adminMyPageChartCanvas');
-        if (!canvas || !adminMyPageSessionData) return;
-        if (adminMyPageChart) { adminMyPageChart.destroy(); adminMyPageChart = null; }
-        const answers = adminMyPageSessionData.answers || [];
-        if (answers.length === 0) return;
-        adminMyPageChart = new Chart(canvas, {
-          type: 'line',
+      function drawAdminMypageTimelineChart(canvasId, timeline, instanceKey) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const key = instanceKey || canvasId;
+        if (adminMyPageCharts[key]) { adminMyPageCharts[key].destroy(); }
+
+        const infoId = `${canvasId}-info`;
+        let infoEl = document.getElementById(infoId);
+        if (!infoEl) {
+          infoEl = document.createElement('div');
+          infoEl.id = infoId;
+          infoEl.className = 'mp-chart-point-info';
+          canvas.parentNode.appendChild(infoEl);
+        } else {
+          infoEl.className = 'mp-chart-point-info';
+        }
+
+        const points = timeline.map(t => ({
+          x: t.minutesElapsed,
+          y: t.concentrationScore,
+          accuracyScore: t.accuracyScore,
+          responseTimeSec: t.responseTimeSec,
+        }));
+
+        adminMyPageCharts[key] = new Chart(canvas, {
+          type: 'scatter',
           data: {
             datasets: [{
-              data: [{ x: 0, y: null }, ...answers.map(a => ({ x: a.minutesElapsed, y: a.concentrationScore }))],
-              borderColor: '#2d5a3d',
-              backgroundColor: 'rgba(45,90,61,0.08)',
-              pointBackgroundColor: '#2d5a3d',
-              pointRadius: 8, pointHoverRadius: 10, hitRadius: 20,
-              borderWidth: 2, fill: true, tension: 0.3,
-            }]
+              data: points,
+              showLine: true,
+              borderColor: '#5de8b0',
+              backgroundColor: 'rgba(93,232,176,0.08)',
+              pointBackgroundColor: '#5de8b0',
+              pointRadius: 6, pointHoverRadius: 9, pointHitRadius: 20,
+              borderWidth: 2, fill: true, tension: 0.4,
+            }],
           },
           options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
               legend: { display: false },
-              tooltip: {
-                callbacks: {
-                  title: (items) => { const idx = items[0].dataIndex - 1; return idx < 0 ? '' : `問${idx+1}（${items[0].parsed.x}分）`; },
-                  label: (item) => { const a = answers[item.dataIndex - 1]; if (!a) return []; return [`集中度: ${a.concentrationScore}/100`, `回答正当度: ${a.accuracyScore}/100`, `回答時間: ${a.responseTimeSec != null ? a.responseTimeSec + '秒' : '未回答'}`]; },
-                }
-              }
+              tooltip: { enabled: false },
+            },
+            onClick(event, elements, chart) {
+              if (!elements.length) return;
+              const pt = chart.data.datasets[0].data[elements[0].index];
+              const scoreColor = pt.y >= 70 ? '#5de8b0' : pt.y >= 40 ? '#ffd666' : '#ff6b8a';
+              infoEl.className = 'mp-chart-point-info open';
+              infoEl.innerHTML = `
+                <div class="mp-chart-pi-time">${pt.x}分経過</div>
+                <div class="mp-chart-pi-score" style="color:${scoreColor}">${pt.y}<span style="font-size:12px;font-weight:400;color:#5a6080"> / 100</span></div>
+                <div class="mp-chart-pi-meta">正確性 ${pt.accuracyScore ?? '-'}点 · 回答時間 ${pt.responseTimeSec ?? '-'}秒</div>`;
             },
             scales: {
-              x: { type: 'linear', min: 0, max: 90, title: { display: true, text: '授業開始からの経過時間（分）', font: { size: 11 } }, ticks: { font: { size: 11 }, stepSize: 15, callback: v => `${v}分` } },
-              y: { min: 0, max: 100, title: { display: true, text: '集中度スコア（点）', font: { size: 11 } }, ticks: { font: { size: 11 }, stepSize: 25 } }
+              x: { type: 'linear', min: 0, max: 90, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#5a6080', font: { size: 10 }, stepSize: 15, callback: v => `${v}分` }, title: { display: true, text: '経過時間（分）', color: '#5a6080', font: { size: 10 } } },
+              y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#5a6080', font: { size: 10 }, stepSize: 25 }, title: { display: true, text: '集中度', color: '#5a6080', font: { size: 10 } } },
             },
-            onClick: (e, elements) => {
-              if (elements.length > 0 && elements[0].index > 0) showAdminMyPagePointDetail(elements[0].index - 1);
-            }
-          }
+          },
         });
       }
 
-      function showAdminMyPagePointDetail(index) {
-        if (!adminMyPageSessionData || !adminMyPageSessionData.answers) return;
-        const a = adminMyPageSessionData.answers[index];
-        if (!a) return;
-        document.getElementById('pointDetailContent').innerHTML = `
-          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">問題文</div>
-          <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${a.questionText || '（データなし）'}</div>
-          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">模範解答</div>
-          <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${a.modelAnswer || '（データなし）'}</div>
-          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">学生の回答</div>
-          <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${a.answerText || '（データなし）'}</div>
-          <div class="popup-row">
-            <div class="popup-stat" style="background:var(--accent-light)">
-              <div class="popup-stat-label" style="color:var(--accent)">回答正当度</div>
-              <div class="popup-stat-value" style="color:var(--accent)">${a.accuracyScore}/100</div>
-            </div>
-            <div class="popup-stat" style="background:var(--surface2)">
-              <div class="popup-stat-label" style="color:var(--ink3)">回答時間</div>
-              <div class="popup-stat-value">${a.responseTimeSec != null ? a.responseTimeSec + '秒' : '未回答'}</div>
-            </div>
-          </div>`;
-        document.getElementById('pointDetailPopup').classList.add('open');
+      function drawAdminMypageHistoryChart(canvasId, sessions) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        if (adminMyPageCharts[canvasId]) { adminMyPageCharts[canvasId].destroy(); }
+        const labels = sessions.map(s => `第${s.sessionNumber}回`);
+        const scores = sessions.map(s => s.sustainScore);
+        adminMyPageCharts[canvasId] = new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              data: scores,
+              backgroundColor: scores.map(s => s >= 70 ? 'rgba(93,232,176,0.7)' : s >= 40 ? 'rgba(255,214,102,0.7)' : 'rgba(255,107,138,0.7)'),
+              borderRadius: 6, borderSkipped: false,
+            }],
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#5a6080', font: { size: 10 } }, title: { display: true, text: '授業回', color: '#5a6080', font: { size: 10 } } },
+              y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#5a6080', font: { size: 10 }, stepSize: 25 }, title: { display: true, text: '維持スコア', color: '#5a6080', font: { size: 10 } } },
+            },
+            animation: { duration: 600, easing: 'easeOutCubic' },
+          },
+        });
       }
 
       async function switchTab(tab) {
