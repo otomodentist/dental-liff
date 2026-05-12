@@ -18,6 +18,8 @@
       --ink2: #4a3f2f;
       --ink3: #8a7a68;
       --accent: #2d5a3d;
+      --primary: #2d5a3d;
+      --primary-dark: #1e3d29;
       --accent-light: #e8f2eb;
       --danger: #8b2020;
       --warning: #7a5a10;
@@ -93,32 +95,31 @@
 
     .main-tab-bar {
       display: flex;
-      margin: 8px 16px 0;
-      border-bottom: 2px solid var(--border);
-      gap: 0;
+      margin: 10px 16px 6px;
+      gap: 8px;
       background: none;
       padding: 0;
       border-radius: 0;
+      border-bottom: none;
     }
     .main-tab {
       flex: 1;
       text-align: center;
-      padding: 10px 0;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--ink3);
-      border: none;
-      background: none;
+      padding: 9px 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink2);
+      border: 2px solid var(--border);
+      background: var(--surface);
       cursor: pointer;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -2px;
-      transition: color 0.15s, border-color 0.15s;
+      border-radius: 8px;
+      transition: all 0.15s;
+      font-family: inherit;
     }
     .main-tab.active {
-      color: var(--primary);
-      border-bottom: 2px solid var(--primary);
-      background: none;
-      box-shadow: none;
+      background: var(--primary);
+      color: #fff;
+      border: 2px solid var(--primary-dark);
     }
 
     /* 科目タブ（横スクロールピル） */
@@ -349,7 +350,7 @@
     /* ニックネームモーダル */
     .nickname-modal { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:flex-end;justify-content:center;padding:0;overflow-y:auto; }
     .nickname-modal.open { display:flex; }
-    .nickname-modal-card { background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:480px;padding-bottom:max(24px, env(safe-area-inset-bottom)); }
+    .nickname-modal-card { background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:480px;padding-bottom:max(24px, env(safe-area-inset-bottom));max-height:90vh;overflow-y:auto; }
     .nickname-modal-title { font-family:'Kaisei Tokumin',serif;font-size:18px;font-weight:700;margin-bottom:8px; }
     .nickname-warning { font-size:12px;color:#c0392b;background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.2);border-radius:8px;padding:8px 12px;margin-bottom:16px;line-height:1.5; }
     .nickname-input { width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--ink);font-size:15px;font-family:inherit;margin-bottom:14px;outline:none; }
