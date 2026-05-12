@@ -345,6 +345,11 @@
       // マイページビュー
       let adminMyPageStudentId = null;
       let adminMyPageData = null;
+      let adminMyPageSubjectName = null;
+      let adminMyPageSessionId = null;
+      let adminMyPageSessionData = null;
+      let adminMyPageChart = null;
+      let myPageSelectorStudents = [];
 
       // 自動終了タイマー
       let autoEndTimer = null;
@@ -793,6 +798,7 @@
           const res = await fetch(`${GAS_URL}?action=getAdminStudentListWithBilling`);
           const data = await res.json();
           const students = (data.students || []).filter(s => s.billingStatus === '課金有効' || s.billingStatus === '管理者承認');
+          myPageSelectorStudents = students;
           listEl.innerHTML = students.length === 0
             ? '<div class="empty-state">課金済み学生がいません</div>'
             : students.map(s => `
@@ -817,6 +823,10 @@
         document.getElementById('myPageSelectorOverlay').classList.remove('open');
         adminMyPageStudentId = uid;
         adminMyPageData = null;
+        adminMyPageSubjectName = null;
+        adminMyPageSessionId = null;
+        adminMyPageSessionData = null;
+        if (adminMyPageChart) { adminMyPageChart.destroy(); adminMyPageChart = null; }
         renderAdminMyPageView();
         try {
           const [dashRes, sessionRes] = await Promise.all([
@@ -831,48 +841,209 @@
       function closeAdminMyPage() {
         adminMyPageStudentId = null;
         adminMyPageData = null;
+        adminMyPageSubjectName = null;
+        adminMyPageSessionId = null;
+        adminMyPageSessionData = null;
+        if (adminMyPageChart) { adminMyPageChart.destroy(); adminMyPageChart = null; }
         renderApp();
       }
 
       function renderAdminMyPageView() {
         const app = document.getElementById('app');
         if (!adminMyPageStudentId) { renderApp(); return; }
-        const allStudents = (studentListData && studentListData.students) || [];
+        const allStudents = (studentListData && studentListData.students) || myPageSelectorStudents;
         const st = allStudents.find(s => s.userId === adminMyPageStudentId) || { displayName: '学生', pictureUrl: '', nickname: '' };
         const name = st.nickname || st.displayName;
+        const backBtn = `<button class="admin-mypage-back" onclick="closeAdminMyPage()">← 管理画面に戻る</button>`;
 
         if (!adminMyPageData) {
-          app.innerHTML = `
-            <button class="admin-mypage-back" onclick="closeAdminMyPage()">← 管理画面に戻る</button>
-            <div style="padding:20px;text-align:center;color:var(--ink3)">読み込み中...</div>`;
+          app.innerHTML = backBtn + `<div style="padding:20px;text-align:center;color:var(--ink3)">読み込み中...</div>`;
           return;
         }
 
+        // ===== 授業詳細グラフビュー =====
+        if (adminMyPageSessionId !== null) {
+          const sessions = (adminMyPageData.sessions && adminMyPageData.sessions.sessions) || [];
+          const sess = sessions.find(s => s.sessionId === adminMyPageSessionId);
+          const sessLabel = sess ? `${sess.subject} 第${sess.sessionNumber}回` : '授業詳細';
+          if (!adminMyPageSessionData) {
+            app.innerHTML = backBtn + `
+              <div class="detail-header">
+                <button class="back-btn" onclick="adminMyPageBackToSessions()">← 授業一覧</button>
+                <div class="detail-name">${sessLabel}</div>
+              </div>
+              <div class="empty-state">読み込み中...</div>`;
+            return;
+          }
+          const answers = adminMyPageSessionData.answers || [];
+          const answersHTML = answers.map((a, i) => `
+            <div class="student-item" onclick="showAdminMyPagePointDetail(${i})">
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--surface2);color:var(--ink2);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">問${i+1}</div>
+              <div class="student-info">
+                <div class="student-name" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.questionText || '（問題文なし）'}</div>
+                <div class="student-meta">回答時間: ${a.responseTimeSec != null ? a.responseTimeSec + '秒' : '未回答'}</div>
+              </div>
+              <div class="student-score ${scoreClass(a.concentrationScore)}" style="font-size:16px">${a.concentrationScore}</div>
+            </div>`).join('');
+          app.innerHTML = backBtn + `
+            <div class="detail-header">
+              <button class="back-btn" onclick="adminMyPageBackToSessions()">← 授業一覧</button>
+              <div class="detail-name">${name} · ${sessLabel}</div>
+            </div>
+            <div style="padding:4px 16px 0;font-size:12px;color:var(--ink3)">集中度スコアの推移（点をタップで詳細）</div>
+            <div class="chart-container"><canvas id="adminMyPageChartCanvas"></canvas></div>
+            ${answers.length === 0 ? '<div class="empty-state">回答データなし</div>' : answersHTML}`;
+          setTimeout(() => drawAdminMyPageChart(), 80);
+          return;
+        }
+
+        // ===== 授業一覧ビュー =====
+        if (adminMyPageSubjectName !== null) {
+          const sessions = (adminMyPageData.sessions && adminMyPageData.sessions.sessions) || [];
+          const subjSessions = sessions
+            .filter(s => s.subject === adminMyPageSubjectName)
+            .sort((a, b) => b.sessionNumber - a.sessionNumber);
+          const listHTML = subjSessions.length === 0
+            ? '<div class="empty-state">授業データがありません</div>'
+            : subjSessions.map(s => `
+                <div class="student-item" onclick="adminMyPageSelectSession('${s.sessionId}')">
+                  <div class="student-info">
+                    <div class="student-name">第${s.sessionNumber}回</div>
+                    <div class="student-meta">${s.answerCount}問回答</div>
+                  </div>
+                  <div class="student-score ${scoreClass(s.sustainScore)}">${s.sustainScore}</div>
+                </div>`).join('');
+          app.innerHTML = backBtn + `
+            <div class="detail-header">
+              <button class="back-btn" onclick="adminMyPageBackToSubjects()">← 科目一覧</button>
+              <div class="detail-name">${adminMyPageSubjectName}</div>
+            </div>
+            <div class="student-list" style="margin-top:4px">${listHTML}</div>`;
+          return;
+        }
+
+        // ===== 科目一覧ビュー =====
         const subjects = adminMyPageData.dashboard.subjects || [];
         const subjectHTML = subjects.length === 0
-          ? '<div style="padding:20px;text-align:center;color:var(--ink3)">回答データがありません</div>'
+          ? '<div class="empty-state">回答データがありません</div>'
           : subjects.map(s => `
-              <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px">
-                <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">${s.name}</div>
-                <div style="display:flex;align-items:center;gap:12px">
-                  <div style="font-family:'Kaisei Tokumin',serif;font-size:32px;font-weight:700;color:${s.sustainScore>=70?'var(--accent)':s.sustainScore>=40?'#b07d00':'#c0392b'}">${s.sustainScore}</div>
-                  <div style="font-size:11px;color:var(--ink3)">${s.totalAnswers}問回答<br>${s.sessions.length}授業参加</div>
+              <div class="student-item" onclick="adminMyPageSelectSubject(${JSON.stringify(s.name)})">
+                <div class="student-info">
+                  <div class="student-name">${s.name}</div>
+                  <div class="student-meta">${s.totalAnswers}問回答 · ${s.sessions.length}授業参加</div>
                 </div>
+                <div class="student-score ${scoreClass(s.sustainScore)}">${s.sustainScore}</div>
               </div>`).join('');
-
-        app.innerHTML = `
-          <button class="admin-mypage-back" onclick="closeAdminMyPage()">← 管理画面に戻る</button>
-          <div style="padding:16px">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-              <img src="${st.pictureUrl}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;background:var(--surface2)" onerror="this.style.display='none'" />
-              <div>
-                <div style="font-size:16px;font-weight:700">${name}</div>
-                ${st.nickname ? `<div style="font-size:12px;color:var(--ink3)">${st.displayName}</div>` : ''}
-              </div>
+        app.innerHTML = backBtn + `
+          <div style="padding:12px 16px 4px;display:flex;align-items:center;gap:12px">
+            <img src="${st.pictureUrl}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--surface2)" onerror="this.style.display='none'" />
+            <div>
+              <div style="font-size:15px;font-weight:700">${name}</div>
+              ${st.nickname ? `<div style="font-size:11px;color:var(--ink3)">${st.displayName}</div>` : ''}
             </div>
-            <div style="font-family:'Kaisei Tokumin',serif;font-size:14px;font-weight:700;margin-bottom:10px">科目別 維持スコア</div>
-            ${subjectHTML}
+          </div>
+          <div style="padding:4px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">科目別 維持スコア</div>
+          <div class="student-list">${subjectHTML}</div>`;
+      }
+
+      function adminMyPageSelectSubject(subjectName) {
+        adminMyPageSubjectName = subjectName;
+        renderAdminMyPageView();
+      }
+
+      function adminMyPageBackToSubjects() {
+        adminMyPageSubjectName = null;
+        adminMyPageSessionId = null;
+        adminMyPageSessionData = null;
+        if (adminMyPageChart) { adminMyPageChart.destroy(); adminMyPageChart = null; }
+        renderAdminMyPageView();
+      }
+
+      async function adminMyPageSelectSession(sessionId) {
+        adminMyPageSessionId = sessionId;
+        adminMyPageSessionData = null;
+        if (adminMyPageChart) { adminMyPageChart.destroy(); adminMyPageChart = null; }
+        renderAdminMyPageView();
+        try {
+          const r = await fetch(`${GAS_URL}?action=getUserSessionGraph&sessionId=${encodeURIComponent(sessionId)}&targetUserId=${encodeURIComponent(adminMyPageStudentId)}`);
+          adminMyPageSessionData = await r.json();
+        } catch (e) {
+          showToast('❌ データ取得失敗');
+          adminMyPageSessionId = null;
+        }
+        renderAdminMyPageView();
+      }
+
+      function adminMyPageBackToSessions() {
+        adminMyPageSessionId = null;
+        adminMyPageSessionData = null;
+        if (adminMyPageChart) { adminMyPageChart.destroy(); adminMyPageChart = null; }
+        closePointDetail();
+        renderAdminMyPageView();
+      }
+
+      function drawAdminMyPageChart() {
+        const canvas = document.getElementById('adminMyPageChartCanvas');
+        if (!canvas || !adminMyPageSessionData) return;
+        if (adminMyPageChart) { adminMyPageChart.destroy(); adminMyPageChart = null; }
+        const answers = adminMyPageSessionData.answers || [];
+        if (answers.length === 0) return;
+        adminMyPageChart = new Chart(canvas, {
+          type: 'line',
+          data: {
+            datasets: [{
+              data: [{ x: 0, y: null }, ...answers.map(a => ({ x: a.minutesElapsed, y: a.concentrationScore }))],
+              borderColor: '#2d5a3d',
+              backgroundColor: 'rgba(45,90,61,0.08)',
+              pointBackgroundColor: '#2d5a3d',
+              pointRadius: 8, pointHoverRadius: 10, hitRadius: 20,
+              borderWidth: 2, fill: true, tension: 0.3,
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  title: (items) => { const idx = items[0].dataIndex - 1; return idx < 0 ? '' : `問${idx+1}（${items[0].parsed.x}分）`; },
+                  label: (item) => { const a = answers[item.dataIndex - 1]; if (!a) return []; return [`集中度: ${a.concentrationScore}/100`, `回答正当度: ${a.accuracyScore}/100`, `回答時間: ${a.responseTimeSec != null ? a.responseTimeSec + '秒' : '未回答'}`]; },
+                }
+              }
+            },
+            scales: {
+              x: { type: 'linear', min: 0, max: 90, title: { display: true, text: '授業開始からの経過時間（分）', font: { size: 11 } }, ticks: { font: { size: 11 }, stepSize: 15, callback: v => `${v}分` } },
+              y: { min: 0, max: 100, title: { display: true, text: '集中度スコア（点）', font: { size: 11 } }, ticks: { font: { size: 11 }, stepSize: 25 } }
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0 && elements[0].index > 0) showAdminMyPagePointDetail(elements[0].index - 1);
+            }
+          }
+        });
+      }
+
+      function showAdminMyPagePointDetail(index) {
+        if (!adminMyPageSessionData || !adminMyPageSessionData.answers) return;
+        const a = adminMyPageSessionData.answers[index];
+        if (!a) return;
+        document.getElementById('pointDetailContent').innerHTML = `
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">問題文</div>
+          <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${a.questionText || '（データなし）'}</div>
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">模範解答</div>
+          <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${a.modelAnswer || '（データなし）'}</div>
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">学生の回答</div>
+          <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${a.answerText || '（データなし）'}</div>
+          <div class="popup-row">
+            <div class="popup-stat" style="background:var(--accent-light)">
+              <div class="popup-stat-label" style="color:var(--accent)">回答正当度</div>
+              <div class="popup-stat-value" style="color:var(--accent)">${a.accuracyScore}/100</div>
+            </div>
+            <div class="popup-stat" style="background:var(--surface2)">
+              <div class="popup-stat-label" style="color:var(--ink3)">回答時間</div>
+              <div class="popup-stat-value">${a.responseTimeSec != null ? a.responseTimeSec + '秒' : '未回答'}</div>
+            </div>
           </div>`;
+        document.getElementById('pointDetailPopup').classList.add('open');
       }
 
       async function switchTab(tab) {
@@ -1271,6 +1442,7 @@
           selectedSessionId = null;
           sessionDetailData = null;
           if (adminChart) { adminChart.destroy(); adminChart = null; }
+          closePointDetail();
           renderApp();
       }
 
