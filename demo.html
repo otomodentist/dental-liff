@@ -118,28 +118,54 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
 
-    .subject-card {
-      background: var(--surface);
-      margin: 0 16px 8px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      padding: 14px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: border-color 0.15s;
+    /* 科目タブ（横スクロールピル） */
+    .subj-tabs-wrapper { padding: 12px 16px 0; overflow-x: auto; scrollbar-width: none; }
+    .subj-tabs-wrapper::-webkit-scrollbar { display: none; }
+    .subj-tabs { display: flex; gap: 8px; min-width: max-content; }
+    .subj-tab {
+      padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 500;
+      border: 1px solid var(--border); background: transparent; color: var(--ink3);
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
     }
-    .subject-card:active { opacity: 0.7; }
-    .subject-icon {
-      width: 36px; height: 36px; border-radius: 10px;
-      background: var(--accent-light);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
+    .subj-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+
+    /* サマリーカード */
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 16px 0; }
+    .summary-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      padding: 14px 16px; position: relative; overflow: hidden;
     }
-    .subject-name { font-size: 14px; font-weight: 700; flex: 1; }
-    .subject-meta { font-size: 12px; color: var(--ink3); }
-    .subject-score { font-size: 20px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+    .summary-card.c1::after { content:''; position:absolute; right:-10px; top:-10px; width:60px; height:60px; border-radius:50%; background:rgba(45,90,61,0.08); }
+    .summary-card.c2::after { content:''; position:absolute; right:-10px; top:-10px; width:60px; height:60px; border-radius:50%; background:rgba(59,130,246,0.08); }
+    .summary-card.c3::after { content:''; position:absolute; right:-10px; top:-10px; width:60px; height:60px; border-radius:50%; background:rgba(245,158,11,0.08); }
+    .summary-label { font-size: 11px; color: var(--ink3); font-weight: 600; letter-spacing: 0.05em; }
+    .summary-value { font-size: 26px; font-weight: 700; color: var(--ink); margin-top: 4px; line-height: 1; }
+    .summary-unit { font-size: 13px; font-weight: 400; color: var(--ink3); margin-left: 2px; }
+
+    /* セッションアコーディオン */
+    .sess-item {
+      margin: 0 16px 6px; border-radius: 12px; border: 1px solid var(--border);
+      background: var(--surface); overflow: hidden; cursor: pointer;
+    }
+    .sess-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px;
+    }
+    .sess-num {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--accent-light); color: var(--accent);
+      font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .sess-info { flex: 1; }
+    .sess-title { font-size: 14px; font-weight: 700; }
+    .sess-meta { font-size: 11px; color: var(--ink3); margin-top: 1px; }
+    .sess-score { font-size: 20px; font-weight: 700; flex-shrink: 0; }
+    .sess-arrow { font-size: 14px; color: var(--ink3); transition: transform 0.2s; flex-shrink: 0; }
+    .sess-arrow.open { transform: rotate(180deg); }
+    .sess-detail { display: none; border-top: 1px solid var(--border); padding: 8px 0 12px; }
+    .sess-detail.open { display: block; }
+    .sess-chart-wrap { padding: 0 14px; height: 180px; position: relative; }
 
     .session-item {
       background: var(--surface);
@@ -843,6 +869,8 @@ let demoSelectedExamId = null;
 let selectedSubjectIdx = 0;
 let selectedSessionIdx = null;
 let demoChart = null;
+let expandedSessionNum = null;
+let demoCharts = {};
 
 // ===== レンダリング =====
 function render() {
@@ -850,6 +878,9 @@ function render() {
   app.innerHTML = buildHTML();
   if (view === 'chart' && selectedSessionIdx !== null) {
     setTimeout(drawChart, 80);
+  }
+  if (view === 'subjects' && mainTab === 'dashboard' && expandedSessionNum !== null) {
+    setTimeout(() => drawDemoSessionChart(expandedSessionNum), 80);
   }
 }
 
@@ -931,24 +962,56 @@ function buildSubjectsHTML() {
       </button>
     </div>`;
   }
-  const html = DEMO_SUBJECTS.map((subj, idx) => {
-    const allScores = subj.sessions.flatMap(s => s.answers.map(a => a.concentrationScore));
-    const score = geoMean(allScores);
+  const subj = DEMO_SUBJECTS[selectedSubjectIdx];
+  const allSessions = subj.sessions;
+  const latestSession = allSessions[allSessions.length - 1];
+  const totalAnswers = allSessions.reduce((s, sess) => s + sess.answers.length, 0);
+  const latestScore = latestSession ? geoMean(latestSession.answers.map(a => a.concentrationScore)) : '-';
+
+  const subjTabsHTML = DEMO_SUBJECTS.map((s, i) => `
+    <button class="subj-tab ${i === selectedSubjectIdx ? 'active' : ''}" onclick="switchDemoSubject(${i})">${s.name}</button>`).join('');
+
+  const sessionListHTML = allSessions.slice().reverse().map(sess => {
+    const score = geoMean(sess.answers.map(a => a.concentrationScore));
+    const isOpen = expandedSessionNum === sess.sessionNumber;
     return `
-      <div class="subject-card" onclick="selectSubject(${idx})">
-        <div class="subject-icon">${subj.icon}</div>
-        <div style="flex:1">
-          <div class="subject-name">${subj.name}</div>
-          <div class="subject-meta">${subj.sessions.length}回授業 / 集中度スコア</div>
+      <div class="sess-item">
+        <div class="sess-header" onclick="toggleDemoSession(${sess.sessionNumber})">
+          <div class="sess-num">${sess.sessionNumber}</div>
+          <div class="sess-info">
+            <div class="sess-title">第${sess.sessionNumber}回授業</div>
+            <div class="sess-meta">${sess.answers.length}問回答</div>
+          </div>
+          <div class="sess-score ${scoreClass(score)}">${score}</div>
+          <div class="sess-arrow ${isOpen ? 'open' : ''}">▼</div>
         </div>
-        <div class="subject-score ${scoreClass(score)}">${score}</div>
+        <div class="sess-detail ${isOpen ? 'open' : ''}">
+          <div class="sess-chart-wrap"><canvas id="demosess-${sess.sessionNumber}"></canvas></div>
+        </div>
       </div>`;
   }).join('');
+
   return `
     ${buildDemoLiveRankingCardHTML()}
     ${tabBar}
-    <div class="section-label">科目一覧</div>
-    ${html}`;
+    <div class="subj-tabs-wrapper"><div class="subj-tabs">${subjTabsHTML}</div></div>
+    <div class="summary-grid">
+      <div class="summary-card c1">
+        <div class="summary-label">回答数</div>
+        <div class="summary-value">${totalAnswers}<span class="summary-unit">問</span></div>
+      </div>
+      <div class="summary-card c2">
+        <div class="summary-label">授業回数</div>
+        <div class="summary-value">${allSessions.length}<span class="summary-unit">回</span></div>
+      </div>
+      <div class="summary-card c3" style="grid-column:1/-1">
+        <div class="summary-label">最新スコア</div>
+        <div class="summary-value">${latestScore}<span class="summary-unit">点</span></div>
+      </div>
+    </div>
+    <div class="section-label" style="margin-top:12px">授業一覧</div>
+    ${sessionListHTML}
+    <div style="height:16px"></div>`;
 }
 
 function buildSessionsHTML() {
@@ -1084,10 +1147,84 @@ function closePopup() {
   document.getElementById('pointDetailPopup').classList.remove('open');
 }
 
-function selectSubject(idx) {
+function switchDemoSubject(idx) {
+  Object.values(demoCharts).forEach(c => c.destroy());
+  demoCharts = {};
   selectedSubjectIdx = idx;
-  view = 'sessions';
+  expandedSessionNum = null;
   render();
+}
+
+function toggleDemoSession(sessionNum) {
+  if (expandedSessionNum === sessionNum) {
+    if (demoCharts[sessionNum]) { demoCharts[sessionNum].destroy(); delete demoCharts[sessionNum]; }
+    expandedSessionNum = null;
+    render();
+  } else {
+    if (expandedSessionNum !== null && demoCharts[expandedSessionNum]) {
+      demoCharts[expandedSessionNum].destroy(); delete demoCharts[expandedSessionNum];
+    }
+    expandedSessionNum = sessionNum;
+    render();
+  }
+}
+
+function drawDemoSessionChart(sessionNum) {
+  const canvas = document.getElementById(`demosess-${sessionNum}`);
+  if (!canvas) return;
+  if (demoCharts[sessionNum]) { demoCharts[sessionNum].destroy(); delete demoCharts[sessionNum]; }
+  const sess = DEMO_SUBJECTS[selectedSubjectIdx].sessions.find(s => s.sessionNumber === sessionNum);
+  if (!sess) return;
+  const answers = sess.answers;
+  demoCharts[sessionNum] = new Chart(canvas, {
+    type: 'line',
+    data: {
+      datasets: [{
+        data: answers.map(a => ({ x: a.minutesElapsed, y: a.concentrationScore })),
+        borderColor: '#2d5a3d',
+        backgroundColor: 'rgba(45,90,61,0.08)',
+        pointBackgroundColor: '#2d5a3d',
+        pointRadius: 7,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.3,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => `問${items[0].dataIndex + 1}（${items[0].parsed.x}分）`,
+            label: (item) => {
+              const a = answers[item.dataIndex];
+              return [`集中度: ${a.concentrationScore}/100`, `回答時間: ${a.responseTimeSec}秒`];
+            },
+          },
+        },
+      },
+      scales: {
+        x: { type: 'linear', min: 0, max: 90, ticks: { font: { size: 10 }, stepSize: 15, callback: v => `${v}分` }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        y: { min: 0, max: 100, ticks: { font: { size: 10 }, stepSize: 25 }, grid: { color: 'rgba(0,0,0,0.05)' } },
+      },
+      onClick: (e, elements) => {
+        if (elements.length > 0) showDemoPointDetail(sessionNum, elements[0].index);
+      },
+    },
+  });
+}
+
+function showDemoPointDetail(sessionNum, idx) {
+  const sess = DEMO_SUBJECTS[selectedSubjectIdx].sessions.find(s => s.sessionNumber === sessionNum);
+  if (!sess) return;
+  const a = sess.answers[idx];
+  selectedSessionIdx = DEMO_SUBJECTS[selectedSubjectIdx].sessions.indexOf(sess);
+  showPointDetail(idx);
+}
+
+function selectSubject(idx) {
+  switchDemoSubject(idx);
 }
 
 function selectSession(idx) {
@@ -1098,6 +1235,8 @@ function selectSession(idx) {
 
 function goBack(to) {
   if (demoChart) { demoChart.destroy(); demoChart = null; }
+  Object.values(demoCharts).forEach(c => c.destroy());
+  demoCharts = {};
   view = to;
   render();
 }
