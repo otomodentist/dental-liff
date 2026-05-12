@@ -316,7 +316,7 @@
 
 <script>
 // ===== サンプルデータ =====
-const DEMO_STUDENT = { name: '山田 太郎', nickname: 'ヤマタロ', grade: '3年生' };
+const DEMO_STUDENT = { name: 'デモユーザー', nickname: 'ゆず', grade: '3年生' };
 
 const DEMO_SUBJECTS = [
   {
@@ -691,22 +691,22 @@ const DEMO_CURRENT_SESSION = {
 };
 
 const DEMO_QUESTION_RANKING = [
-  { rank: 1, nickname: 'ハナコ',   displayName: '佐藤 花子',  avatar: '🌸', concentrationScore: 92, answerText: '約10.5mmです', isMe: false },
-  { rank: 2, nickname: 'ヤマタロ', displayName: '山田 太郎',  avatar: '👤', concentrationScore: 88, answerText: '10〜11mm程度', isMe: true  },
-  { rank: 3, nickname: 'イチロー',  displayName: '鈴木 一郎',  avatar: '📘', concentrationScore: 75, answerText: '10mm前後', isMe: false },
-  { rank: 4, nickname: 'ケンジ',   displayName: '田中 健二',  avatar: '🌿', concentrationScore: 68, answerText: '約11mmだと思います', isMe: false },
-  { rank: 5, nickname: 'ジロ',     displayName: '伊藤 次郎',  avatar: '🔖', concentrationScore: 55, answerText: '歯冠の長さは平均で10mm程度と記憶しています', isMe: false },
-  { rank: null, nickname: 'サブロー', displayName: '高橋 三郎', avatar: '⭐', concentrationScore: null, answerText: null, isMe: false },
-  { rank: null, nickname: 'ヨウコ',  displayName: '中村 陽子', avatar: '🎀', concentrationScore: null, answerText: null, isMe: false },
+  { rank: 1, nickname: 'みかん',  displayName: 'みかん',  avatar: '🍊', concentrationScore: 92, answerText: '約10.5mmです', isMe: false },
+  { rank: 2, nickname: 'ゆず',   displayName: 'ゆず',   avatar: '👤', concentrationScore: 88, answerText: '10〜11mm程度', isMe: true  },
+  { rank: 3, nickname: 'そら',   displayName: 'そら',   avatar: '☁️', concentrationScore: 75, answerText: '10mm前後', isMe: false },
+  { rank: 4, nickname: 'りく',   displayName: 'りく',   avatar: '🌿', concentrationScore: 68, answerText: '約11mmだと思います', isMe: false },
+  { rank: 5, nickname: 'こたろ', displayName: 'こたろ', avatar: '🔖', concentrationScore: 55, answerText: '歯冠の長さは平均で10mm程度と記憶しています', isMe: false },
+  { rank: null, nickname: 'はる', displayName: 'はる', avatar: '🌸', concentrationScore: null, answerText: null, isMe: false },
+  { rank: null, nickname: 'なな', displayName: 'なな', avatar: '🎀', concentrationScore: null, answerText: null, isMe: false },
 ];
 
 const DEMO_SESSION_RANKING = [
-  { rank: 1, nickname: 'イチロー',  displayName: '鈴木 一郎',  avatar: '📘', sustainScore: 82, answerCount: 4, isMe: false },
-  { rank: 2, nickname: 'ヤマタロ', displayName: '山田 太郎',  avatar: '👤', sustainScore: 78, answerCount: 4, isMe: true  },
-  { rank: 3, nickname: 'ケンジ',   displayName: '田中 健二',  avatar: '🌿', sustainScore: 73, answerCount: 4, isMe: false },
-  { rank: 4, nickname: 'ハナコ',   displayName: '佐藤 花子',  avatar: '🌸', sustainScore: 70, answerCount: 4, isMe: false },
-  { rank: 5, nickname: 'サブロー', displayName: '高橋 三郎',  avatar: '⭐', sustainScore: 63, answerCount: 3, isMe: false },
-  { rank: 6, nickname: 'ジロ',     displayName: '伊藤 次郎',  avatar: '🔖', sustainScore: 54, answerCount: 4, isMe: false },
+  { rank: 1, nickname: 'そら',   displayName: 'そら',   avatar: '☁️', sustainScore: 82, answerCount: 4, isMe: false },
+  { rank: 2, nickname: 'ゆず',   displayName: 'ゆず',   avatar: '👤', sustainScore: 78, answerCount: 4, isMe: true  },
+  { rank: 3, nickname: 'りく',   displayName: 'りく',   avatar: '🌿', sustainScore: 73, answerCount: 4, isMe: false },
+  { rank: 4, nickname: 'みかん', displayName: 'みかん', avatar: '🍊', sustainScore: 70, answerCount: 4, isMe: false },
+  { rank: 5, nickname: 'はる',   displayName: 'はる',   avatar: '🌸', sustainScore: 63, answerCount: 3, isMe: false },
+  { rank: 6, nickname: 'こたろ', displayName: 'こたろ', avatar: '🔖', sustainScore: 54, answerCount: 4, isMe: false },
 ];
 
 // ===== 設定 =====
@@ -965,9 +965,8 @@ function drawChart() {
   demoChart = new Chart(canvas, {
     type: 'line',
     data: {
-      labels: ['0分', ...answers.map(a => `${a.minutesElapsed}分`)],
       datasets: [{
-        data: [null, ...answers.map(a => a.concentrationScore)],
+        data: answers.map(a => ({ x: a.minutesElapsed, y: a.concentrationScore })),
         borderColor: '#2d5a3d',
         backgroundColor: 'rgba(45,90,61,0.08)',
         pointBackgroundColor: '#2d5a3d',
@@ -985,7 +984,7 @@ function drawChart() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            title: (items) => `問${items[0].dataIndex + 1}（${items[0].label}）`,
+            title: (items) => `問${items[0].dataIndex + 1}（${items[0].parsed.x}分）`,
             label: (item) => {
               const a = answers[item.dataIndex];
               return [`集中度: ${a.concentrationScore}/100`, `回答正当度: ${a.accuracyScore}/100`, `回答時間: ${a.responseTimeSec}秒`];
@@ -995,9 +994,12 @@ function drawChart() {
       },
       scales: {
         x: {
-          title: { display: true, text: '授業開始からの経過時間', font: { size: 11 } },
+          type: 'linear',
+          min: 0,
+          max: 90,
+          title: { display: true, text: '授業開始からの経過時間（分）', font: { size: 11 } },
           grid: { color: 'rgba(0,0,0,0.05)' },
-          ticks: { font: { size: 11 } },
+          ticks: { font: { size: 11 }, stepSize: 15, callback: v => `${v}分` },
         },
         y: {
           min: 0, max: 100,
@@ -1021,7 +1023,7 @@ function showPointDetail(idx) {
     <div class="popup-value">${a.questionText}</div>
     <div class="popup-label">模範解答</div>
     <div class="popup-value">${a.modelAnswer}</div>
-    <div class="popup-label">山田さんの回答</div>
+    <div class="popup-label">あなたの回答</div>
     <div class="popup-value">${a.answerText}</div>
     <div class="popup-row">
       <div class="popup-stat" style="background:var(--accent-light)">
@@ -1312,7 +1314,6 @@ async function initLiffAndRecord() {
     // LIFF未設定またはLIFF外からのアクセス → そのまま表示
   }
   render();
-  if (!localStorage.getItem('demo_nickname')) openDemoNicknameModal();
 }
 
 initLiffAndRecord();
