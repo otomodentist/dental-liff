@@ -316,7 +316,7 @@
 
 <script>
 // ===== サンプルデータ =====
-const DEMO_STUDENT = { name: 'デモユーザー', nickname: 'ゆず', grade: '3年生' };
+const DEMO_STUDENT = { name: 'デモユーザー', nickname: 'ぽんすけ', grade: '3年生' };
 
 const DEMO_SUBJECTS = [
   {
@@ -691,22 +691,22 @@ const DEMO_CURRENT_SESSION = {
 };
 
 const DEMO_QUESTION_RANKING = [
-  { rank: 1, nickname: 'みかん',  displayName: 'みかん',  avatar: '🍊', concentrationScore: 92, answerText: '約10.5mmです', isMe: false },
-  { rank: 2, nickname: 'ゆず',   displayName: 'ゆず',   avatar: '👤', concentrationScore: 88, answerText: '10〜11mm程度', isMe: true  },
-  { rank: 3, nickname: 'そら',   displayName: 'そら',   avatar: '☁️', concentrationScore: 75, answerText: '10mm前後', isMe: false },
-  { rank: 4, nickname: 'りく',   displayName: 'りく',   avatar: '🌿', concentrationScore: 68, answerText: '約11mmだと思います', isMe: false },
-  { rank: 5, nickname: 'こたろ', displayName: 'こたろ', avatar: '🔖', concentrationScore: 55, answerText: '歯冠の長さは平均で10mm程度と記憶しています', isMe: false },
-  { rank: null, nickname: 'はる', displayName: 'はる', avatar: '🌸', concentrationScore: null, answerText: null, isMe: false },
-  { rank: null, nickname: 'なな', displayName: 'なな', avatar: '🎀', concentrationScore: null, answerText: null, isMe: false },
+  { rank: 1, nickname: 'ぴょん太',              displayName: 'ぴょん太',              avatar: '🐰', concentrationScore: 92, answerText: '約10.5mmです', isMe: false },
+  { rank: 2, nickname: 'ぽんすけ',              displayName: 'ぽんすけ',              avatar: '👤', concentrationScore: 88, answerText: '10〜11mm程度', isMe: true  },
+  { rank: 3, nickname: 'かいわれ',              displayName: 'かいわれ',              avatar: '🌱', concentrationScore: 75, answerText: '10mm前後', isMe: false },
+  { rank: 4, nickname: 'ゆいぴす',              displayName: 'ゆいぴす',              avatar: '🎵', concentrationScore: 68, answerText: '約11mmだと思います', isMe: false },
+  { rank: 5, nickname: 'カレーライス',          displayName: 'カレーライス',          avatar: '🍛', concentrationScore: 55, answerText: '歯冠の長さは平均で10mm程度と記憶しています', isMe: false },
+  { rank: null, nickname: '大統領',             displayName: '大統領',             avatar: '🎩', concentrationScore: null, answerText: null, isMe: false },
+  { rank: null, nickname: 'ピックルボールガチ勢', displayName: 'ピックルボールガチ勢', avatar: '🏓', concentrationScore: null, answerText: null, isMe: false },
 ];
 
 const DEMO_SESSION_RANKING = [
-  { rank: 1, nickname: 'そら',   displayName: 'そら',   avatar: '☁️', sustainScore: 82, answerCount: 4, isMe: false },
-  { rank: 2, nickname: 'ゆず',   displayName: 'ゆず',   avatar: '👤', sustainScore: 78, answerCount: 4, isMe: true  },
-  { rank: 3, nickname: 'りく',   displayName: 'りく',   avatar: '🌿', sustainScore: 73, answerCount: 4, isMe: false },
-  { rank: 4, nickname: 'みかん', displayName: 'みかん', avatar: '🍊', sustainScore: 70, answerCount: 4, isMe: false },
-  { rank: 5, nickname: 'はる',   displayName: 'はる',   avatar: '🌸', sustainScore: 63, answerCount: 3, isMe: false },
-  { rank: 6, nickname: 'こたろ', displayName: 'こたろ', avatar: '🔖', sustainScore: 54, answerCount: 4, isMe: false },
+  { rank: 1, nickname: 'かいわれ',     displayName: 'かいわれ',     avatar: '🌱', sustainScore: 82, answerCount: 4, isMe: false },
+  { rank: 2, nickname: 'ぽんすけ',     displayName: 'ぽんすけ',     avatar: '👤', sustainScore: 78, answerCount: 4, isMe: true  },
+  { rank: 3, nickname: 'ゆいぴす',     displayName: 'ゆいぴす',     avatar: '🎵', sustainScore: 73, answerCount: 4, isMe: false },
+  { rank: 4, nickname: 'ぴょん太',     displayName: 'ぴょん太',     avatar: '🐰', sustainScore: 70, answerCount: 4, isMe: false },
+  { rank: 5, nickname: '大統領',       displayName: '大統領',       avatar: '🎩', sustainScore: 63, answerCount: 3, isMe: false },
+  { rank: 6, nickname: 'カレーライス', displayName: 'カレーライス', avatar: '🍛', sustainScore: 54, answerCount: 4, isMe: false },
 ];
 
 // ===== 設定 =====
@@ -1173,7 +1173,12 @@ function buildReviewBarChartHTML(exams, progressBlocks, onClickFn) {
     return p ? p.remaining : 0;
   }));
   const MAX_H = 80;
-  const cols = exams.map(exam => {
+  const sortedExams = [...exams].sort((a, b) => {
+    const aDone = (progressBlocks[a.subjectName]?.remaining ?? 0) === 0 ? 1 : 0;
+    const bDone = (progressBlocks[b.subjectName]?.remaining ?? 0) === 0 ? 1 : 0;
+    return aDone - bDone;
+  });
+  const cols = sortedExams.map(exam => {
     const p = progressBlocks[exam.subjectName];
     const remaining = p ? p.remaining : 0;
     const total = p ? p.attended : 0;
