@@ -575,17 +575,7 @@ async function init() {
     if (!liff.isLoggedIn()) { liff.login(); return; }
 
     step = 'liff.getProfile';
-    let profile;
-    try {
-      profile = await liff.getProfile();
-    } catch (profileErr) {
-      const idToken = liff.getDecodedIDToken();
-      if (idToken && idToken.sub) {
-        profile = { userId: idToken.sub, displayName: idToken.name || 'ユーザー', pictureUrl: idToken.picture || '' };
-      } else {
-        throw profileErr;
-      }
-    }
+    const profile = await liff.getProfile();
     userId = profile.userId;
     profileData = profile;
 
@@ -610,8 +600,7 @@ async function init() {
     const isPaid = myBillingStatus === '課金有効' || myBillingStatus === '管理者承認';
     if (!myNickname && isPaid) openNicknameModal();
   } catch (err) {
-    const detail = [err.code, err.name, err.status].filter(Boolean).join('/');
-    showError(`[${step}] ${err.message}${detail ? ' (' + detail + ')' : ''}`);
+    showError(`[${step}] ${err.message}`);
   }
 }
 
