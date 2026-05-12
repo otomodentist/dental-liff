@@ -801,39 +801,68 @@
         overlay.classList.add('open');
 
         if (!sessionId) { content.innerHTML = '<div class="empty-state">セッションIDが不明です</div>'; return; }
-        try {
-          const r = await fetch(`${GAS_URL}?action=getUserSessionGraph&sessionId=${encodeURIComponent(sessionId)}&targetUserId=${encodeURIComponent(userId)}`);
-          const d = await r.json();
-          const answers = d.answers || [];
-          if (answers.length === 0) {
-            content.innerHTML = '<div class="empty-state">この授業の回答データがありません</div>';
-            return;
-          }
-          content.innerHTML = `<div style="position:relative;height:200px"><canvas id="studentPanelChart"></canvas></div>`;
+
+        function drawPanelChart(answers) {
+          content.innerHTML = `<div style="position:relative;height:220px;padding:8px 0"><canvas id="studentPanelChart"></canvas></div>`;
           setTimeout(() => {
             const ctx = document.getElementById('studentPanelChart');
             if (!ctx) return;
             new Chart(ctx, {
               type: 'line',
-              data: {
-                datasets: [{
-                  data: answers.map(a => ({ x: a.minutesElapsed, y: a.concentrationScore })),
-                  borderColor: '#1a6bbd', backgroundColor: 'rgba(26,107,189,0.1)',
-                  pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true,
-                }]
-              },
+              data: { datasets: [{ data: answers.map(a => ({ x: a.minutesElapsed, y: a.concentrationScore })), borderColor: '#1a6bbd', backgroundColor: 'rgba(26,107,189,0.1)', pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true }] },
               options: {
                 responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                  x: { type: 'linear', min: 0, max: 90, title: { display: true, text: '経過分', font: { size: 10 } }, ticks: { color: '#888', font: { size: 10 } } },
-                  y: { min: 0, max: 100, title: { display: true, text: '集中度', font: { size: 10 } }, ticks: { color: '#888', font: { size: 10 } } }
+                  x: { type: 'linear', min: 0, max: 90, ticks: { color: '#888', font: { size: 10 }, stepSize: 15, callback: v => `${v}分` } },
+                  y: { min: 0, max: 100, ticks: { color: '#888', font: { size: 10 }, stepSize: 25 } }
                 }
               }
             });
           }, 100);
+        }
+
+        async function fallbackToDashboard() {
+          try {
+            const dr = await fetch(`${GAS_URL}?action=getDashboard&userId=${encodeURIComponent(userId)}`);
+            const dd = await dr.json();
+            const subjects = (dd && dd.subjects) || [];
+            let timeline = null;
+            for (const subj of subjects) {
+              if (activeSessionInfo && subj.name === activeSessionInfo.subject) {
+                const sess = (subj.sessions || []).find(s => s.sessionNumber === activeSessionInfo.sessionNumber);
+                if (sess && sess.timeline && sess.timeline.length > 0) { timeline = sess.timeline; break; }
+              }
+            }
+            if (!timeline) {
+              for (const subj of subjects) {
+                for (const sess of (subj.sessions || [])) {
+                  if (sess.timeline && sess.timeline.length > 0) { timeline = sess.timeline; break; }
+                }
+                if (timeline) break;
+              }
+            }
+            if (timeline && timeline.length > 0) {
+              drawPanelChart(timeline);
+            } else {
+              content.innerHTML = '<div class="empty-state">この授業の回答データがありません</div>';
+            }
+          } catch (e) {
+            content.innerHTML = '<div class="empty-state">データ取得失敗</div>';
+          }
+        }
+
+        try {
+          const r = await fetch(`${GAS_URL}?action=getUserSessionGraph&sessionId=${encodeURIComponent(sessionId)}&targetUserId=${encodeURIComponent(userId)}`);
+          const d = await r.json();
+          const answers = d.answers || [];
+          if (answers.length > 0) {
+            drawPanelChart(answers);
+          } else {
+            await fallbackToDashboard();
+          }
         } catch (e) {
-          content.innerHTML = '<div class="empty-state">データ取得失敗</div>';
+          await fallbackToDashboard();
         }
       }
 
