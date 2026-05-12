@@ -486,10 +486,18 @@
 <div id="nicknameModal" class="nickname-modal">
   <div class="nickname-modal-card">
     <div class="nickname-modal-title">ニックネームを設定</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">ランキング表示時に他のユーザーに表示されます</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <label style="position:relative;cursor:pointer;flex-shrink:0">
+        <img id="avatarPreview" style="width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--surface2);border:2px solid var(--border)" src="" onerror="this.style.background='var(--surface2)'" />
+        <div style="position:absolute;bottom:0;right:0;background:var(--accent);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px">📷</div>
+        <input type="file" accept="image/*" style="display:none" onchange="onAvatarFileSelected(this)" />
+      </label>
+      <input id="nicknameInput" class="nickname-input" type="text" maxlength="20" placeholder="例: タロ、ヒロシ" style="margin-bottom:0;flex:1" />
+    </div>
     <div class="nickname-warning">⚠️ 他の受講者が不快に感じるような表現は使用しないでください</div>
-    <input id="nicknameInput" class="nickname-input" type="text" maxlength="20" placeholder="例: タロ、ヒロシ" />
-    <button class="nickname-save-btn" onclick="saveNickname()">保存する</button>
-    <button class="nickname-skip-btn" onclick="closeNicknameModal()">あとで設定する</button>
+    <button class="nickname-save-btn" onclick="saveNickname()">決定</button>
+    <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:8px">ユーザーネームは後から変更できます</div>
   </div>
 </div>
 
@@ -561,6 +569,8 @@ let rankingPollTimer = null;
 // ニックネーム
 let myNickname = '';
 let myBillingStatus = '';
+let myAvatarUrl = '';
+let pendingAvatarDataUrl = '';
 
 // ランキング個人グラフ
 let currentRankingSessionId = null;
@@ -610,13 +620,17 @@ async function fetchNickname(uid) {
     const d = await r.json();
     myNickname = d.nickname || '';
     myBillingStatus = d.billingStatus || '';
-  } catch (e) { myNickname = ''; myBillingStatus = ''; }
+    myAvatarUrl = d.avatarUrl || '';
+  } catch (e) { myNickname = ''; myBillingStatus = ''; myAvatarUrl = ''; }
 }
 
 function openNicknameModal() {
   const modal = document.getElementById('nicknameModal');
   const input = document.getElementById('nicknameInput');
   if (input) input.value = myNickname || '';
+  pendingAvatarDataUrl = '';
+  const preview = document.getElementById('avatarPreview');
+  if (preview) preview.src = myAvatarUrl || profileData.pictureUrl || '';
   modal.classList.add('open');
 }
 
@@ -629,11 +643,34 @@ async function saveNickname() {
   const val = (input.value || '').trim();
   if (!val) { input.focus(); return; }
   try {
-    await fetch(`${GAS_URL}?action=setNickname&userId=${encodeURIComponent(userId)}&nickname=${encodeURIComponent(val)}`);
+    let url = `${GAS_URL}?action=setNickname&userId=${encodeURIComponent(userId)}&nickname=${encodeURIComponent(val)}`;
+    if (pendingAvatarDataUrl) url += `&avatarDataUrl=${encodeURIComponent(pendingAvatarDataUrl)}`;
+    await fetch(url);
     myNickname = val;
+    if (pendingAvatarDataUrl) myAvatarUrl = pendingAvatarDataUrl;
+    pendingAvatarDataUrl = '';
     closeNicknameModal();
     renderApp();
   } catch (e) { alert('保存に失敗しました。もう一度お試しください。'); }
+}
+
+function onAvatarFileSelected(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 64;
+      canvas.getContext('2d').drawImage(img, 0, 0, 64, 64);
+      pendingAvatarDataUrl = canvas.toDataURL('image/jpeg', 0.65);
+      const preview = document.getElementById('avatarPreview');
+      if (preview) preview.src = pendingAvatarDataUrl;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 async function refreshActiveSession() {
@@ -748,10 +785,10 @@ function renderApp() {
     app.innerHTML = `
       <div class="header">
         <div class="header-top">
-          <div class="avatar"><img src="${profileData.pictureUrl}" onerror="this.style.display='none'" /></div>
+          <div class="avatar"><img src="${myAvatarUrl || profileData.pictureUrl}" onerror="this.style.display='none'" /></div>
           <div>
             <div class="greeting">こんにちは</div>
-            <div class="username-row"><span class="username">${myNickname || profileData.displayName}</span><button class="edit-nick-btn" onclick="openNicknameModal()">✏️</button></div>
+            <div class="username-row"><span class="username">${myNickname || profileData.displayName}</span><button class="edit-nick-btn" onclick="openNicknameModal()">編集</button></div>
           </div>
         </div>
       </div>
@@ -770,10 +807,10 @@ function renderApp() {
   app.innerHTML = `
     <div class="header">
       <div class="header-top">
-        <div class="avatar"><img src="${profileData.pictureUrl}" onerror="this.style.display='none'" /></div>
+        <div class="avatar"><img src="${myAvatarUrl || profileData.pictureUrl}" onerror="this.style.display='none'" /></div>
         <div>
           <div class="greeting">こんにちは</div>
-          <div class="username-row"><span class="username">${myNickname || profileData.displayName}</span><button class="edit-nick-btn" onclick="openNicknameModal()">✏️</button></div>
+          <div class="username-row"><span class="username">${myNickname || profileData.displayName}</span><button class="edit-nick-btn" onclick="openNicknameModal()">編集</button></div>
         </div>
       </div>
       <div class="title-block">

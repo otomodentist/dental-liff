@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>授業管理パネル</title>
+    <title>授業管理</title>
   <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -226,6 +226,17 @@
     .student-panel-name { font-size:15px;font-weight:700;flex:1; }
     .student-panel-close { background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer; }
 
+    /* マイページセレクター */
+    .mypage-selector-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;align-items:flex-end; }
+    .mypage-selector-overlay.open { display:flex; }
+    .mypage-selector-sheet { background:var(--surface);border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:80vh;overflow-y:auto; }
+    .mypage-selector-title { font-family:'Kaisei Tokumin',serif;font-size:16px;font-weight:700;margin-bottom:14px; }
+    .mypage-student-row { display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer; }
+    .mypage-student-row:active { background:var(--surface2); }
+    .mypage-student-avatar { width:34px;height:34px;border-radius:50%;background:var(--surface2);flex-shrink:0;object-fit:cover; }
+    /* 管理者マイページビュー */
+    .admin-mypage-back { display:flex;align-items:center;gap:6px;background:var(--accent);color:#fff;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;border:none;width:100%; }
+
     .tab-nav { display: flex; background: var(--accent); border-top: 1px solid rgba(255,255,255,0.15); }
     .tab-btn { flex: 1; padding: 10px 4px; background: none; border: none; color: rgba(255,255,255,0.6); font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
     .tab-btn.active { color: white; border-bottom-color: white; font-weight: 700; }
@@ -297,6 +308,16 @@
         </div>
     </div>
 
+    <div id="myPageSelectorOverlay" class="mypage-selector-overlay" onclick="closeMyPageSelector(event)">
+      <div class="mypage-selector-sheet" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="mypage-selector-title">マイページを表示</div>
+          <button onclick="closeMyPageSelector()" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer">✕</button>
+        </div>
+        <div id="myPageStudentList"><div class="empty-state">読み込み中...</div></div>
+      </div>
+    </div>
+
     <script>
       const GAS_URL = 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec';
       const LIFF_ID = '2009739219-9qVGb0Xm';
@@ -316,8 +337,14 @@
 
       // ランキング
       let adminCurrentQuestionId = null;
+      let adminCurrentQuestionText = null;
+      let adminCurrentModelAnswer = null;
       let adminRankingTimer = null;
       let lastEndedSessionId = null;
+
+      // マイページビュー
+      let adminMyPageStudentId = null;
+      let adminMyPageData = null;
 
       // 自動終了タイマー
       let autoEndTimer = null;
@@ -406,10 +433,16 @@
       }
 
       function renderApp() {
+          if (adminMyPageStudentId) { renderAdminMyPageView(); return; }
           document.getElementById('app').innerHTML = `
             <div class="header">
-              <div class="header-label">Admin Panel</div>
-              <div class="header-title">授業管理パネル</div>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div class="header-label">Admin Panel</div>
+                  <div class="header-title">授業管理</div>
+                </div>
+                <button onclick="openMyPageSelector()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:10px;color:#fff;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer">マイページ</button>
+              </div>
               <div class="tab-nav">
                 <button class="tab-btn ${activeTab === 'session' ? 'active' : ''}" onclick="switchTab('session')">問題配信</button>
                 <button class="tab-btn ${activeTab === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">ダッシュボード</button>
@@ -576,7 +609,7 @@
           document.getElementById('app').innerHTML = `
             <div class="header">
               <div class="header-label">Admin Panel</div>
-              <div class="header-title">授業管理パネル</div>
+              <div class="header-title">授業管理</div>
               <div class="tab-nav">
                 <button class="tab-btn ${activeTabName === 'session' ? 'active' : ''}" onclick="switchTab('session')">問題配信</button>
                 <button class="tab-btn ${activeTabName === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">ダッシュボード</button>
@@ -647,12 +680,20 @@
         try {
           const r = await fetch(`${GAS_URL}?action=getQuestionRanking&questionId=${encodeURIComponent(adminCurrentQuestionId)}`);
           const d = await r.json();
+          adminCurrentQuestionText = d.currentQuestionText || adminCurrentQuestionText;
+          adminCurrentModelAnswer  = d.currentModelAnswer  || adminCurrentModelAnswer;
           const el = document.getElementById('adminRankingSection');
           if (!el) return;
           const rows = (d.ranking || []);
-          el.innerHTML = rows.length > 0
+          const qHtml = adminCurrentQuestionText ? `
+            <div style="padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
+              <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">出題中の問題</div>
+              <div style="font-size:13px;line-height:1.5;margin-bottom:6px">${adminCurrentQuestionText}</div>
+              ${adminCurrentModelAnswer ? `<div style="font-size:10px;color:var(--ink3);margin-bottom:2px">模範解答</div><div style="font-size:12px;color:var(--ink2);line-height:1.4">${adminCurrentModelAnswer}</div>` : ''}
+            </div>` : '';
+          el.innerHTML = qHtml + (rows.length > 0
             ? rows.map(buildAdminRankRowHTML).join('')
-            : '<div style="padding:14px;font-size:13px;color:var(--ink3);text-align:center">まだ誰も回答していません</div>';
+            : '<div style="padding:14px;font-size:13px;color:var(--ink3);text-align:center">まだ誰も回答していません</div>');
         } catch (e) {}
       }
 
@@ -702,31 +743,34 @@
 
         if (!sessionId) { content.innerHTML = '<div class="empty-state">セッションIDが不明です</div>'; return; }
         try {
-          const r = await fetch(`${GAS_URL}?action=queryBySessionAndStudent&sessionId=${encodeURIComponent(sessionId)}&userId=${encodeURIComponent(userId)}`);
+          const r = await fetch(`${GAS_URL}?action=getUserSessionGraph&sessionId=${encodeURIComponent(sessionId)}&targetUserId=${encodeURIComponent(userId)}`);
           const d = await r.json();
-          const questions = d.questions || [];
-          if (questions.length === 0) {
+          const answers = d.answers || [];
+          if (answers.length === 0) {
             content.innerHTML = '<div class="empty-state">この授業の回答データがありません</div>';
             return;
           }
-          const labels = questions.map((q, i) => `Q${i + 1}`);
-          const scores = questions.map(q => q.concentrationScore || 0);
-          const rows = questions.map((q, i) => `
-            <div style="padding:10px 0;border-bottom:1px solid var(--border)">
-              <div style="font-size:11px;color:var(--ink3);margin-bottom:2px">Q${i+1} · 集中度 <strong style="color:${(q.concentrationScore||0)>=70?'var(--accent)':(q.concentrationScore||0)>=40?'#b07d00':'#c0392b'}">${q.concentrationScore||'—'}</strong></div>
-              <div style="font-size:12px;margin-bottom:2px">${q.questionText || ''}</div>
-              <div style="font-size:12px;color:var(--ink3)">${q.answerText || '（未回答）'}</div>
-            </div>`).join('');
-          content.innerHTML = `
-            <canvas id="studentPanelChart" style="margin-bottom:16px;max-height:180px"></canvas>
-            <div>${rows}</div>`;
+          content.innerHTML = `<div style="position:relative;height:200px"><canvas id="studentPanelChart"></canvas></div>`;
           setTimeout(() => {
             const ctx = document.getElementById('studentPanelChart');
             if (!ctx) return;
             new Chart(ctx, {
-              type: 'bar',
-              data: { labels, datasets: [{ data: scores, backgroundColor: scores.map(s => s>=70?'#2ecc71':s>=40?'#f39c12':'#e74c3c'), borderRadius: 6 }] },
-              options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100, ticks: { color: '#888', font: { size: 10 } } }, x: { ticks: { color: '#888', font: { size: 10 } } } } }
+              type: 'line',
+              data: {
+                datasets: [{
+                  data: answers.map(a => ({ x: a.minutesElapsed, y: a.concentrationScore })),
+                  borderColor: '#1a6bbd', backgroundColor: 'rgba(26,107,189,0.1)',
+                  pointRadius: 5, pointHoverRadius: 7, tension: 0.3, fill: true,
+                }]
+              },
+              options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                  x: { type: 'linear', min: 0, max: 90, title: { display: true, text: '経過分', font: { size: 10 } }, ticks: { color: '#888', font: { size: 10 } } },
+                  y: { min: 0, max: 100, title: { display: true, text: '集中度', font: { size: 10 } }, ticks: { color: '#888', font: { size: 10 } } }
+                }
+              }
             });
           }, 100);
         } catch (e) {
@@ -737,6 +781,98 @@
       function closeStudentDetailPanel(e) {
         if (e && e.target !== document.getElementById('studentPanelOverlay')) return;
         document.getElementById('studentPanelOverlay').classList.remove('open');
+        closePointDetail();
+      }
+
+      // ===== マイページセレクター =====
+      async function openMyPageSelector() {
+        const overlay = document.getElementById('myPageSelectorOverlay');
+        const listEl  = document.getElementById('myPageStudentList');
+        overlay.classList.add('open');
+        try {
+          const res = await fetch(`${GAS_URL}?action=getAdminStudentListWithBilling`);
+          const data = await res.json();
+          const students = (data.students || []).filter(s => s.billingStatus === '課金有効' || s.billingStatus === '管理者承認');
+          listEl.innerHTML = students.length === 0
+            ? '<div class="empty-state">課金済み学生がいません</div>'
+            : students.map(s => `
+                <div class="mypage-student-row" onclick="selectStudentMyPage('${s.userId}')">
+                  <img class="mypage-student-avatar" src="${s.pictureUrl}" onerror="this.style.display='none'" />
+                  <div>
+                    <div style="font-size:14px;font-weight:600">${s.nickname || s.displayName}</div>
+                    ${s.nickname ? `<div style="font-size:11px;color:var(--ink3)">${s.displayName}</div>` : ''}
+                  </div>
+                </div>`).join('');
+        } catch (e) {
+          listEl.innerHTML = '<div class="empty-state">取得失敗</div>';
+        }
+      }
+
+      function closeMyPageSelector(e) {
+        if (e && e.target !== document.getElementById('myPageSelectorOverlay')) return;
+        document.getElementById('myPageSelectorOverlay').classList.remove('open');
+      }
+
+      async function selectStudentMyPage(uid) {
+        document.getElementById('myPageSelectorOverlay').classList.remove('open');
+        adminMyPageStudentId = uid;
+        adminMyPageData = null;
+        renderAdminMyPageView();
+        try {
+          const [dashRes, sessionRes] = await Promise.all([
+            fetch(`${GAS_URL}?action=getDashboard&userId=${encodeURIComponent(uid)}`),
+            fetch(`${GAS_URL}?action=getStudentSessions&userId=${encodeURIComponent(uid)}`),
+          ]);
+          adminMyPageData = { dashboard: await dashRes.json(), sessions: await sessionRes.json() };
+        } catch (e) {}
+        renderAdminMyPageView();
+      }
+
+      function closeAdminMyPage() {
+        adminMyPageStudentId = null;
+        adminMyPageData = null;
+        renderApp();
+      }
+
+      function renderAdminMyPageView() {
+        const app = document.getElementById('app');
+        if (!adminMyPageStudentId) { renderApp(); return; }
+        const allStudents = (studentListData && studentListData.students) || [];
+        const st = allStudents.find(s => s.userId === adminMyPageStudentId) || { displayName: '学生', pictureUrl: '', nickname: '' };
+        const name = st.nickname || st.displayName;
+
+        if (!adminMyPageData) {
+          app.innerHTML = `
+            <button class="admin-mypage-back" onclick="closeAdminMyPage()">← 管理画面に戻る</button>
+            <div style="padding:20px;text-align:center;color:var(--ink3)">読み込み中...</div>`;
+          return;
+        }
+
+        const subjects = adminMyPageData.dashboard.subjects || [];
+        const subjectHTML = subjects.length === 0
+          ? '<div style="padding:20px;text-align:center;color:var(--ink3)">回答データがありません</div>'
+          : subjects.map(s => `
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px">
+                <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">${s.name}</div>
+                <div style="display:flex;align-items:center;gap:12px">
+                  <div style="font-family:'Kaisei Tokumin',serif;font-size:32px;font-weight:700;color:${s.sustainScore>=70?'var(--accent)':s.sustainScore>=40?'#b07d00':'#c0392b'}">${s.sustainScore}</div>
+                  <div style="font-size:11px;color:var(--ink3)">${s.totalAnswers}問回答<br>${s.sessions.length}授業参加</div>
+                </div>
+              </div>`).join('');
+
+        app.innerHTML = `
+          <button class="admin-mypage-back" onclick="closeAdminMyPage()">← 管理画面に戻る</button>
+          <div style="padding:16px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+              <img src="${st.pictureUrl}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;background:var(--surface2)" onerror="this.style.display='none'" />
+              <div>
+                <div style="font-size:16px;font-weight:700">${name}</div>
+                ${st.nickname ? `<div style="font-size:12px;color:var(--ink3)">${st.displayName}</div>` : ''}
+              </div>
+            </div>
+            <div style="font-family:'Kaisei Tokumin',serif;font-size:14px;font-weight:700;margin-bottom:10px">科目別 維持スコア</div>
+            ${subjectHTML}
+          </div>`;
       }
 
       async function switchTab(tab) {
