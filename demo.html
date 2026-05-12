@@ -113,9 +113,9 @@
       transition: background 0.15s, color 0.15s;
     }
     .main-tab.active {
-      background: var(--surface);
-      color: var(--ink);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     }
 
     /* 科目タブ（横スクロールピル） */
@@ -958,11 +958,10 @@ function buildHTML() {
     <div class="profile-card">
       <div class="profile-avatar">👤</div>
       <div>
-        <div class="username-row" style="display:flex;align-items:center;gap:6px">
+        <div class="username-row" style="display:flex;align-items:center;gap:8px">
           <span class="profile-name">${demoNickname}</span>
-          <button onclick="openDemoNicknameModal(false)" style="background:none;border:none;font-size:13px;cursor:pointer;padding:0;color:#888">編集</button>
+          <button onclick="openDemoNicknameModal(false)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;padding:3px 9px;color:var(--ink2);font-family:inherit">編集</button>
         </div>
-        <div class="profile-meta">${DEMO_STUDENT.grade}</div>
       </div>
       <div class="demo-label">デモユーザー</div>
     </div>`;
