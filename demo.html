@@ -142,6 +142,23 @@
     .summary-value { font-size: 26px; font-weight: 700; color: var(--ink); margin-top: 4px; line-height: 1; }
     .summary-unit { font-size: 13px; font-weight: 400; color: var(--ink3); margin-left: 2px; }
 
+    /* 管理画面スタイルのセッション一覧 */
+    .student-list { }
+    .student-item {
+      display: flex; align-items: center; gap: 12px;
+      margin: 0 16px 6px; padding: 12px 14px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      cursor: pointer;
+    }
+    .student-item:active { opacity: 0.7; }
+    .student-info { flex: 1; }
+    .student-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+    .student-meta { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+    .student-score { font-size: 20px; font-weight: 700; flex-shrink: 0; }
+    .student-score.score-high { color: var(--accent); }
+    .student-score.score-mid  { color: var(--warning); }
+    .student-score.score-low  { color: var(--danger); }
+
     /* セッションアコーディオン */
     .sess-item {
       margin: 0 16px 6px; border-radius: 12px; border: 1px solid var(--border);
@@ -811,14 +828,19 @@ function buildDemoSessionRankRowHTML(item) {
 }
 
 function buildDemoLiveRankingCardHTML() {
-  const rowsHTML = DEMO_QUESTION_RANKING.map(item => buildDemoRankRowHTML(item)).join('');
+  const visibleItems = rankingExpanded ? DEMO_QUESTION_RANKING : DEMO_QUESTION_RANKING.slice(0, 3);
+  const rowsHTML = visibleItems.map(item => buildDemoRankRowHTML(item)).join('');
+  const toggleBtn = rankingExpanded
+    ? `<button onclick="rankingExpanded=false;render()" style="width:100%;background:none;border:none;border-top:1px solid var(--border);padding:10px;font-size:12px;color:var(--ink3);cursor:pointer;font-family:inherit">閉じる ▲</button>`
+    : `<button onclick="rankingExpanded=true;render()" style="width:100%;background:none;border:none;border-top:1px solid var(--border);padding:10px;font-size:12px;color:var(--primary);cursor:pointer;font-family:inherit;font-weight:600">詳しく表示 ▼</button>`;
   return `
-    <div class="live-card">
+    <div class="live-card" style="padding-bottom:0;overflow:hidden">
       <div class="live-card-header">
         <span class="live-badge">LIVE</span>
         <span class="live-question">${DEMO_CURRENT_SESSION.subject} 第${DEMO_CURRENT_SESSION.sessionNumber}回 · ${DEMO_CURRENT_SESSION.currentQuestionText}</span>
       </div>
       ${rowsHTML}
+      ${toggleBtn}
     </div>`;
 }
 
@@ -840,6 +862,7 @@ function buildDemoSessionRankingCardHTML() {
 let demoUserId = null;
 let view = 'subjects'; // 'subjects' | 'sessions' | 'chart' | 'studyPlan'
 let mainTab = 'dashboard'; // 'dashboard' | 'plan'
+let rankingExpanded = false;
 let demoNickname = localStorage.getItem('demo_nickname') || DEMO_STUDENT.nickname;
 
 function openDemoNicknameModal(isFirst) {
@@ -878,9 +901,6 @@ function render() {
   app.innerHTML = buildHTML();
   if (view === 'chart' && selectedSessionIdx !== null) {
     setTimeout(drawChart, 80);
-  }
-  if (view === 'subjects' && mainTab === 'dashboard' && expandedSessionNum !== null) {
-    setTimeout(() => drawDemoSessionChart(expandedSessionNum), 80);
   }
 }
 
@@ -962,55 +982,28 @@ function buildSubjectsHTML() {
       </button>
     </div>`;
   }
-  const subj = DEMO_SUBJECTS[selectedSubjectIdx];
-  const allSessions = subj.sessions;
-  const latestSession = allSessions[allSessions.length - 1];
-  const totalAnswers = allSessions.reduce((s, sess) => s + sess.answers.length, 0);
-  const latestScore = latestSession ? geoMean(latestSession.answers.map(a => a.concentrationScore)) : '-';
-
-  const subjTabsHTML = DEMO_SUBJECTS.map((s, i) => `
-    <button class="subj-tab ${i === selectedSubjectIdx ? 'active' : ''}" onclick="switchDemoSubject(${i})">${s.name}</button>`).join('');
-
-  const sessionListHTML = allSessions.slice().reverse().map(sess => {
-    const score = geoMean(sess.answers.map(a => a.concentrationScore));
-    const isOpen = expandedSessionNum === sess.sessionNumber;
-    return `
-      <div class="sess-item">
-        <div class="sess-header" onclick="toggleDemoSession(${sess.sessionNumber})">
-          <div class="sess-num">${sess.sessionNumber}</div>
-          <div class="sess-info">
-            <div class="sess-title">第${sess.sessionNumber}回授業</div>
-            <div class="sess-meta">${sess.answers.length}問回答</div>
+  // 科目ごとにセッションをグループ化（管理画面ダッシュボード仕様）
+  const subjectGroupsHTML = DEMO_SUBJECTS.map((subj, subjectIdx) =>
+    `<div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">${subj.name}</div>` +
+    subj.sessions.slice().reverse().map((sess, i) => {
+      const score = geoMean(sess.answers.map(a => a.concentrationScore));
+      const realIdx = subj.sessions.length - 1 - i;
+      return `
+        <div class="student-item" onclick="selectSessionFromDashboard(${subjectIdx},${realIdx})">
+          <div class="student-info">
+            <div class="student-name">第${sess.sessionNumber}回授業</div>
+            <div class="student-meta">${sess.answers.length}問回答</div>
           </div>
-          <div class="sess-score ${scoreClass(score)}">${score}</div>
-          <div class="sess-arrow ${isOpen ? 'open' : ''}">▼</div>
-        </div>
-        <div class="sess-detail ${isOpen ? 'open' : ''}">
-          <div class="sess-chart-wrap"><canvas id="demosess-${sess.sessionNumber}"></canvas></div>
-        </div>
-      </div>`;
-  }).join('');
+          <div class="student-score ${scoreClass(score)}">${score}</div>
+        </div>`;
+    }).join('')
+  ).join('');
 
   return `
-    ${buildDemoLiveRankingCardHTML()}
     ${tabBar}
-    <div class="subj-tabs-wrapper"><div class="subj-tabs">${subjTabsHTML}</div></div>
-    <div class="summary-grid">
-      <div class="summary-card c1">
-        <div class="summary-label">回答数</div>
-        <div class="summary-value">${totalAnswers}<span class="summary-unit">問</span></div>
-      </div>
-      <div class="summary-card c2">
-        <div class="summary-label">授業回数</div>
-        <div class="summary-value">${allSessions.length}<span class="summary-unit">回</span></div>
-      </div>
-      <div class="summary-card c3" style="grid-column:1/-1">
-        <div class="summary-label">最新スコア</div>
-        <div class="summary-value">${latestScore}<span class="summary-unit">点</span></div>
-      </div>
-    </div>
-    <div class="section-label" style="margin-top:12px">授業一覧</div>
-    ${sessionListHTML}
+    ${buildDemoLiveRankingCardHTML()}
+    <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">授業履歴</div>
+    <div class="student-list">${subjectGroupsHTML}</div>
     <div style="height:16px"></div>`;
 }
 
@@ -1042,7 +1035,7 @@ function buildChartHTML() {
   const sess = subj.sessions[selectedSessionIdx];
   return `
     <div class="detail-header">
-      <button class="back-btn" onclick="goBack('sessions')">← 授業一覧</button>
+      <button class="back-btn" onclick="goBack('subjects')">← 授業履歴</button>
       <div class="detail-title">${subj.name} 第${sess.sessionNumber}回</div>
     </div>
     <div style="padding:4px 16px 0;font-size:12px;color:var(--ink3)">集中度スコアの推移（回答正当度×速度）（点をタップで詳細）</div>
@@ -1147,84 +1140,17 @@ function closePopup() {
   document.getElementById('pointDetailPopup').classList.remove('open');
 }
 
-function switchDemoSubject(idx) {
-  Object.values(demoCharts).forEach(c => c.destroy());
-  demoCharts = {};
-  selectedSubjectIdx = idx;
-  expandedSessionNum = null;
+function selectSessionFromDashboard(subjectIdx, sessionIdx) {
+  selectedSubjectIdx = subjectIdx;
+  selectedSessionIdx = sessionIdx;
+  view = 'chart';
   render();
 }
 
-function toggleDemoSession(sessionNum) {
-  if (expandedSessionNum === sessionNum) {
-    if (demoCharts[sessionNum]) { demoCharts[sessionNum].destroy(); delete demoCharts[sessionNum]; }
-    expandedSessionNum = null;
-    render();
-  } else {
-    if (expandedSessionNum !== null && demoCharts[expandedSessionNum]) {
-      demoCharts[expandedSessionNum].destroy(); delete demoCharts[expandedSessionNum];
-    }
-    expandedSessionNum = sessionNum;
-    render();
-  }
-}
-
-function drawDemoSessionChart(sessionNum) {
-  const canvas = document.getElementById(`demosess-${sessionNum}`);
-  if (!canvas) return;
-  if (demoCharts[sessionNum]) { demoCharts[sessionNum].destroy(); delete demoCharts[sessionNum]; }
-  const sess = DEMO_SUBJECTS[selectedSubjectIdx].sessions.find(s => s.sessionNumber === sessionNum);
-  if (!sess) return;
-  const answers = sess.answers;
-  demoCharts[sessionNum] = new Chart(canvas, {
-    type: 'line',
-    data: {
-      datasets: [{
-        data: answers.map(a => ({ x: a.minutesElapsed, y: a.concentrationScore })),
-        borderColor: '#2d5a3d',
-        backgroundColor: 'rgba(45,90,61,0.08)',
-        pointBackgroundColor: '#2d5a3d',
-        pointRadius: 7,
-        borderWidth: 2,
-        fill: true,
-        tension: 0.3,
-      }],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            title: (items) => `問${items[0].dataIndex + 1}（${items[0].parsed.x}分）`,
-            label: (item) => {
-              const a = answers[item.dataIndex];
-              return [`集中度: ${a.concentrationScore}/100`, `回答時間: ${a.responseTimeSec}秒`];
-            },
-          },
-        },
-      },
-      scales: {
-        x: { type: 'linear', min: 0, max: 90, ticks: { font: { size: 10 }, stepSize: 15, callback: v => `${v}分` }, grid: { color: 'rgba(0,0,0,0.05)' } },
-        y: { min: 0, max: 100, ticks: { font: { size: 10 }, stepSize: 25 }, grid: { color: 'rgba(0,0,0,0.05)' } },
-      },
-      onClick: (e, elements) => {
-        if (elements.length > 0) showDemoPointDetail(sessionNum, elements[0].index);
-      },
-    },
-  });
-}
-
-function showDemoPointDetail(sessionNum, idx) {
-  const sess = DEMO_SUBJECTS[selectedSubjectIdx].sessions.find(s => s.sessionNumber === sessionNum);
-  if (!sess) return;
-  const a = sess.answers[idx];
-  selectedSessionIdx = DEMO_SUBJECTS[selectedSubjectIdx].sessions.indexOf(sess);
-  showPointDetail(idx);
-}
-
 function selectSubject(idx) {
-  switchDemoSubject(idx);
+  selectedSubjectIdx = idx;
+  view = 'sessions';
+  render();
 }
 
 function selectSession(idx) {
