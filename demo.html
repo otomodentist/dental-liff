@@ -93,34 +93,9 @@
       letter-spacing: 0.05em;
     }
 
-    .main-tab-bar {
-      display: flex;
-      margin: 10px 16px 6px;
-      gap: 8px;
-      background: none;
-      padding: 0;
-      border-radius: 0;
-      border-bottom: none;
-    }
-    .main-tab {
-      flex: 1;
-      text-align: center;
-      padding: 9px 0;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--ink2);
-      border: 2px solid var(--border);
-      background: var(--surface);
-      cursor: pointer;
-      border-radius: 8px;
-      transition: all 0.15s;
-      font-family: inherit;
-    }
-    .main-tab.active {
-      background: var(--primary);
-      color: #fff;
-      border: 2px solid var(--primary-dark);
-    }
+    .tab-nav { display: flex; background: var(--accent); border-top: 1px solid rgba(255,255,255,0.15); }
+    .tab-btn { flex: 1; padding: 10px 4px; background: none; border: none; color: rgba(255,255,255,0.6); font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    .tab-btn.active { color: white; border-bottom-color: white; font-weight: 700; }
 
     /* 科目タブ（横スクロールピル） */
     .subj-tabs-wrapper { padding: 12px 16px 0; overflow-x: auto; scrollbar-width: none; }
@@ -1000,26 +975,26 @@ function buildHTML() {
     <div class="demo-banner">
       <span class="demo-badge">DEMO</span>サービス体験中 — これはサンプルデータです
     </div>`;
+  const isSubjectsView = view === 'subjects';
   const headerHTML = `
     <div class="header">
       <div class="header-label">授業のオトモ</div>
       <div class="header-title">マイページ（デモ）</div>
-    </div>`;
-  const profileHTML = `
-    <div class="profile-card">
-      <div class="profile-avatar" style="overflow:hidden">
-        ${demoAvatar ? `<img src="${demoAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : '👤'}
-      </div>
-      <div>
-        <div class="username-row" style="display:flex;align-items:center;gap:8px">
-          <span class="profile-name">${demoNickname}</span>
-          <button onclick="openDemoNicknameModal(false)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;padding:3px 9px;color:var(--ink2);font-family:inherit">編集</button>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0">
+          ${demoAvatar ? `<img src="${demoAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : '👤'}
         </div>
+        <span style="font-size:15px;font-weight:700;color:white">${demoNickname}</span>
+        <button onclick="openDemoNicknameModal(false)" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;padding:3px 10px;color:white;font-family:inherit">編集</button>
+        <span style="margin-left:auto;background:rgba(255,255,255,0.18);color:white;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px">デモ</span>
       </div>
-      <div class="demo-label">デモユーザー</div>
-    </div>`;
+    </div>
+    ${isSubjectsView ? `<div class="tab-nav">
+      <button class="tab-btn ${mainTab === 'dashboard' ? 'active' : ''}" onclick="mainTab='dashboard';render()">集中度スコア</button>
+      <button class="tab-btn ${mainTab === 'plan' ? 'active' : ''}" onclick="mainTab='plan';render()">学習計画</button>
+    </div>` : ''}`;
 
-  if (view === 'subjects') return bannerHTML + headerHTML + profileHTML + buildSubjectsHTML();
+  if (view === 'subjects') return bannerHTML + headerHTML + buildSubjectsHTML();
   if (view === 'sessions') return bannerHTML + headerHTML + buildSessionsHTML();
   if (view === 'chart') return bannerHTML + headerHTML + buildChartHTML();
   if (view === 'studyPlan') return demoSelectedExamId ? buildDemoExamDetailHTML() : buildStudyPlanHTML();
@@ -1035,18 +1010,10 @@ function geoMean(scores) {
   const logSum = scores.reduce((s, v) => s + Math.log(Math.max(v, 1)), 0);
   return Math.round(Math.exp(logSum / scores.length));
 }
-function buildMainTabBar() {
-  return `
-    <div class="main-tab-bar">
-      <button class="main-tab ${mainTab === 'dashboard' ? 'active' : ''}" onclick="mainTab='dashboard';render()">集中度スコア</button>
-      <button class="main-tab ${mainTab === 'plan' ? 'active' : ''}" onclick="mainTab='plan';render()">学習計画</button>
-    </div>`;
-}
 
 function buildSubjectsHTML() {
-  const tabBar = buildMainTabBar();
   if (mainTab === 'plan') {
-    return tabBar + `
+    return `
     <div style="padding:8px 16px 16px">
       <button onclick="view='studyPlan';render()" class="study-plan-btn">
         <div class="study-plan-btn-icon">📚</div>
@@ -1132,7 +1099,6 @@ function buildSubjectsHTML() {
   }).join('');
 
   return `
-    ${tabBar}
     ${buildDemoLiveRankingCardHTML()}
     ${topChartCard}
     <div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">授業履歴</div>
