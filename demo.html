@@ -1037,7 +1037,7 @@ function geoMean(scores) {
 function buildMainTabBar() {
   return `
     <div class="main-tab-bar">
-      <button class="main-tab ${mainTab === 'dashboard' ? 'active' : ''}" onclick="mainTab='dashboard';render()">ダッシュボード</button>
+      <button class="main-tab ${mainTab === 'dashboard' ? 'active' : ''}" onclick="mainTab='dashboard';render()">集中度スコア</button>
       <button class="main-tab ${mainTab === 'plan' ? 'active' : ''}" onclick="mainTab='plan';render()">学習計画</button>
     </div>`;
 }
