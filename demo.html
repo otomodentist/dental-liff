@@ -1582,7 +1582,24 @@ function openRegister() {
 }
 
 // ===== LIFF初期化 & デモアクセス記録 =====
+async function checkVersion() {
+  try {
+    const r = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' });
+    const { v } = await r.json();
+    const stored = localStorage.getItem('appVersion');
+    localStorage.setItem('appVersion', v);
+    if (stored && stored !== v) {
+      const url = new URL(location.href);
+      url.searchParams.set('_', Date.now());
+      location.replace(url.toString());
+      return false;
+    }
+  } catch (e) {}
+  return true;
+}
+
 async function initLiffAndRecord() {
+  if (!await checkVersion()) return;
   if (!DEMO_LIFF_ID) { render(); return; }
   try {
     await liff.init({ liffId: DEMO_LIFF_ID });

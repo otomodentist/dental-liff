@@ -380,7 +380,24 @@
         try { await fn(); } finally { _busy.delete(key); }
       }
 
+      async function checkVersion() {
+          try {
+              const r = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' });
+              const { v } = await r.json();
+              const stored = localStorage.getItem('appVersion');
+              localStorage.setItem('appVersion', v);
+              if (stored && stored !== v) {
+                  const url = new URL(location.href);
+                  url.searchParams.set('_', Date.now());
+                  location.replace(url.toString());
+                  return false;
+              }
+          } catch (e) {}
+          return true;
+      }
+
       async function init() {
+          if (!await checkVersion()) return;
           try {
                 await liff.init({ liffId: LIFF_ID });
                 if (!liff.isLoggedIn()) { liff.login(); return; }
@@ -429,12 +446,6 @@
           return sem === 'spring' ? '春学期' : '秋学期';
       }
 
-      function hardReload() {
-          const url = new URL(location.href);
-          url.searchParams.set('_', Date.now());
-          location.href = url.toString();
-      }
-
       function renderApp() {
           document.getElementById('app').innerHTML = `
             <div class="header">
@@ -445,7 +456,6 @@
                 </div>
                 <div style="display:flex;gap:8px;align-items:center">
                   <button onclick="location.reload()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:16px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">↻</button>
-                  <button onclick="hardReload()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">キャッシュ消去</button>
                   <button onclick="openMyPageSelector()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:10px;color:#fff;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer">マイページ</button>
                 </div>
               </div>
@@ -619,10 +629,7 @@
                   <div class="header-label">Admin Panel</div>
                   <div class="header-title">授業管理</div>
                 </div>
-                <div style="display:flex;gap:8px;align-items:center">
-                  <button onclick="location.reload()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:16px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">↻</button>
-                  <button onclick="hardReload()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">キャッシュ消去</button>
-                </div>
+                <button onclick="location.reload()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:16px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">↻</button>
               </div>
               <div class="tab-nav">
                 <button class="tab-btn ${activeTabName === 'session' ? 'active' : ''}" onclick="switchTab('session')">問題配信</button>
