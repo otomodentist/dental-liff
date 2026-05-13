@@ -298,8 +298,9 @@ let selectedExamId = null;
 let studyPlanData = null;
 
 // ランキング
-let activeSessionState = null;   // getActiveSession() の結果
-let questionRankingData = null;  // getQuestionRanking() の結果
+let activeSessionState = null;
+let questionRankingData = null;
+let liveSessionTimeline = [];
 let rankingPollTimer = null;
 
 // ニックネーム
@@ -452,23 +453,62 @@ async function refreshActiveSession() {
 }
 
 function startRankingPoll() {
-  if (rankingPollTimer) clearInterval(rankingPollTimer);
-  rankingPollTimer = setInterval(async () => {
-    const prevQId = activeSessionState?.session?.currentQuestionId;
-    await refreshActiveSession();
-    const curQId = activeSessionState?.session?.currentQuestionId;
-    if (curQId) {
-      try {
-        const r = await fetch(`${GAS_URL}?action=getQuestionRanking&questionId=${encodeURIComponent(curQId)}`);
-        questionRankingData = await r.json();
-      } catch (e) {}
-    } else {
-      questionRankingData = null;
-    }
-    // 問題が切り替わったか授業状態が変わったときのみ再描画
-    if (curQId !== prevQId || !activeSessionState?.isActive) renderApp();
-    else updateRankingCard();
-  }, 5000);
+  stopRankingPoll();
+  if (!activeSessionState?.isActive) return;
+  pollSession();
+  rankingPollTimer = setInterval(pollSession, 5000);
+}
+
+function stopRankingPoll() {
+  if (rankingPollTimer) { clearInterval(rankingPollTimer); rankingPollTimer = null; }
+}
+
+async function pollSession() {
+  const prevQId = activeSessionState?.session?.currentQuestionId;
+  await refreshActiveSession();
+
+  if (!activeSessionState?.isActive) {
+    stopRankingPoll();
+    liveSessionTimeline = [];
+    renderApp();
+    return;
+  }
+
+  const curQId = activeSessionState.session.currentQuestionId;
+  const sessionId = activeSessionState.session.sessionId;
+
+  if (curQId) {
+    try {
+      const r = await fetch(`${GAS_URL}?action=getQuestionRanking&questionId=${encodeURIComponent(curQId)}`);
+      questionRankingData = await r.json();
+    } catch (e) {}
+  } else {
+    questionRankingData = null;
+  }
+
+  try {
+    const r = await fetch(`${GAS_URL}?action=getUserSessionGraph&sessionId=${encodeURIComponent(sessionId)}&targetUserId=${encodeURIComponent(userId)}`);
+    const d = await r.json();
+    liveSessionTimeline = d.answers || [];
+  } catch (e) {}
+
+  if (curQId !== prevQId) {
+    renderApp();
+  } else {
+    updateRankingCard();
+    updateLiveChart();
+  }
+}
+
+function updateLiveChart() {
+  const chart = chartInstances['liveSessionChart'];
+  if (!chart || !liveSessionTimeline.length) return;
+  chart.data.datasets[0].data = liveSessionTimeline.map(t => ({
+    x: t.minutesElapsed, y: t.concentrationScore,
+    accuracyScore: t.accuracyScore, responseTimeSec: t.responseTimeSec,
+    questionText: '', modelAnswer: '', answerText: '',
+  }));
+  chart.update('none');
 }
 
 async function fetchDashboard(uid) {
@@ -642,9 +682,21 @@ function renderApp() {
       </div>`;
   }).join('');
 
-  const dashboardHTML = `
-    ${buildLiveRankingCardHTML()}
-    ${topSess ? `
+  const isLive = activeSessionState?.isActive;
+  const liveSess = activeSessionState?.session;
+
+  const topCardHTML = isLive ? `
+    <div style="margin:8px 16px 0;background:var(--surface);border:1.5px solid var(--accent);border-radius:12px;overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);background:var(--accent-light);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:0.05em">授業中</div>
+          <div style="font-size:14px;font-weight:700;color:var(--ink);margin-top:2px">${liveSess.subject}　第${liveSess.sessionNumber}回</div>
+        </div>
+        <div style="font-size:11px;color:var(--ink3)">${liveSessionTimeline.length}問回答済み</div>
+      </div>
+      <div style="height:190px;position:relative;padding:8px 8px 4px"><canvas id="liveChartCanvas"></canvas></div>
+      <div id="liveChartCanvas-info" class="chart-point-info" style="margin:0 12px 10px"></div>
+    </div>` : topSess ? `
     <div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
       <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
         <div>
@@ -655,7 +707,11 @@ function renderApp() {
       </div>
       <div style="height:190px;position:relative;padding:8px 8px 4px"><canvas id="topChartCanvas"></canvas></div>
       <div id="topChartCanvas-info" class="chart-point-info" style="margin:0 12px 10px"></div>
-    </div>` : ''}
+    </div>` : '';
+
+  const dashboardHTML = `
+    ${buildLiveRankingCardHTML()}
+    ${topCardHTML}
     <div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">授業履歴</div>
     ${accordionHTML}
     <button class="latest-btn" onclick="checkLatestSession()">
@@ -691,7 +747,11 @@ function renderApp() {
 
   requestAnimationFrame(() => {
     if (mainTab === 'dashboard') {
-      if (topSess?.timeline?.length) drawTimelineChart('topChartCanvas', topSess.timeline, 'topChart');
+      if (isLive) {
+        if (liveSessionTimeline.length) drawTimelineChart('liveChartCanvas', liveSessionTimeline, 'liveSessionChart');
+      } else {
+        if (topSess?.timeline?.length) drawTimelineChart('topChartCanvas', topSess.timeline, 'topChart');
+      }
       if (historySubjectOpen !== null && historySessionOpen !== null) {
         const subj = subjects[historySubjectOpen];
         const sess = subj?.sessions.find(s => s.sessionNumber === historySessionOpen);
