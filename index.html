@@ -303,6 +303,8 @@ let questionRankingData = null;
 let liveSessionTimeline = [];
 let rankingPollTimer = null;
 let lastSeenQuestionId = null;
+let latestSessionData = null;
+let latestSessionRanking = [];
 
 // ニックネーム
 let myNickname = '';
@@ -343,6 +345,7 @@ async function init() {
     } catch (e) {}
     renderApp();
     startRankingPoll();
+    if (!activeSessionState?.isActive) { await fetchLatestRanking(); renderApp(); }
     // プレビューバナーを表示
     const banner = document.createElement('div');
     banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a1208cc;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:6px;z-index:9999;backdrop-filter:blur(4px)';
@@ -379,6 +382,7 @@ async function init() {
     step = 'renderApp';
     renderApp();
     startRankingPoll();
+    if (!activeSessionState?.isActive) { await fetchLatestRanking(); renderApp(); }
     const isPaid = myBillingStatus === '課金有効' || myBillingStatus === '管理者承認';
     if (!myNickname && isPaid) openNicknameModal();
   } catch (err) {
@@ -471,6 +475,7 @@ async function pollSession() {
     stopRankingPoll();
     liveSessionTimeline = [];
     lastSeenQuestionId = null;
+    await fetchLatestRanking();
     renderApp();
     return;
   }
@@ -503,6 +508,19 @@ async function pollSession() {
 async function fetchDashboard(uid) {
   const res = await fetch(`${GAS_URL}?action=getDashboard&userId=${encodeURIComponent(uid)}`);
   return await res.json();
+}
+
+async function fetchLatestRanking() {
+  try {
+    const res = await fetch(`${GAS_URL}?action=getLatestSessionData&userId=${encodeURIComponent(userId)}`);
+    latestSessionData = await res.json();
+    if (!latestSessionData.found) { latestSessionData = null; latestSessionRanking = []; return; }
+    const rr = await fetch(`${GAS_URL}?action=getSessionRanking&sessionId=${encodeURIComponent(latestSessionData.sessionId)}`);
+    const rd = await rr.json();
+    latestSessionRanking = rd.ranking || [];
+    currentRankingSessionId = latestSessionData.sessionId;
+    currentRankingData = latestSessionRanking;
+  } catch (e) { latestSessionData = null; latestSessionRanking = []; }
 }
 
 // ===== ランキング描画 =====
@@ -698,9 +716,19 @@ function renderApp() {
       <div id="topChartCanvas-info" class="chart-point-info" style="margin:0 12px 10px"></div>
     </div>` : '';
 
+  const sessionRankingCardHTML = !isLive && latestSessionRanking.length > 0 ? `
+    <div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--ink3)">クラスランキング</div>
+        <div style="font-size:14px;font-weight:700;color:var(--ink);margin-top:2px">${latestSessionData.subject}　第${latestSessionData.sessionNumber}回</div>
+      </div>
+      ${latestSessionRanking.map(item => buildSessionRankRowHTML(item, userId)).join('')}
+    </div>` : '';
+
   const dashboardHTML = `
     ${buildLiveRankingCardHTML()}
     ${topCardHTML}
+    ${sessionRankingCardHTML}
     <div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">授業履歴</div>
     ${accordionHTML}
     <button class="latest-btn" onclick="checkLatestSession()">
