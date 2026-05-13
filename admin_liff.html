@@ -691,10 +691,9 @@
         const sid = sessionId || (activeSessionInfo && activeSessionInfo.sessionId) || '';
         return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}')">
           <div class="admin-rank-num ${cls}">${item.rank}</div>
-          <img class="admin-rank-avatar" src="${item.pictureUrl}" onerror="this.style.display='none'" />
+          <img class="admin-rank-avatar" src="${item.avatarUrl}" onerror="this.style.display='none'" />
           <div class="admin-rank-info">
-            <div class="admin-rank-name">${item.nickname || item.displayName}</div>
-            ${item.nickname ? `<div class="admin-rank-line">${item.displayName}</div>` : ''}
+            <div class="admin-rank-name">${item.displayName}</div>
             <div class="admin-rank-answer">${item.answerText ? item.answerText.slice(0,50)+(item.answerText.length>50?'…':'') : '（未回答）'}</div>
           </div>
           <div class="admin-rank-scores">
@@ -710,10 +709,9 @@
         const sid = sessionId || '';
         return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}')">
           <div class="admin-rank-num ${cls}">${item.rank}</div>
-          <img class="admin-rank-avatar" src="${item.pictureUrl}" onerror="this.style.display='none'" />
+          <img class="admin-rank-avatar" src="${item.avatarUrl}" onerror="this.style.display='none'" />
           <div class="admin-rank-info">
-            <div class="admin-rank-name">${item.nickname || item.displayName}</div>
-            ${item.nickname ? `<div class="admin-rank-line">${item.displayName}</div>` : ''}
+            <div class="admin-rank-name">${item.displayName}</div>
             <div class="admin-rank-answer">${item.answerCount}問回答</div>
           </div>
           <div class="admin-rank-scores">
@@ -789,9 +787,9 @@
         const student = studentListData && studentListData.students
           ? studentListData.students.find(s => s.userId === userId) : null;
         if (student) {
-          nameEl.textContent  = student.nickname || student.displayName || '学生';
-          lineEl.textContent  = student.nickname ? student.displayName : '';
-          avatarEl.src        = student.pictureUrl || '';
+          nameEl.textContent  = student.displayName || '学生';
+          lineEl.textContent  = '';
+          avatarEl.src        = student.avatarUrl || '';
         } else {
           nameEl.textContent = '学生';
           lineEl.textContent = '';
@@ -886,10 +884,9 @@
             ? '<div class="empty-state">課金済み学生がいません</div>'
             : students.map(s => `
                 <div class="mypage-student-row" onclick="selectStudentMyPage('${s.userId}')">
-                  <img class="mypage-student-avatar" src="${s.pictureUrl}" onerror="this.style.display='none'" />
+                  <img class="mypage-student-avatar" src="${s.avatarUrl}" onerror="this.style.display='none'" />
                   <div>
-                    <div style="font-size:14px;font-weight:600">${s.nickname || s.displayName}</div>
-                    ${s.nickname ? `<div style="font-size:11px;color:var(--ink3)">${s.displayName}</div>` : ''}
+                    <div style="font-size:14px;font-weight:600">${s.displayName}</div>
                   </div>
                 </div>`).join('');
         } catch (e) {
@@ -930,8 +927,8 @@
         const app = document.getElementById('app');
         if (!adminMyPageStudentId) { renderApp(); return; }
         const allStudents = (studentListData && studentListData.students) || myPageSelectorStudents;
-        const st = allStudents.find(s => s.userId === adminMyPageStudentId) || { displayName: '学生', pictureUrl: '', nickname: '' };
-        const name = st.nickname || st.displayName;
+        const st = allStudents.find(s => s.userId === adminMyPageStudentId) || { displayName: '学生', avatarUrl: '' };
+        const name = st.displayName;
         const backBtn = `<button class="admin-mypage-back" onclick="closeAdminMyPage()">← 管理画面に戻る</button>`;
 
         if (!adminMyPageData) {
@@ -975,7 +972,7 @@
           <div class="adminmp">
             <div class="mp-header">
               <div class="mp-header-top">
-                <div class="mp-avatar"><img src="${st.pictureUrl}" onerror="this.style.display='none'" /></div>
+                <div class="mp-avatar"><img src="${st.avatarUrl}" onerror="this.style.display='none'" /></div>
                 <div>
                   <div class="mp-greeting">閲覧中（管理者）</div>
                   <div class="mp-username">${name}</div>
@@ -1306,11 +1303,10 @@
                   return `
                   <div class="student-item" onclick="showStudentSessions('${s.userId}')">
                       <div class="student-avatar">
-                          ${s.pictureUrl ? `<img src="${s.pictureUrl}" alt="">` : '👤'}
+                          ${s.avatarUrl ? `<img src="${s.avatarUrl}" alt="">` : '👤'}
                       </div>
                       <div class="student-info">
-                          <div class="student-name">${s.nickname || s.displayName || '名前なし'}</div>
-                          ${s.nickname ? `<div class="student-line">${s.displayName}</div>` : ''}
+                          <div class="student-name">${s.displayName || '名前なし'}</div>
                           <div class="student-meta" style="color:${statusColor}">${statusLabel}</div>
                       </div>
                       <div style="font-size:13px;color:var(--ink3)">▶</div>
@@ -1344,7 +1340,7 @@
 
       function renderStudentSessionsHTML() {
           const student = studentListData.students.find(s => s.userId === selectedStudentId);
-          const name = student ? (student.nickname || student.displayName || '名前なし') : '学生';
+          const name = student ? (student.displayName || '名前なし') : '学生';
 
           if (!studentSessionsData) {
               return `
@@ -1385,7 +1381,7 @@
               <div class="detail-header">
                   <button class="back-btn" onclick="backToStudentList()">← 一覧</button>
                   <div class="student-avatar" style="width:30px;height:30px;font-size:13px">
-                      ${student && student.pictureUrl ? `<img src="${student.pictureUrl}" alt="">` : '👤'}
+                      ${student && student.avatarUrl ? `<img src="${student.avatarUrl}" alt="">` : '👤'}
                   </div>
                   <div class="detail-name">${name}</div>
               </div>
@@ -1425,7 +1421,7 @@
 
       function renderSessionDetailHTML() {
           const student = studentListData.students.find(s => s.userId === selectedStudentId);
-          const studentName = student ? (student.nickname || student.displayName || '名前なし') : '学生';
+          const studentName = student ? (student.displayName || '名前なし') : '学生';
           const session = studentSessionsData && studentSessionsData.sessions
               ? studentSessionsData.sessions.find(s => s.sessionId === selectedSessionId)
               : null;
@@ -1779,11 +1775,10 @@
           const renderRegistered = (s) => `
               <div class="student-item" style="cursor:default">
                   <div class="student-avatar">
-                      ${s.pictureUrl ? `<img src="${s.pictureUrl}" alt="">` : '👤'}
+                      ${s.avatarUrl ? `<img src="${s.avatarUrl}" alt="">` : '👤'}
                   </div>
                   <div class="student-info">
-                      <div class="student-name">${s.nickname || s.displayName || '名前なし'}</div>
-                      ${s.nickname ? `<div class="student-line">${s.displayName}</div>` : ''}
+                      <div class="student-name">${s.displayName || '名前なし'}</div>
                       <div class="student-meta">${s.billingStatus}</div>
                   </div>
                   <button onclick="revokeAccess('${s.userId}')"
@@ -1795,11 +1790,10 @@
           const renderUnregistered = (s) => `
               <div class="student-item" style="cursor:default">
                   <div class="student-avatar">
-                      ${s.pictureUrl ? `<img src="${s.pictureUrl}" alt="">` : '👤'}
+                      ${s.avatarUrl ? `<img src="${s.avatarUrl}" alt="">` : '👤'}
                   </div>
                   <div class="student-info">
-                      <div class="student-name">${s.nickname || s.displayName || '名前なし'}</div>
-                      ${s.nickname ? `<div class="student-line">${s.displayName}</div>` : ''}
+                      <div class="student-name">${s.displayName || '名前なし'}</div>
                       <div class="student-meta">未登録</div>
                   </div>
                   <button onclick="grantFreeAccess('${s.userId}')"
