@@ -841,7 +841,7 @@
                 <div class="mypage-student-row" onclick="selectStudentMyPage('${s.userId}')">
                   <img class="mypage-student-avatar" src="${s.avatarUrl}" onerror="this.style.display='none'" />
                   <div>
-                    <div style="font-size:14px;font-weight:600">${s.displayName}</div>
+                    <div style="font-size:14px;font-weight:600">${s.displayName}${s.nickname ? `<span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:5px">(${s.nickname})</span>` : ''}</div>
                   </div>
                 </div>`).join('');
         } catch (e) {
