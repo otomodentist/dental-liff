@@ -221,7 +221,10 @@
 
 <div id="nicknameModal" class="nickname-modal">
   <div class="nickname-modal-card">
-    <div class="nickname-modal-title">ニックネームを設定</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="nickname-modal-title" style="margin-bottom:0">ニックネームを設定</div>
+      <button onclick="closeNicknameModal()" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;line-height:1;padding:2px 4px">×</button>
+    </div>
     <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">ランキング表示時に他のユーザーに表示されます</div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
       <label style="position:relative;cursor:pointer;flex-shrink:0">
@@ -547,7 +550,7 @@ function buildSessionRankRowHTML(item, highlightUserId) {
   const numCls = rankNumClass(item.rank);
   const scoreColor = item.sustainScore >= 70 ? '#2d5a3d' : item.sustainScore >= 40 ? '#d97706' : '#c0392b';
   return `
-    <div class="rank-row${isMe ? ' me' : ''}" onclick="openUserGraph('${item.userId}')">
+    <div class="rank-row${isMe ? ' me' : ''}">
       <div class="rank-num ${numCls}">${item.rank}</div>
       <img class="rank-avatar" src="${item.pictureUrl}" onerror="this.style.display='none'" />
       <div class="rank-info">
