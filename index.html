@@ -895,13 +895,36 @@ function drawTimelineChart(canvasId, timeline, instanceKey) {
     infoEl.className = 'chart-point-info'; // open クラスをリセット
   }
 
-  // データをチャートポイント自体に埋め込む（onClick時にindexを経由せず直接取得）
   const points = timeline.map(t => ({
     x: t.minutesElapsed,
     y: t.concentrationScore,
     accuracyScore: t.accuracyScore,
     responseTimeSec: t.responseTimeSec,
+    questionText: t.questionText || '',
+    modelAnswer: t.modelAnswer || '',
+    answerText: t.answerText || '',
   }));
+
+  function showPointInfo(idx) {
+    const pt = points[idx];
+    if (!pt) return;
+    infoEl.style.display = 'block';
+    infoEl.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:4px">問${idx + 1}（${pt.x}分経過）</div>
+      ${pt.questionText ? `<div style="color:var(--ink);font-size:13px;margin-bottom:4px;line-height:1.4">${pt.questionText}</div>` : ''}
+      ${pt.modelAnswer ? `<div style="color:var(--ink3);font-size:11px;margin-bottom:3px"><span style="font-weight:700">模範解答：</span>${pt.modelAnswer}</div>` : ''}
+      ${pt.answerText ? `<div style="color:var(--ink2);font-size:11px;margin-bottom:6px"><span style="font-weight:700">あなたの回答：</span>${pt.answerText}</div>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+        <span style="background:var(--accent-light);color:var(--accent);font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px">集中度 ${pt.y}</span>
+        <span style="background:var(--surface);border:1px solid var(--border);font-size:11px;color:var(--ink3);padding:2px 8px;border-radius:4px">正確性 ${pt.accuracyScore ?? '-'}</span>
+        <span style="background:var(--surface);border:1px solid var(--border);font-size:11px;color:var(--ink3);padding:2px 8px;border-radius:4px">回答 ${pt.responseTimeSec ?? '-'}秒</span>
+      </div>`;
+    const chart = chartInstances[key];
+    if (chart) {
+      chart.data.datasets[0].pointBackgroundColor = points.map((_, i) => i === idx ? '#e65c00' : '#2d5a3d');
+      chart.update('none');
+    }
+  }
 
   chartInstances[key] = new Chart(canvas, {
     type: 'scatter',
@@ -911,50 +934,36 @@ function drawTimelineChart(canvasId, timeline, instanceKey) {
         showLine: true,
         borderColor: '#2d5a3d',
         backgroundColor: 'rgba(45,90,61,0.08)',
-        pointBackgroundColor: '#2d5a3d',
-        pointRadius: 6,
-        pointHoverRadius: 9,
+        pointBackgroundColor: points.map(() => '#2d5a3d'),
+        pointRadius: 8,
+        pointHoverRadius: 10,
         pointHitRadius: 20,
         borderWidth: 2,
         fill: true,
-        tension: 0.4,
+        tension: 0.3,
       }],
     },
     options: {
       ...CHART_DEFAULTS,
-      plugins: {
-        legend: { display: false },
-        tooltip: { enabled: false },
-      },
-      onClick(event, elements, chart) {
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      onClick(event, elements) {
         if (!elements.length) return;
-        const pt = chart.data.datasets[0].data[elements[0].index];
-        const scoreColor = pt.y >= 70 ? '#2d5a3d' : pt.y >= 40 ? '#d97706' : '#c0392b';
-        infoEl.className = 'chart-point-info open';
-        infoEl.innerHTML = `
-          <div class="chart-pi-time">${pt.x}分経過</div>
-          <div class="chart-pi-score" style="color:${scoreColor}">${pt.y}<span style="font-size:12px;font-weight:400;color:var(--text-muted)"> / 100</span></div>
-          <div class="chart-pi-meta">正確性 ${pt.accuracyScore ?? '-'}点 · 回答時間 ${pt.responseTimeSec ?? '-'}秒</div>
-        `;
+        showPointInfo(elements[0].index);
       },
       scales: {
         x: {
-          type: 'linear',
-          min: 0,
-          max: 90,
+          type: 'linear', min: 0, max: 90,
           grid: { color: 'rgba(0,0,0,0.05)' },
-          ticks: {
-            color: '#8a7a68',
-            font: { size: 10 },
-            stepSize: 15,
-            callback: v => `${v}分`,
-          },
+          ticks: { color: '#8a7a68', font: { size: 10 }, stepSize: 15, callback: v => `${v}分` },
           title: { display: true, text: '経過時間（分）', color: '#8a7a68', font: { size: 10 } },
         },
         y: { ...CHART_DEFAULTS.scales.y, title: { display: true, text: '集中度', color: '#8a7a68', font: { size: 10 } } },
       },
     },
   });
+
+  // デフォルトで1問目を選択状態に
+  showPointInfo(0);
 }
 
 function drawHistoryChart(canvasId, sessions) {
