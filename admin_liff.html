@@ -960,21 +960,9 @@
         document.getElementById('myPageSelectorOverlay').classList.remove('open');
       }
 
-      async function selectStudentMyPage(uid) {
+      function selectStudentMyPage(uid) {
         document.getElementById('myPageSelectorOverlay').classList.remove('open');
-        adminMyPageStudentId = uid;
-        adminMyPageData = null;
-        adminMyPageLiveRank = null;
-        adminMyPageSubjectIdx = 0;
-        Object.values(adminMyPageCharts).forEach(c => c && c.destroy());
-        adminMyPageCharts = {};
-        renderAdminMyPageView();
-        try {
-          const res = await fetch(`${GAS_URL}?action=getDashboard&userId=${encodeURIComponent(uid)}`);
-          adminMyPageData = { dashboard: await res.json() };
-        } catch (e) {}
-        renderAdminMyPageView();
-        startAdminMyPagePoll();
+        window.open(`https://otomodentist.github.io/dental-liff/?preview=${encodeURIComponent(uid)}`, '_blank');
       }
 
       function closeAdminMyPage() {
