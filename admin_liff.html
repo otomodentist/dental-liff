@@ -459,6 +459,39 @@
           return sem === 'spring' ? '春学期' : '秋学期';
       }
 
+      async function softRefresh() {
+          try {
+              const res = await fetch(`${GAS_URL}?action=getInitData`);
+              const data = await res.json();
+              SUBJECTS          = data.subjects || [];
+              activeSemester    = data.semesterData || activeSemester;
+              const session     = data.activeSession || {};
+              isSessionActive   = session.isActive || false;
+              activeSessionInfo = session.session || null;
+              isDeliveryPaused  = session.isPaused || false;
+              adminCurrentQuestionId = (activeSessionInfo && activeSessionInfo.currentQuestionId) || null;
+              if (!isSessionActive) {
+                  stopAdminRankingPoll();
+                  lastEndedSessionId = localStorage.getItem('lastEndedSessionId') || null;
+              } else {
+                  startAdminRankingPoll();
+              }
+              // タブ依存データをリセットして再取得
+              studentListData = null;
+              billingListData = null;
+              examListData = null;
+              selectedStudentId = null;
+              studentSessionsData = null;
+              selectedSessionId = null;
+              sessionDetailData = null;
+              renderApp();
+              if (!isSessionActive && lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
+              showToast('✅ 更新しました');
+          } catch (e) {
+              showToast('❌ 更新失敗');
+          }
+      }
+
       function renderApp() {
           document.getElementById('app').innerHTML = `
             <div class="header">
@@ -468,7 +501,7 @@
                   <div class="header-title">授業管理</div>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center">
-                  <button onclick="location.reload()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:16px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">↻</button>
+                  <button onclick="softRefresh()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:16px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">↻</button>
                   <button onclick="openMyPageSelector()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:10px;color:#fff;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer">マイページ</button>
                 </div>
               </div>
@@ -642,7 +675,7 @@
                   <div class="header-label">Admin Panel</div>
                   <div class="header-title">授業管理</div>
                 </div>
-                <button onclick="location.reload()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:16px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">↻</button>
+                <button onclick="softRefresh()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:16px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">↻</button>
               </div>
               <div class="tab-nav">
                 <button class="tab-btn ${activeTabName === 'session' ? 'active' : ''}" onclick="switchTab('session')">問題配信</button>
