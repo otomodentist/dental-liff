@@ -851,6 +851,7 @@
 
       async function switchTab(tab) {
           activeTab = tab;
+          document.getElementById('pointDetailPopup').classList.remove('open');
           if (tab === 'session' && isSessionActive) startAdminRankingPoll();
           else if (tab === 'session' && lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
           else stopAdminRankingPoll();
