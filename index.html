@@ -302,6 +302,7 @@ let activeSessionState = null;
 let questionRankingData = null;
 let liveSessionTimeline = [];
 let rankingPollTimer = null;
+let lastSeenQuestionId = null;
 
 // ニックネーム
 let myNickname = '';
@@ -455,7 +456,7 @@ async function refreshActiveSession() {
 function startRankingPoll() {
   stopRankingPoll();
   if (!activeSessionState?.isActive) return;
-  pollSession();
+  lastSeenQuestionId = null; // 初回は必ずフェッチさせる
   rankingPollTimer = setInterval(pollSession, 5000);
 }
 
@@ -464,17 +465,20 @@ function stopRankingPoll() {
 }
 
 async function pollSession() {
-  const prevQId = activeSessionState?.session?.currentQuestionId;
-  await refreshActiveSession();
+  await refreshActiveSession(); // 軽量（PropertiesService 1回読むだけ）
 
   if (!activeSessionState?.isActive) {
     stopRankingPoll();
     liveSessionTimeline = [];
+    lastSeenQuestionId = null;
     renderApp();
     return;
   }
 
   const curQId = activeSessionState.session.currentQuestionId;
+  if (curQId === lastSeenQuestionId) return; // 変化なし → 何もしない
+
+  lastSeenQuestionId = curQId;
   const sessionId = activeSessionState.session.sessionId;
 
   if (curQId) {
@@ -492,24 +496,9 @@ async function pollSession() {
     liveSessionTimeline = d.answers || [];
   } catch (e) {}
 
-  if (curQId !== prevQId) {
-    renderApp();
-  } else {
-    updateRankingCard();
-    updateLiveChart();
-  }
+  renderApp();
 }
 
-function updateLiveChart() {
-  const chart = chartInstances['liveSessionChart'];
-  if (!chart || !liveSessionTimeline.length) return;
-  chart.data.datasets[0].data = liveSessionTimeline.map(t => ({
-    x: t.minutesElapsed, y: t.concentrationScore,
-    accuracyScore: t.accuracyScore, responseTimeSec: t.responseTimeSec,
-    questionText: '', modelAnswer: '', answerText: '',
-  }));
-  chart.update('none');
-}
 
 async function fetchDashboard(uid) {
   const res = await fetch(`${GAS_URL}?action=getDashboard&userId=${encodeURIComponent(uid)}`);
