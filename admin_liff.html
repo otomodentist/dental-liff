@@ -404,6 +404,8 @@
       let adminMyPageSubjectIdx = 0;
       let adminMyPageCharts = {};
       let myPageSelectorStudents = [];
+      let adminMyPagePollTimer = null;
+      let adminMyPageLiveRank = null;
 
       // 自動終了タイマー
       let autoEndTimer = null;
@@ -759,7 +761,58 @@
           el.innerHTML = qHtml + (rows.length > 0
             ? rows.map(buildAdminRankRowHTML).join('')
             : '<div style="padding:14px;font-size:13px;color:var(--ink3);text-align:center">まだ誰も回答していません</div>');
+
+          // マイページ表示中なら学生のライブ状況を更新
+          if (adminMyPageStudentId) {
+            adminMyPageLiveRank = rows.find(r => r.userId === adminMyPageStudentId) || null;
+            const liveEl = document.getElementById('adminMypageLiveCard');
+            if (liveEl) liveEl.innerHTML = buildAdminMypageLiveCardHTML();
+          }
         } catch (e) {}
+      }
+
+      function buildAdminMypageLiveCardHTML() {
+        if (!activeSessionInfo) return '';
+        const item = adminMyPageLiveRank;
+        const scoreColor = item && item.concentrationScore >= 70 ? 'var(--accent)' : item && item.concentrationScore >= 40 ? '#b07d00' : '#c0392b';
+        return `
+          <div style="margin:12px 16px 0;background:var(--accent);border-radius:12px;padding:12px 14px;color:#fff">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <span style="background:#fff;color:var(--accent);font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px">LIVE</span>
+              <span style="font-size:12px;opacity:0.85">${activeSessionInfo.subject} 第${activeSessionInfo.sessionNumber}回</span>
+            </div>
+            ${adminCurrentQuestionText ? `<div style="font-size:12px;opacity:0.9;margin-bottom:8px;line-height:1.4">${adminCurrentQuestionText}</div>` : ''}
+            ${item ? `
+              <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:12px">
+                <div style="font-size:22px;font-weight:800;min-width:36px">${item.rank}<span style="font-size:12px;font-weight:400">位</span></div>
+                <div style="flex:1">
+                  <div style="font-size:12px;opacity:0.85;margin-bottom:2px">${item.answerText ? item.answerText.slice(0, 60) + (item.answerText.length > 60 ? '…' : '') : '（未回答）'}</div>
+                  <div style="font-size:11px;opacity:0.7">正確性 ${item.accuracyScore} · ${item.responseTimeSec}秒</div>
+                </div>
+                <div style="font-size:24px;font-weight:800;color:${scoreColor === 'var(--accent)' ? '#fff' : scoreColor}">${item.concentrationScore}</div>
+              </div>` : `
+              <div style="background:rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;font-size:13px;opacity:0.7">未回答</div>`}
+          </div>`;
+      }
+
+      async function refreshAdminMyPage() {
+        if (!adminMyPageStudentId) return;
+        try {
+          const res = await fetch(`${GAS_URL}?action=getDashboard&userId=${encodeURIComponent(adminMyPageStudentId)}`);
+          adminMyPageData = { dashboard: await res.json() };
+          Object.values(adminMyPageCharts).forEach(c => c && c.destroy());
+          adminMyPageCharts = {};
+          renderAdminMyPageView();
+        } catch (e) {}
+      }
+
+      function startAdminMyPagePoll() {
+        stopAdminMyPagePoll();
+        adminMyPagePollTimer = setInterval(refreshAdminMyPage, 30000);
+      }
+
+      function stopAdminMyPagePoll() {
+        if (adminMyPagePollTimer) { clearInterval(adminMyPagePollTimer); adminMyPagePollTimer = null; }
       }
 
       function startAdminRankingPoll() {
@@ -911,6 +964,7 @@
         document.getElementById('myPageSelectorOverlay').classList.remove('open');
         adminMyPageStudentId = uid;
         adminMyPageData = null;
+        adminMyPageLiveRank = null;
         adminMyPageSubjectIdx = 0;
         Object.values(adminMyPageCharts).forEach(c => c && c.destroy());
         adminMyPageCharts = {};
@@ -920,11 +974,14 @@
           adminMyPageData = { dashboard: await res.json() };
         } catch (e) {}
         renderAdminMyPageView();
+        startAdminMyPagePoll();
       }
 
       function closeAdminMyPage() {
+        stopAdminMyPagePoll();
         adminMyPageStudentId = null;
         adminMyPageData = null;
+        adminMyPageLiveRank = null;
         adminMyPageSubjectIdx = 0;
         Object.values(adminMyPageCharts).forEach(c => c && c.destroy());
         adminMyPageCharts = {};
@@ -937,10 +994,13 @@
         const allStudents = (studentListData && studentListData.students) || myPageSelectorStudents;
         const st = allStudents.find(s => s.userId === adminMyPageStudentId) || { displayName: '学生', avatarUrl: '' };
         const name = st.displayName;
-        const backBtn = `<button class="admin-mypage-back" onclick="closeAdminMyPage()">← 管理画面に戻る</button>`;
+        const backBtn = `<div style="display:flex;align-items:center;gap:8px;padding:10px 16px 0">
+          <button class="admin-mypage-back" onclick="closeAdminMyPage()" style="flex:1">← 管理画面に戻る</button>
+          <button onclick="refreshAdminMyPage()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer">↻ 更新</button>
+        </div>`;
 
         if (!adminMyPageData) {
-          app.innerHTML = backBtn + `<div style="padding:20px;text-align:center;color:var(--ink3)">読み込み中...</div>`;
+          app.innerHTML = backBtn + `<div style="padding:40px 20px;text-align:center;color:var(--ink3)">読み込み中...</div>`;
           return;
         }
 
@@ -991,6 +1051,8 @@
                 <div class="mp-title-main">集中度<br>ダッシュボード</div>
               </div>
             </div>
+
+            <div id="adminMypageLiveCard">${buildAdminMypageLiveCardHTML()}</div>
 
             <div class="mp-tabs-wrapper">
               <div class="mp-tabs">${tabsHTML}</div>
