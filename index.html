@@ -315,6 +315,7 @@ let myBillingStatus = '';
 let myAvatarUrl = '';
 let myGrade = parseInt(localStorage.getItem('myGrade') || '4');
 let mySemester = localStorage.getItem('mySemester') || 'spring';
+let availableSemesters = null;
 let pendingAvatarDataUrl = '';
 
 // メインタブ
@@ -619,7 +620,7 @@ function renderApp() {
             <img src="${_a}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'" />
           </div>
           <div class="header-title">${_n}</div>
-          <button onclick="currentView='settings';renderSettingsView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:17px;cursor:pointer;padding:2px 9px;color:white;line-height:1.4">⚙</button>
+          <button onclick="openSettingsView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:17px;cursor:pointer;padding:2px 9px;color:white;line-height:1.4">⚙</button>
         </div>
       </div>
       <div class="error-state">
@@ -641,7 +642,7 @@ function renderApp() {
           <img src="${avatarSrc}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'" />
         </div>
         <div class="header-title">${name}</div>
-        <button onclick="currentView='settings';renderSettingsView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:17px;cursor:pointer;padding:2px 9px;color:white;line-height:1.4">⚙</button>
+        <button onclick="openSettingsView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:17px;cursor:pointer;padding:2px 9px;color:white;line-height:1.4">⚙</button>
       </div>
     </div>
     <div class="tab-nav">
@@ -801,6 +802,18 @@ function toggleHistorySession(subjIdx, sessNum) {
   renderApp();
 }
 
+async function openSettingsView() {
+  currentView = 'settings';
+  renderSettingsView();
+  if (!availableSemesters) {
+    try {
+      const r = await fetch(`${GAS_URL}?action=getAvailableSemesters&userId=${encodeURIComponent(userId)}`);
+      availableSemesters = (await r.json()).semesters || [];
+    } catch (e) { availableSemesters = []; }
+    renderSettingsView();
+  }
+}
+
 function renderSettingsView() {
   const app = document.getElementById('app');
   const name = myNickname || (profileData ? profileData.displayName : '');
@@ -835,19 +848,20 @@ function renderSettingsView() {
       <div style="padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">表示設定</div>
       </div>
-      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)">
-        <div style="font-size:14px;color:var(--ink2)">学年</div>
-        <select onchange="saveGradeSemester(this.value, null)" style="font-size:13px;font-weight:700;color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:5px 8px;background:var(--surface2);font-family:inherit">
-          ${[1,2,3,4,5,6].map(g => `<option value="${g}" ${myGrade===g?'selected':''}>${g}年生</option>`).join('')}
+      ${availableSemesters === null ? `
+      <div style="padding:14px 16px;font-size:13px;color:var(--ink3)">読み込み中...</div>` :
+      availableSemesters.length === 0 ? `
+      <div style="padding:14px 16px;font-size:13px;color:var(--ink3)">データのある学期がありません</div>` :
+      `<div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:14px;color:var(--ink2)">表示する学年・学期</div>
+        <select onchange="saveGradeSemester(this.value)" style="font-size:13px;font-weight:700;color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:5px 8px;background:var(--surface2);font-family:inherit">
+          ${availableSemesters.map(s => {
+            const semLabel = s.semester === 'spring' ? '春学期' : '秋学期';
+            const selected = s.grade === myGrade && s.semester === mySemester ? 'selected' : '';
+            return `<option value="${s.grade}_${s.semester}" ${selected}>${s.grade}年生 ${semLabel}</option>`;
+          }).join('')}
         </select>
-      </div>
-      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:14px;color:var(--ink2)">学期</div>
-        <select onchange="saveGradeSemester(null, this.value)" style="font-size:13px;font-weight:700;color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:5px 8px;background:var(--surface2);font-family:inherit">
-          <option value="spring" ${mySemester==='spring'?'selected':''}>春学期</option>
-          <option value="fall" ${mySemester==='fall'?'selected':''}>秋学期</option>
-        </select>
-      </div>
+      </div>`}
     </div>
 
     <div style="margin:12px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
@@ -870,9 +884,10 @@ function renderSettingsView() {
     <div class="footer-pad"></div>`;
 }
 
-async function saveGradeSemester(grade, semester) {
-  if (grade !== null) { myGrade = parseInt(grade); localStorage.setItem('myGrade', myGrade); }
-  if (semester !== null) { mySemester = semester; localStorage.setItem('mySemester', mySemester); }
+async function saveGradeSemester(value) {
+  const [g, s] = value.split('_');
+  myGrade = parseInt(g); localStorage.setItem('myGrade', myGrade);
+  mySemester = s; localStorage.setItem('mySemester', mySemester);
   dashboardData = await fetchDashboard(userId);
   currentView = 'settings';
   renderApp();
