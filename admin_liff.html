@@ -994,9 +994,11 @@
         const allStudents = (studentListData && studentListData.students) || myPageSelectorStudents;
         const st = allStudents.find(s => s.userId === adminMyPageStudentId) || { displayName: '学生', avatarUrl: '' };
         const name = st.displayName;
+        const previewUrl = `https://otomodentist.github.io/dental-liff/?preview=${encodeURIComponent(adminMyPageStudentId)}`;
         const backBtn = `<div style="display:flex;align-items:center;gap:8px;padding:10px 16px 0">
           <button class="admin-mypage-back" onclick="closeAdminMyPage()" style="flex:1">← 管理画面に戻る</button>
           <button onclick="refreshAdminMyPage()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer">↻ 更新</button>
+          <a href="${previewUrl}" target="_blank" style="background:var(--accent);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:#fff;text-decoration:none;white-space:nowrap">↗ マイページ</a>
         </div>`;
 
         if (!adminMyPageData) {

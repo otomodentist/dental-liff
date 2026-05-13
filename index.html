@@ -321,6 +321,34 @@ let userGraphChart = null;
 
 // ===== 初期化 =====
 async function init() {
+  // プレビューモード: ?preview=<userId> でLIFF認証をスキップ
+  const previewUserId = new URLSearchParams(location.search).get('preview');
+  if (previewUserId) {
+    userId = previewUserId;
+    profileData = { userId: previewUserId, displayName: '', pictureUrl: '' };
+    try {
+      [dashboardData] = await Promise.all([
+        fetchDashboard(userId),
+        refreshActiveSession(),
+        fetchNickname(userId),
+      ]);
+      try {
+        const r = await fetch(`${GAS_URL}?action=getTodayStudyItems&userId=${encodeURIComponent(userId)}`);
+        const d = await r.json();
+        todayStudyItems = d.todayItems || [];
+        tomorrowStudyItems = d.tomorrowItems || [];
+      } catch (e) { todayStudyItems = []; tomorrowStudyItems = []; }
+    } catch (e) {}
+    renderApp();
+    startRankingPoll();
+    // プレビューバナーを表示
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a1208cc;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:6px;z-index:9999;backdrop-filter:blur(4px)';
+    banner.textContent = '👁 管理者プレビューモード';
+    document.body.appendChild(banner);
+    return;
+  }
+
   let step = 'liff.init';
   try {
     await liff.init({ liffId: LIFF_ID });
