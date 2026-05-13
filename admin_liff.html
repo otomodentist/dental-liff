@@ -365,6 +365,7 @@
       let selectedSessionId = null;
       let studentSessionsData = null;
       let sessionDetailData = null;
+      let adminSubjectOpen = null;
       let adminChart = null;
       let billingListData = null;
 
@@ -1047,21 +1048,40 @@
                   subjectMap[s.subject].latestAnswerAt = s.latestAnswerAt || 0;
           });
 
+          const subjEntries = Object.entries(subjectMap)
+              .sort(([, a], [, b]) => b.latestAnswerAt - a.latestAnswerAt);
+
           const listHTML = sessions.length === 0
               ? '<div class="empty-state">授業データがありません</div>'
-              : Object.entries(subjectMap)
-                  .sort(([, a], [, b]) => b.latestAnswerAt - a.latestAnswerAt)
-                  .map(([subj, data]) => `
-                  <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">${subj}</div>
-                  ${data.sessions.map(s => `
-                      <div class="student-item" onclick="showSessionDetail('${s.sessionId}')">
-                          <div class="student-info">
-                              <div class="student-name">第${s.sessionNumber}回</div>
-                              <div class="student-meta">${s.answerCount}問回答</div>
+              : subjEntries.map(([subj, data], idx) => {
+                  const isOpen = adminSubjectOpen === idx;
+                  const latestScore = data.sessions.length > 0 ? data.sessions[data.sessions.length - 1].sustainScore : 0;
+                  const sessionRows = isOpen ? data.sessions.slice().reverse().map(s => `
+                      <div style="border-top:1px solid var(--border)">
+                          <div class="student-item" onclick="showSessionDetail('${s.sessionId}')" style="margin:0;border-radius:0;border:none;background:transparent">
+                              <div class="student-info">
+                                  <div class="student-name">第${s.sessionNumber}回</div>
+                                  <div class="student-meta">${s.answerCount}問回答</div>
+                              </div>
+                              <div class="student-score ${scoreClass(s.sustainScore)}">${s.sustainScore}</div>
                           </div>
-                          <div class="student-score ${scoreClass(s.sustainScore)}">${s.sustainScore}</div>
-                      </div>`).join('')}
-              `).join('');
+                      </div>`).join('') : '';
+                  return `
+                      <div style="margin:0 0 8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+                          <div onclick="toggleAdminSubject(${idx})" style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer">
+                              <div style="flex:1">
+                                  <div style="font-size:14px;font-weight:700;color:var(--ink)">${subj}</div>
+                                  <div style="font-size:11px;color:var(--ink3);margin-top:2px">${data.sessions.length}回授業</div>
+                              </div>
+                              <div style="text-align:right;margin-right:6px">
+                                  <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">直近維持スコア</div>
+                                  <div class="student-score ${scoreClass(latestScore)}" style="font-size:20px">${latestScore}</div>
+                              </div>
+                              <div style="font-size:12px;color:var(--ink3);transform:${isOpen ? 'rotate(180deg)' : 'none'}">▼</div>
+                          </div>
+                          ${sessionRows}
+                      </div>`;
+              }).join('');
 
           return `
               <div class="detail-header">
@@ -1080,7 +1100,13 @@
           studentSessionsData = null;
           selectedSessionId = null;
           sessionDetailData = null;
+          adminSubjectOpen = null;
           if (adminChart) { adminChart.destroy(); adminChart = null; }
+          renderApp();
+      }
+
+      function toggleAdminSubject(idx) {
+          adminSubjectOpen = adminSubjectOpen === idx ? null : idx;
           renderApp();
       }
 
