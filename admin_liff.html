@@ -318,6 +318,22 @@
         </div>
     </div>
 
+    <div id="reviewMinModal" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-title">参考復習所要時間を入力</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:14px">学生の集中度スコアに応じて個別化した復習時間を算出するため、この授業の参考復習時間（目安）を入力してください。</div>
+        <div style="text-align:center">
+          <input id="reviewMinInput" type="number" min="5" max="180" step="5" value="45"
+            style="width:100px;padding:10px 8px;font-size:22px;font-weight:700;border:2px solid var(--border);border-radius:10px;text-align:center">
+          <span style="font-size:14px;color:var(--ink2);margin-left:6px">分</span>
+        </div>
+        <div class="modal-btns">
+          <button class="modal-btn-cancel" onclick="skipReviewMin()">後で設定</button>
+          <button class="modal-btn-save" onclick="saveReviewMin()">保存</button>
+        </div>
+      </div>
+    </div>
+
     <div id="myPageSelectorOverlay" class="mypage-selector-overlay" onclick="closeMyPageSelector(event)">
       <div class="mypage-selector-sheet" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -1214,12 +1230,18 @@
           }
 
           const answers = sessionDetailData.answers || [];
+          const refMin = sessionDetailData.referenceReviewMinutes;
+          const reviewBadge = refMin
+              ? `<span style="font-size:12px;color:var(--ink2)">参考復習 <strong>${refMin}分</strong></span>
+                 <button onclick="openReviewMinModal('${selectedSessionId}')" style="margin-left:6px;padding:2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--ink3);cursor:pointer">編集</button>`
+              : `<button onclick="openReviewMinModal('${selectedSessionId}')" style="padding:2px 10px;font-size:11px;border:1px solid var(--accent);border-radius:6px;background:transparent;color:var(--accent);cursor:pointer">+ 参考復習時間を設定</button>`;
           return `
               <div class="detail-header">
                   <button class="back-btn" onclick="backToSessions()">← 授業一覧</button>
                   <div class="detail-name">${studentName} · ${sessionLabel}</div>
               </div>
-              <div style="padding:8px 16px 4px;font-size:12px;color:var(--ink3)">集中度スコアの推移（回答正当度×速度）（点をタップで詳細）</div>
+              <div style="padding:6px 16px 4px;display:flex;align-items:center;gap:6px">${reviewBadge}</div>
+              <div style="padding:4px 16px 4px;font-size:12px;color:var(--ink3)">集中度スコアの推移（回答正当度×速度）（点をタップで詳細）</div>
               <div class="chart-container">
                   <canvas id="adminChartCanvas"></canvas>
               </div>
@@ -1498,6 +1520,8 @@
           });
       }
 
+      let pendingReviewMinSessionId = null;
+
       async function endSession() {
           clearAutoEndTimer();
           await guardedAction('endSession', async () => {
@@ -1507,6 +1531,7 @@
                   if (result.success) {
                       lastEndedSessionId = activeSessionInfo ? activeSessionInfo.sessionId : null;
                       if (lastEndedSessionId) localStorage.setItem('lastEndedSessionId', lastEndedSessionId);
+                      pendingReviewMinSessionId = lastEndedSessionId;
                       isSessionActive = false;
                       activeSessionInfo = null;
                       isDeliveryPaused = false;
@@ -1515,6 +1540,7 @@
                       if (lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
                       showToast('✅ 授業を終了しました');
                       renderApp();
+                      if (pendingReviewMinSessionId) openReviewMinModal(pendingReviewMinSessionId);
                   } else {
                       showToast('❌ エラー: ' + result.error);
                   }
@@ -1522,6 +1548,38 @@
                   showToast('❌ 通信エラー');
               }
           });
+      }
+
+      function openReviewMinModal(sessionId) {
+          pendingReviewMinSessionId = sessionId;
+          document.getElementById('reviewMinInput').value = 45;
+          document.getElementById('reviewMinModal').classList.add('open');
+      }
+      function skipReviewMin() {
+          document.getElementById('reviewMinModal').classList.remove('open');
+          pendingReviewMinSessionId = null;
+      }
+      async function saveReviewMin() {
+          const minutes = parseInt(document.getElementById('reviewMinInput').value);
+          const sessionId = pendingReviewMinSessionId;
+          if (!sessionId || isNaN(minutes) || minutes < 1) return;
+          document.getElementById('reviewMinModal').classList.remove('open');
+          pendingReviewMinSessionId = null;
+          try {
+              const res = await fetch(`${GAS_URL}?action=setSessionReviewMinutes&sessionId=${encodeURIComponent(sessionId)}&minutes=${minutes}`);
+              const result = await res.json();
+              if (result.success) {
+                  showToast(`✅ 参考復習時間 ${minutes}分 を設定しました`);
+                  if (sessionDetailData && sessionDetailData.sessionId === sessionId) {
+                      sessionDetailData.referenceReviewMinutes = minutes;
+                      renderApp();
+                  }
+              } else {
+                  showToast('❌ 保存失敗: ' + result.error);
+              }
+          } catch (err) {
+              showToast('❌ 通信エラー');
+          }
       }
 
       async function broadcastQuestion() {
