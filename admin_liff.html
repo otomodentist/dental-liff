@@ -727,6 +727,7 @@
         const nick = encodeURIComponent(item.nickname || '');
         return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')">
           <div class="admin-rank-num ${cls}">${item.rank}</div>
+          <img class="admin-rank-avatar" src="${item.avatarUrl || ''}" onerror="this.style.display='none'" />
           <div class="admin-rank-info">
             <div class="admin-rank-name">${adminRankLabel(item)}</div>
             <div class="admin-rank-answer">${item.answerText ? item.answerText.slice(0,50)+(item.answerText.length>50?'…':'') : '（未回答）'}</div>
@@ -746,6 +747,7 @@
         const nick = encodeURIComponent(item.nickname || '');
         return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')">
           <div class="admin-rank-num ${cls}">${item.rank}</div>
+          <img class="admin-rank-avatar" src="${item.avatarUrl || ''}" onerror="this.style.display='none'" />
           <div class="admin-rank-info">
             <div class="admin-rank-name">${adminRankLabel(item)}</div>
             <div class="admin-rank-answer">${item.answerCount}問回答</div>
