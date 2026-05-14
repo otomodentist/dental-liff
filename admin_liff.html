@@ -1815,6 +1815,7 @@ ${isDeliveryPaused ? `
       // ===== 学習計画タブ =====
       let editingExamId = null;
       let editingLastClassDate = false;
+      let examSubTab = 'regular'; // 'regular' | 'quiz'
 
       function formatExamDate(dateStr) {
           if (!dateStr) return '—';
@@ -1980,44 +1981,51 @@ ${isDeliveryPaused ? `
                       <button onclick="deleteQuiz('${q.quizId}')" style="background:none;border:1px solid #e0695a;border-radius:6px;color:#e0695a;font-size:11px;padding:3px 8px;cursor:pointer;flex-shrink:0">削除</button>
                   </div>`).join('');
 
+          const subTabBtn = (id, label) => `<button onclick="examSubTab='${id}';renderApp()" style="flex:1;padding:8px 0;font-size:13px;font-weight:600;border:none;cursor:pointer;border-radius:8px;font-family:inherit;transition:background 0.15s;background:${examSubTab===id?'var(--accent)':'transparent'};color:${examSubTab===id?'white':'var(--ink3)'}">${label}</button>`;
+          const subTabsHTML = `<div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:16px">${subTabBtn('regular','定期試験')}${subTabBtn('quiz','小テスト')}</div>`;
+
+          const regularHTML = `
+              <div style="background:var(--bg-sub);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:18px">
+                  ${lastClassSection}
+              </div>
+              <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:14px;color:var(--ink)">試験日程を追加</div>
+              ${addFormHTML}
+              <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:10px;color:var(--ink)">登録済み試験日程（${exams.length}件）</div>
+              <div class="card" style="padding:0;overflow:hidden">${tableHTML}</div>
+              ${editFormHTML}`;
+
+          const quizHTML = `
+              <div class="card" style="padding:14px;margin-bottom:16px">
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+                      <div>
+                          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">科目名 *</div>
+                          <select id="quizSubject" class="modal-select" style="width:100%;box-sizing:border-box">
+                              <option value="">選択...</option>
+                              ${SUBJECTS.map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
+                          </select>
+                      </div>
+                      <div>
+                          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">日程 *</div>
+                          <input id="quizDate" type="date" class="modal-select" style="width:100%;box-sizing:border-box" />
+                      </div>
+                  </div>
+                  <div style="margin-bottom:10px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">テスト名（任意）</div>
+                      <input id="quizName" type="text" class="modal-select" style="width:100%;box-sizing:border-box" placeholder="例：第3章テスト" />
+                  </div>
+                  <div style="margin-bottom:12px">
+                      <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">範囲（任意）</div>
+                      <input id="quizScope" type="text" class="modal-select" style="width:100%;box-sizing:border-box" placeholder="例：第1章〜第3章" />
+                  </div>
+                  <button onclick="addQuiz()" class="action-btn btn-start" style="width:100%">登録・学生に通知</button>
+              </div>
+              <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:10px;color:var(--ink)">登録中の小テスト（${(adminQuizList||[]).length}件）</div>
+              <div class="card" style="padding:0;overflow:hidden">${quizListHTML}</div>`;
+
           return `
               <div style="padding:16px">
-                  <div style="background:var(--bg-sub);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:18px">
-                      ${lastClassSection}
-                  </div>
-                  <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:14px;color:var(--ink)">試験日程を追加</div>
-                  ${addFormHTML}
-                  <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:10px;color:var(--ink)">登録済み試験日程（${exams.length}件）</div>
-                  <div class="card" style="padding:0;overflow:hidden">${tableHTML}</div>
-                  ${editFormHTML}
-
-                  <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin:24px 0 14px;color:var(--ink)">小テストを登録</div>
-                  <div class="card" style="padding:14px;margin-bottom:16px">
-                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-                          <div>
-                              <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">科目名 *</div>
-                              <select id="quizSubject" class="modal-select" style="width:100%;box-sizing:border-box">
-                                  <option value="">選択...</option>
-                                  ${SUBJECTS.map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
-                              </select>
-                          </div>
-                          <div>
-                              <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">日程 *</div>
-                              <input id="quizDate" type="date" class="modal-select" style="width:100%;box-sizing:border-box" />
-                          </div>
-                      </div>
-                      <div style="margin-bottom:10px">
-                          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">テスト名（任意）</div>
-                          <input id="quizName" type="text" class="modal-select" style="width:100%;box-sizing:border-box" placeholder="例：第3章テスト" />
-                      </div>
-                      <div style="margin-bottom:12px">
-                          <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">範囲（任意）</div>
-                          <input id="quizScope" type="text" class="modal-select" style="width:100%;box-sizing:border-box" placeholder="例：第1章〜第3章" />
-                      </div>
-                      <button onclick="addQuiz()" class="action-btn btn-start" style="width:100%">登録・学生に通知</button>
-                  </div>
-                  <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:10px;color:var(--ink)">登録中の小テスト</div>
-                  <div class="card" style="padding:0;overflow:hidden">${quizListHTML}</div>
+                  ${subTabsHTML}
+                  ${examSubTab === 'quiz' ? quizHTML : regularHTML}
               </div>
           `;
       }
