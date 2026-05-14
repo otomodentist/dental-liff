@@ -675,10 +675,10 @@ function renderApp() {
       const isSessOpen = historySubjectOpen === subjIdx && historySessionOpen === sess.sessionNumber;
       const sc = sess.sustainScore;
       return `
-        <div style="border-top:1px solid var(--border);background:var(--surface)">
+        <div style="border-top:1px solid var(--border);background:#f0f6f1">
           <div onclick="toggleHistorySession(${subjIdx},${sess.sessionNumber})" style="display:flex;align-items:center;gap:12px;padding:11px 14px 11px 20px;cursor:pointer">
             <div style="flex:1">
-              <div style="font-size:13px;font-weight:600;color:var(--ink2)">第${sess.sessionNumber}回授業</div>
+              <div style="font-size:13px;font-weight:600;color:var(--ink)">第${sess.sessionNumber}回授業</div>
               <div style="font-size:11px;color:var(--ink3);margin-top:1px">${sess.timeline.length}問回答</div>
             </div>
             <div class="score-badge ${sc>=70?'high':sc>=40?'mid':'low'}" style="font-size:18px;margin-right:4px">${sc}</div>
@@ -693,7 +693,7 @@ function renderApp() {
     }).join('') : '';
     return `
       <div style="margin:0 16px 8px;border-radius:12px;overflow:hidden;border:1px solid var(--border)">
-        <div onclick="toggleHistorySubject(${subjIdx})" style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;background:var(--accent-light)">
+        <div onclick="toggleHistorySubject(${subjIdx})" style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;background:#b8d9bd">
           <div style="flex:1">
             <div style="font-size:14px;font-weight:700;color:var(--accent)">${subj.name}</div>
             <div style="font-size:11px;color:var(--ink3);margin-top:2px">${subj.sessions.length}回授業</div>

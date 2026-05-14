@@ -1170,7 +1170,7 @@ ${isDeliveryPaused ? `
                   const isOpen = adminSubjectOpen === idx;
                   const latestScore = data.sessions.length > 0 ? data.sessions[data.sessions.length - 1].sustainScore : 0;
                   const sessionRows = isOpen ? data.sessions.slice().reverse().map(s => `
-                      <div style="border-top:1px solid var(--border);background:var(--surface)">
+                      <div style="border-top:1px solid var(--border);background:#f0f6f1">
                           <div class="student-item" onclick="showSessionDetail('${s.sessionId}')" style="margin:0;border-radius:0;border:none;background:transparent;padding-left:20px">
                               <div class="student-info">
                                   <div class="student-name" style="font-size:13px">第${s.sessionNumber}回</div>
@@ -1181,7 +1181,7 @@ ${isDeliveryPaused ? `
                       </div>`).join('') : '';
                   return `
                       <div style="margin:0 0 8px;border-radius:12px;overflow:hidden;border:1px solid var(--border)">
-                          <div onclick="toggleAdminSubject(${idx})" style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;background:var(--accent-light)">
+                          <div onclick="toggleAdminSubject(${idx})" style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;background:#b8d9bd">
                               <div style="flex:1">
                                   <div style="font-size:14px;font-weight:700;color:var(--accent)">${subj}</div>
                                   <div style="font-size:11px;color:var(--ink3);margin-top:2px">${data.sessions.length}回授業</div>
