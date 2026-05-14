@@ -273,7 +273,6 @@
     <div id="studentPanelOverlay" class="student-panel-overlay" onclick="closeStudentDetailPanel(event)">
       <div class="student-panel" onclick="event.stopPropagation()">
         <div class="student-panel-header">
-          <div class="student-panel-avatar"><img id="studentPanelAvatar" src="" onerror="this.style.display='none'" /></div>
           <div class="flex-col" style="flex:1;min-width:0">
             <div class="student-panel-name" id="studentPanelName"></div>
             <div class="student-line" id="studentPanelLine"></div>
@@ -716,17 +715,20 @@
       // ===== ランキング =====
       function adminRankNumClass(r) { return r===1?'gold':r===2?'silver':r===3?'bronze':''; }
 
+      function adminRankLabel(item) {
+        return item.displayName + (item.nickname ? ` <span style="font-size:11px;font-weight:400;color:var(--ink3)">(${item.nickname})</span>` : '');
+      }
+
       function buildAdminRankRowHTML(item) {
         const cls = adminRankNumClass(item.rank);
         const scoreColor = item.concentrationScore>=70?'var(--accent)':item.concentrationScore>=40?'#b07d00':'#c0392b';
         const sid = adminCurrentSessionId || '';
         const name = encodeURIComponent(item.displayName || '');
-        const avatar = encodeURIComponent(item.avatarUrl || '');
-        return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${avatar}')">
+        const nick = encodeURIComponent(item.nickname || '');
+        return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')">
           <div class="admin-rank-num ${cls}">${item.rank}</div>
-          <img class="admin-rank-avatar" src="${item.avatarUrl}" onerror="this.style.display='none'" />
           <div class="admin-rank-info">
-            <div class="admin-rank-name">${item.displayName}</div>
+            <div class="admin-rank-name">${adminRankLabel(item)}</div>
             <div class="admin-rank-answer">${item.answerText ? item.answerText.slice(0,50)+(item.answerText.length>50?'…':'') : '（未回答）'}</div>
           </div>
           <div class="admin-rank-scores">
@@ -741,12 +743,11 @@
         const scoreColor = item.sustainScore>=70?'var(--accent)':item.sustainScore>=40?'#b07d00':'#c0392b';
         const sid = sessionId || '';
         const name = encodeURIComponent(item.displayName || '');
-        const avatar = encodeURIComponent(item.avatarUrl || '');
-        return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${avatar}')">
+        const nick = encodeURIComponent(item.nickname || '');
+        return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')">
           <div class="admin-rank-num ${cls}">${item.rank}</div>
-          <img class="admin-rank-avatar" src="${item.avatarUrl}" onerror="this.style.display='none'" />
           <div class="admin-rank-info">
-            <div class="admin-rank-name">${item.displayName}</div>
+            <div class="admin-rank-name">${adminRankLabel(item)}</div>
             <div class="admin-rank-answer">${item.answerCount}問回答</div>
           </div>
           <div class="admin-rank-scores">
@@ -812,20 +813,20 @@
         } catch (e) {}
       }
 
-      async function openStudentDetailPanel(userId, sessionId, encodedName, encodedAvatar) {
+      async function openStudentDetailPanel(userId, sessionId, encodedName, encodedNick) {
         const overlay = document.getElementById('studentPanelOverlay');
         const content = document.getElementById('studentPanelContent');
         const nameEl  = document.getElementById('studentPanelName');
         const lineEl  = document.getElementById('studentPanelLine');
-        const avatarEl = document.getElementById('studentPanelAvatar');
 
         const student = studentListData && studentListData.students
           ? studentListData.students.find(s => s.userId === userId) : null;
-        const fallbackName   = encodedName   ? decodeURIComponent(encodedName)   : '';
-        const fallbackAvatar = encodedAvatar ? decodeURIComponent(encodedAvatar) : '';
-        nameEl.textContent = (student && student.displayName) || fallbackName || '学生';
-        lineEl.textContent = '';
-        avatarEl.src       = (student && student.avatarUrl)   || fallbackAvatar || '';
+        const displayName = (student && student.displayName) || (encodedName ? decodeURIComponent(encodedName) : '') || '学生';
+        const nickname    = (student && student.nickname)    || (encodedNick ? decodeURIComponent(encodedNick) : '') || '';
+        nameEl.textContent = displayName;
+        lineEl.textContent = nickname ? `(${nickname})` : '';
+        lineEl.style.fontSize = '12px';
+        lineEl.style.color = 'var(--ink3)';
         content.innerHTML = '<div class="empty-state">読み込み中...</div>';
         overlay.classList.add('open');
 
