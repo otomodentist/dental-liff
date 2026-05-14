@@ -367,6 +367,7 @@
       let adminCurrentModelAnswer = null;
       let adminRankingTimer = null;
       let lastEndedSessionId = null;
+      let adminCurrentSessionId = null; // セッション終了後も保持
 
       // マイページセレクター
       let myPageSelectorStudents = [];
@@ -450,6 +451,7 @@
                 activeSessionInfo = session.session || null;
                 isDeliveryPaused  = session.isPaused || false;
                 adminCurrentQuestionId = (activeSessionInfo && activeSessionInfo.currentQuestionId) || null;
+                if (activeSessionInfo && activeSessionInfo.sessionId) adminCurrentSessionId = activeSessionInfo.sessionId;
 
                 // フィルタ未設定の場合はactiveSemesterを自動適用
                 if (!dashboardFilter) {
@@ -457,7 +459,10 @@
                     localStorage.setItem(FILTER_KEY, JSON.stringify(dashboardFilter));
                 }
                 // 最終終了セッションをlocalStorageから復元
-                if (!isSessionActive) lastEndedSessionId = localStorage.getItem('lastEndedSessionId') || null;
+                if (!isSessionActive) {
+                    lastEndedSessionId = localStorage.getItem('lastEndedSessionId') || null;
+                    if (lastEndedSessionId && !adminCurrentSessionId) adminCurrentSessionId = lastEndedSessionId;
+                }
                 renderApp();
                 if (!isSessionActive && lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
                 if (isSessionActive) {
@@ -486,9 +491,11 @@
               activeSessionInfo = session.session || null;
               isDeliveryPaused  = session.isPaused || false;
               adminCurrentQuestionId = (activeSessionInfo && activeSessionInfo.currentQuestionId) || null;
+              if (activeSessionInfo && activeSessionInfo.sessionId) adminCurrentSessionId = activeSessionInfo.sessionId;
               if (!isSessionActive) {
                   stopAdminRankingPoll();
                   lastEndedSessionId = localStorage.getItem('lastEndedSessionId') || null;
+                  if (lastEndedSessionId && !adminCurrentSessionId) adminCurrentSessionId = lastEndedSessionId;
               } else {
                   startAdminRankingPoll();
               }
@@ -709,11 +716,13 @@
       // ===== ランキング =====
       function adminRankNumClass(r) { return r===1?'gold':r===2?'silver':r===3?'bronze':''; }
 
-      function buildAdminRankRowHTML(item, sessionId) {
+      function buildAdminRankRowHTML(item) {
         const cls = adminRankNumClass(item.rank);
         const scoreColor = item.concentrationScore>=70?'var(--accent)':item.concentrationScore>=40?'#b07d00':'#c0392b';
-        const sid = sessionId || (activeSessionInfo && activeSessionInfo.sessionId) || '';
-        return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}')">
+        const sid = adminCurrentSessionId || '';
+        const name = encodeURIComponent(item.displayName || '');
+        const avatar = encodeURIComponent(item.avatarUrl || '');
+        return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${avatar}')">
           <div class="admin-rank-num ${cls}">${item.rank}</div>
           <img class="admin-rank-avatar" src="${item.avatarUrl}" onerror="this.style.display='none'" />
           <div class="admin-rank-info">
@@ -731,7 +740,9 @@
         const cls = adminRankNumClass(item.rank);
         const scoreColor = item.sustainScore>=70?'var(--accent)':item.sustainScore>=40?'#b07d00':'#c0392b';
         const sid = sessionId || '';
-        return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}')">
+        const name = encodeURIComponent(item.displayName || '');
+        const avatar = encodeURIComponent(item.avatarUrl || '');
+        return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${avatar}')">
           <div class="admin-rank-num ${cls}">${item.rank}</div>
           <img class="admin-rank-avatar" src="${item.avatarUrl}" onerror="this.style.display='none'" />
           <div class="admin-rank-info">
@@ -773,7 +784,7 @@
               ${adminCurrentModelAnswer ? `<div style="font-size:10px;color:var(--ink3);margin-bottom:2px">模範解答</div><div style="font-size:12px;color:var(--ink2);line-height:1.4">${adminCurrentModelAnswer}</div>` : ''}
             </div>` : '';
           el.innerHTML = qHtml + (rows.length > 0
-            ? rows.map(buildAdminRankRowHTML).join('')
+            ? rows.map(item => buildAdminRankRowHTML(item)).join('')
             : '<div style="padding:14px;font-size:13px;color:var(--ink3);text-align:center">まだ誰も回答していません</div>');
         } catch (e) {}
       }
@@ -781,7 +792,7 @@
       function startAdminRankingPoll() {
         if (adminRankingTimer) clearInterval(adminRankingTimer);
         pollAdminRanking();
-        adminRankingTimer = setInterval(pollAdminRanking, 5000);
+        adminRankingTimer = setInterval(pollAdminRanking, 10000);
       }
 
       function stopAdminRankingPoll() {
@@ -801,7 +812,7 @@
         } catch (e) {}
       }
 
-      async function openStudentDetailPanel(userId, sessionId) {
+      async function openStudentDetailPanel(userId, sessionId, encodedName, encodedAvatar) {
         const overlay = document.getElementById('studentPanelOverlay');
         const content = document.getElementById('studentPanelContent');
         const nameEl  = document.getElementById('studentPanelName');
@@ -810,15 +821,11 @@
 
         const student = studentListData && studentListData.students
           ? studentListData.students.find(s => s.userId === userId) : null;
-        if (student) {
-          nameEl.textContent  = student.displayName || '学生';
-          lineEl.textContent  = '';
-          avatarEl.src        = student.avatarUrl || '';
-        } else {
-          nameEl.textContent = '学生';
-          lineEl.textContent = '';
-          avatarEl.src = '';
-        }
+        const fallbackName   = encodedName   ? decodeURIComponent(encodedName)   : '';
+        const fallbackAvatar = encodedAvatar ? decodeURIComponent(encodedAvatar) : '';
+        nameEl.textContent = (student && student.displayName) || fallbackName || '学生';
+        lineEl.textContent = '';
+        avatarEl.src       = (student && student.avatarUrl)   || fallbackAvatar || '';
         content.innerHTML = '<div class="empty-state">読み込み中...</div>';
         overlay.classList.add('open');
 
@@ -1506,7 +1513,8 @@
                   if (result.success) {
                       isSessionActive   = true;
                       const startEpoch = result.sessionStartTimeEpoch || Date.now();
-                      activeSessionInfo = { subject: selectedSubject, sessionNumber: selectedSession, sessionStartTimeEpoch: startEpoch };
+                      activeSessionInfo = { subject: selectedSubject, sessionNumber: selectedSession, sessionStartTimeEpoch: startEpoch, sessionId: result.sessionId };
+                      adminCurrentSessionId = result.sessionId || null;
                       scheduleAutoEnd(startEpoch);
                       selectedDay = selectedSubject = selectedSession = null;
                       showToast(`✅ ${activeSessionInfo.subject} 第${activeSessionInfo.sessionNumber}回 開始しました`);
@@ -1531,6 +1539,7 @@
                   if (result.success) {
                       lastEndedSessionId = activeSessionInfo ? activeSessionInfo.sessionId : null;
                       if (lastEndedSessionId) localStorage.setItem('lastEndedSessionId', lastEndedSessionId);
+                      adminCurrentSessionId = lastEndedSessionId || adminCurrentSessionId;
                       pendingReviewMinSessionId = lastEndedSessionId;
                       isSessionActive = false;
                       activeSessionInfo = null;
