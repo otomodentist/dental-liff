@@ -1073,24 +1073,35 @@
       function renderStudentListHTML() {
           const { students, overall } = studentListData;
           const filterLabel = `${dashboardFilter.grade}年生 · ${semesterLabel(dashboardFilter.semester)}`;
+
+          function studentRowHTML(s) {
+              return `
+              <div class="student-item" onclick="showStudentSessions('${s.userId}')">
+                  <div class="student-avatar">
+                      ${s.avatarUrl ? `<img src="${s.avatarUrl}" alt="">` : '👤'}
+                  </div>
+                  <div class="student-info">
+                      <div class="student-name">${s.displayName || '名前なし'}${s.nickname ? `<span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:5px">(${s.nickname})</span>` : ''}</div>
+                  </div>
+                  <div style="font-size:13px;color:var(--ink3)">▶</div>
+              </div>`;
+          }
+
+          const registered   = students.filter(s => s.billingStatus === '課金有効' || s.billingStatus === '管理者承認');
+          const unregistered = students.filter(s => s.billingStatus !== '課金有効' && s.billingStatus !== '管理者承認');
+
           const listHTML = students.length === 0
               ? '<div class="empty-state">学生データがありません</div>'
-              : students.map(s => {
-                  const isPaid = s.billingStatus === '課金有効' || s.billingStatus === '管理者承認';
-                  const statusLabel = isPaid ? '登録済み' : '未登録';
-                  const statusColor = isPaid ? 'var(--ink3)' : '#e06060';
-                  return `
-                  <div class="student-item" onclick="showStudentSessions('${s.userId}')">
-                      <div class="student-avatar">
-                          ${s.avatarUrl ? `<img src="${s.avatarUrl}" alt="">` : '👤'}
-                      </div>
-                      <div class="student-info">
-                          <div class="student-name">${s.displayName || '名前なし'}${s.nickname ? `<span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:5px">(${s.nickname})</span>` : ''}</div>
-                          <div class="student-meta" style="color:${statusColor}">${statusLabel}</div>
-                      </div>
-                      <div style="font-size:13px;color:var(--ink3)">▶</div>
-                  </div>`;
-              }).join('');
+              : `
+              ${registered.length > 0 ? `
+                  <div style="padding:8px 16px 4px;font-size:11px;font-weight:700;color:var(--accent)">登録済み（${registered.length}名）</div>
+                  <div class="student-list" style="margin-bottom:0">${registered.map(studentRowHTML).join('')}</div>
+              ` : ''}
+              ${unregistered.length > 0 ? `
+                  <div style="padding:8px 16px 4px;font-size:11px;font-weight:700;color:#e06060">未登録（${unregistered.length}名）</div>
+                  <div class="student-list" style="margin-bottom:0">${unregistered.map(studentRowHTML).join('')}</div>
+              ` : ''}`;
+
           return `
               <div style="background:var(--warning-light);border-bottom:1px solid #e8d89a;padding:10px 16px;display:flex;align-items:center;gap:10px">
                   <div style="flex:1;font-size:13px;color:var(--warning);font-weight:500">
@@ -1098,8 +1109,7 @@
                   </div>
                   <button class="btn-semester-change" onclick="changeDashboardFilter()">変更</button>
               </div>
-              <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">学生一覧（${overall.totalStudents}名）</div>
-              <div class="student-list">${listHTML}</div>
+              ${listHTML}
           `;
       }
 
@@ -1160,7 +1170,7 @@
                       </div>`).join('') : '';
                   return `
                       <div style="margin:0 0 8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-                          <div onclick="toggleAdminSubject(${idx})" style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer">
+                          <div onclick="toggleAdminSubject(${idx})" style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;background:var(--accent-light);border-bottom:${isOpen ? '1px solid var(--border)' : 'none'}">
                               <div style="flex:1">
                                   <div style="font-size:14px;font-weight:700;color:var(--ink)">${subj}</div>
                                   <div style="font-size:11px;color:var(--ink3);margin-top:2px">${data.sessions.length}回授業</div>
