@@ -375,34 +375,10 @@
 
       // 自動終了タイマー
       let autoEndTimer = null;
-      let countdownIntervalId = null;
-
-      function startCountdownDisplay(endAt) {
-          if (countdownIntervalId) clearInterval(countdownIntervalId);
-          function update() {
-              const el = document.getElementById('sessionCountdown');
-              if (!el) return;
-              const rem = endAt - Date.now();
-              if (rem <= 0) {
-                  el.textContent = '終了';
-                  el.style.color = '#e53e3e';
-                  clearInterval(countdownIntervalId);
-                  return;
-              }
-              const m = Math.floor(rem / 60000);
-              const s = Math.floor((rem % 60000) / 1000);
-              el.textContent = `残り ${m}:${String(s).padStart(2,'0')}`;
-              el.style.color = rem < 10 * 60 * 1000 ? '#e53e3e' : 'rgba(255,255,255,0.75)';
-          }
-          update();
-          countdownIntervalId = setInterval(update, 1000);
-      }
-
       function scheduleAutoEnd(sessionStartTimeEpoch) {
           clearAutoEndTimer();
           const endAt = sessionStartTimeEpoch + 90 * 60 * 1000;
           const remaining = endAt - Date.now();
-          startCountdownDisplay(endAt);
           if (remaining > 0) {
               autoEndTimer = setTimeout(endSession, remaining);
           } else {
@@ -411,7 +387,6 @@
       }
       function clearAutoEndTimer() {
           if (autoEndTimer) { clearTimeout(autoEndTimer); autoEndTimer = null; }
-          if (countdownIntervalId) { clearInterval(countdownIntervalId); countdownIntervalId = null; }
       }
 
       // ダッシュボード用
@@ -605,7 +580,7 @@
                                                                           <div class="status-dot ${isSessionActive ? 'active' : 'inactive'}"></div>
                                                                                 <div class="status-text">
                                                                                         ${isSessionActive
-                                                                                                    ? `<strong>${activeSessionInfo.subject} 第${activeSessionInfo.sessionNumber}回</strong>授業進行中 <span id="sessionCountdown" style="font-size:12px;font-weight:600;margin-left:4px"></span>`
+                                                                                                    ? `<strong>${activeSessionInfo.subject} 第${activeSessionInfo.sessionNumber}回</strong>授業進行中`
                                                                                                     : '<strong>授業なし</strong>待機中'}
                                                                                                           </div>
                                                                                                                 ${isSessionActive ? `
