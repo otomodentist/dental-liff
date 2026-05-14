@@ -57,7 +57,7 @@
 | Project ID | `1dfHpjEjSigxTJbSnuER99IKDBROzZ-ZXJ2XPiNJMfDsUZ9idejL35Cq8` |
 | Web App URL（Webhook & API） | `https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec` |
 | Deploy ID（`clasp deploy -i` に指定） | `AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug` |
-| 現在のバージョン | v63（2026/05/11） |
+| 現在のバージョン | v129（2026/05/15） |
 
 ### Google Sheets（Spreadsheet ID: `15UpJAol2SayyiEQDyOdKYX02eQQ4pMH4gq4SssJrYT4`）
 
@@ -70,6 +70,7 @@
 | 科目マスタ | 科目名, 曜日, 学年, 学期（16科目, 学年4, spring） |
 | 試験日程 | 試験ID, 科目名, 試験日, 復習標準時間（分）, 作成日時, 開始時間（HH:mm文字列）, 復習必要コマ数 |
 | 学習計画 | 計画ID, userId, 試験ID, 科目名, セッションID, 授業回数, タイプ, 予定日, 所要時間（分）, 完了状態, 完了日時, リプラン回数 |
+| 小テスト | quizId, 科目名, テスト名, 範囲, 日程（YYYY-MM-DD）, 作成日時 |
 
 ### Google Drive
 
@@ -133,6 +134,10 @@
 - `replanStudy(userId, dailyAvailableHours)` — 全科目の未完了分を今日から再スケジュール
 - `replanStudyForExam(userId, examId, dailyAvailableHours)` — 特定科目の未完了分を今日から再スケジュール
 - `getStudyPlanInitData(userId)` — 学習計画ビュー初期化（exams・plan・progressBlocks・attendedBySubject）
+- `getQuizList()` — 小テスト一覧（日程が今日以降のもの、日程昇順）
+- `addQuiz(subjectName, quizName, scope, examDate)` — 小テスト追加（シートなければ作成）→ 課金済み学生にLINE通知
+- `deleteQuiz(quizId)` — 小テスト削除
+- `getUserSessionGraph(sessionId, targetUserId)` — セッション内回答タイムライン（questionText・modelAnswer・answerText含む、問題マスタをjoin）
 - `getScheduledSessionStart_()` — コマ定刻に基づく授業開始時刻を返す（内部関数）
 
 **スプレッドシート操作**
@@ -145,6 +150,10 @@
 - `multicastMessage(userIds, text)` — 最大500件ずつ分割してMulticast送信
 - `getLineProfile(userId)` — LINEプロフィール取得
 
+**授業セッション自動終了**
+- 授業開始から90分後に自動終了（`getScheduledSessionStart_()` が返す定時刻ベース）
+- コマ定刻: 1コマ8:40 / 2コマ10:25 / 3コマ12:55 / 4コマ14:40
+
 **朝のリマインダー（GASトリガー）**
 - `sendMorningReminders()` — 毎朝7時に当日の学習計画をLINE通知（GASタイムトリガーから実行）
 - `setupMorningReminderTrigger()` — 上記トリガーを登録（手動実行）
@@ -155,12 +164,16 @@
 - `broadcastRegistrationMessage()` — 学生登録案内ブロードキャスト
 - `registerAllFollowers()` — フォロワー全員を学生マスタに一括登録
 
-### `gas_richmenu.js.gs`（182行、手動実行用）
+### `gas_richmenu.js.gs`（手動実行用）
 
-- `createAndSetRichMenu()` — 学生用リッチメニュー作成・画像アップ・デフォルト設定
+- `createAndSetRichMenu()` — 学生用リッチメニュー作成・画像アップ・デフォルト設定（demo.html行き）
 - `createAndSetAdminRichMenu()` — 管理者用リッチメニュー作成・設定
 - `getAdminRichMenuIdFromList()` — LINE APIから `name:'admin_richmenu'` のIDを検索（followイベントから呼び出し）
 - `setRichMenuForAdmin(adminRichMenuId)` — 管理者ユーザーにリッチメニューをリンク
+- `setRichMenuForPaidUser(userId)` — 課金済みユーザーにindex.html行きリッチメニューを個別設定
+- `getOrCreatePaidStudentRichMenu()` — `name:'paid_student_richmenu'` を取得または作成（index.html行き）
+- `setUserRichMenu(userId, richMenuId)` — 特定ユーザーにリッチメニューをリンク
+- `deleteUserRichMenu(userId)` — 特定ユーザーの個別リッチメニュー設定を削除（デフォルトに戻す）
 - `saveStudentRichMenuImageFromDataUrl(dataUrl)` — Canvas生成画像をDriveに保存
 - `openRichMenuGenerator()` — 学生用リッチメニュー画像ジェネレーターをSpreadsheetUIで開く
 
@@ -257,6 +270,9 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 7. **LIFFキャッシュ** — LINE設定 → ストレージ → キャッシュ消去 で古いHTMLが表示される問題を解消できる
 8. **ダッシュボードフィルタはlocalStorage** — `FILTER_KEY = 'dashboardFilter'` で永続化。初回はactiveSemesterを自動適用
 9. **Sheets の時刻自動変換** — `appendRow` / `setValue` で "HH:mm" 文字列を書き込むと Sheets がDate型に自動変換する。書き込み前に `setNumberFormat('@STRING@')` を適用すること。読み取り時は `r[n] instanceof Date ? Utilities.formatDate(r[n], 'Asia/Tokyo', 'HH:mm') : String(r[n])` で文字列に戻す
+10. **index.html の主要localStorageキー** — `hideAnswerInRanking`（ランキング回答非表示）、`dashboardFilter`（ダッシュボードフィルタ）
+11. **学習計画タブはlazy-load** — `switchMainTab('plan')` で初めて `loadPlanTabData()` を呼び出す。`planTabData = { exams, progressBlocks, quizzes }` にキャッシュ。`openStudyPlanView()` 後は exams/progressBlocks のみ更新
+12. **HTMLテンプレート文字列の深いインデント** — `admin_liff.html` / `index.html` のテンプレート文字列は数千文字のインデントが入ることがあり、Editツールの完全一致が失敗する場合は Python スクリプトで `content.replace()` を使うこと
 
 ---
 
@@ -297,3 +313,14 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 | 2026/05/11 | GAS: `getQuestionRanking(questionId)` / `getSessionRanking(sessionId)` 追加、`adminBroadcast` が questionId を返すよう変更 |
 | 2026/05/11 | GAS: `getActiveSession()` / `getInitData()` に currentQuestionId・currentQuestionText を追加 |
 | 2026/05/11 | demo.html: LIVEランキングカード・セッションランキングを静的デモデータで追加（授業中を想定、未回答者も「未回答」表示）|
+| 2026/05/15 | admin_liff.html: 問題配信フォームに問題文・模範解答クリアボタン追加、180秒クールダウン、フォームpadding整理（v120〜）|
+| 2026/05/15 | GAS: `calculateSpeedMultiplier` の許容秒数を30s→60sに変更（60秒以内=×1.0、以降30s毎に×0.1減衰、270s以降=×0.3固定）|
+| 2026/05/15 | GAS: `getUserSessionGraph()` を問題マスタjoin方式に修正（questionText・modelAnswer・answerTextを返すように）|
+| 2026/05/15 | index.html: スコア表記「回答」→「回答時間」、集中度＝正確性×速度 の計算式を表示 |
+| 2026/05/15 | index.html: ランキング未回答ロック（回答完了後のみランキング・模範解答を表示）|
+| 2026/05/15 | index.html: ランキング回答非表示設定（localStorage `hideAnswerInRanking`）、設定画面に「ランキング設定」セクション追加 |
+| 2026/05/15 | index.html: 学習計画タブをlazy-load（`loadPlanTabData()`）、定期試験リスト・小テストリストを直接表示（旧exam-sectionボタンUI削除）|
+| 2026/05/15 | GAS: 小テスト機能追加（`getQuizList`/`addQuiz`/`deleteQuiz`、シート「小テスト」）。`addQuiz`時に課金済み学生へLINE通知 |
+| 2026/05/15 | admin_liff.html: 試験タブに小テスト登録フォーム・一覧追加（`addQuiz()`/`deleteQuiz()`）|
+| 2026/05/15 | admin_liff.html・index.html: 科目ヘッダー色 `#e8f2eb`→`#b8d9bd`、セッション行 white→`#f0f6f1`（アコーディオン視認性改善）|
+| 2026/05/15 | index.html: 不要CSS削除（`.exam-btn`・`.exam-section`・関連クラス）（v129） |
