@@ -1813,7 +1813,7 @@ ${isDeliveryPaused ? `
       }
 
       // ===== 学習計画タブ =====
-      let editingExamId = null;
+      let editingExamId = null;\n      let editingQuizId = null;
       let editingLastClassDate = false;
       let examSubTab = 'quiz'; // 'regular' | 'quiz'
 
@@ -1971,15 +1971,49 @@ ${isDeliveryPaused ? `
 
           const quizListHTML = (adminQuizList || []).length === 0
               ? '<div style="padding:12px 16px;font-size:13px;color:var(--ink3)">登録中の小テストはありません</div>'
-              : (adminQuizList || []).map(q => `
+              : (adminQuizList || []).map(q => {
+                  if (editingQuizId === q.quizId) {
+                      return `
+                  <div style="padding:12px 14px;border-bottom:1px solid var(--border);background:var(--bg-sub)">
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                          <div>
+                              <div style="font-size:11px;color:var(--ink3);margin-bottom:3px">科目名 *</div>
+                              <select id="editQuizSubject_${q.quizId}" class="modal-select" style="width:100%;box-sizing:border-box">
+                                  ${SUBJECTS.map(s => `<option value="${s.name}" ${s.name===q.subjectName?'selected':''}>${s.name}</option>`).join('')}
+                              </select>
+                          </div>
+                          <div>
+                              <div style="font-size:11px;color:var(--ink3);margin-bottom:3px">日程 *</div>
+                              <input id="editQuizDate_${q.quizId}" type="date" class="modal-select" style="width:100%;box-sizing:border-box" value="${q.examDate}" />
+                          </div>
+                      </div>
+                      <div style="margin-bottom:8px">
+                          <div style="font-size:11px;color:var(--ink3);margin-bottom:3px">テスト名（任意）</div>
+                          <input id="editQuizName_${q.quizId}" type="text" class="modal-select" style="width:100%;box-sizing:border-box" value="${q.quizName}" placeholder="例：第3章テスト" />
+                      </div>
+                      <div style="margin-bottom:10px">
+                          <div style="font-size:11px;color:var(--ink3);margin-bottom:3px">範囲（任意）</div>
+                          <input id="editQuizScope_${q.quizId}" type="text" class="modal-select" style="width:100%;box-sizing:border-box" value="${q.scope}" placeholder="例：第1章〜第3章" />
+                      </div>
+                      <div style="display:flex;gap:8px">
+                          <button onclick="saveEditQuiz('${q.quizId}')" class="action-btn btn-start" style="flex:1;padding:8px;font-size:13px">保存</button>
+                          <button onclick="cancelEditQuiz()" style="flex:1;padding:8px;font-size:13px;background:none;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-family:inherit">キャンセル</button>
+                      </div>
+                  </div>`;
+                  }
+                  return `
                   <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)">
                       <div style="flex:1">
                           <div style="font-size:13px;font-weight:600;color:var(--ink)">${q.subjectName}${q.quizName ? `　<span style="font-weight:400;color:var(--ink2)">${q.quizName}</span>` : ''}</div>
                           ${q.scope ? `<div style="font-size:11px;color:var(--ink3);margin-top:1px">範囲：${q.scope}</div>` : ''}
                           <div style="font-size:11px;color:var(--accent);margin-top:1px">${q.examDate}</div>
                       </div>
-                      <button onclick="deleteQuiz('${q.quizId}')" style="background:none;border:1px solid #e0695a;border-radius:6px;color:#e0695a;font-size:11px;padding:3px 8px;cursor:pointer;flex-shrink:0">削除</button>
-                  </div>`).join('');
+                      <div style="display:flex;gap:6px;flex-shrink:0">
+                          <button onclick="startEditQuiz('${q.quizId}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink2);font-size:11px;padding:3px 8px;cursor:pointer">編集</button>
+                          <button onclick="deleteQuiz('${q.quizId}')" style="background:none;border:1px solid #e0695a;border-radius:6px;color:#e0695a;font-size:11px;padding:3px 8px;cursor:pointer">削除</button>
+                      </div>
+                  </div>`;
+              }).join('');
 
           const subTabBtn = (id, label) => `<button onclick="examSubTab='${id}';renderApp()" style="flex:1;padding:8px 0;font-size:13px;font-weight:600;border:none;cursor:pointer;border-radius:8px;font-family:inherit;transition:background 0.15s;background:${examSubTab===id?'var(--accent)':'transparent'};color:${examSubTab===id?'white':'var(--ink3)'}">${label}</button>`;
           const subTabsHTML = `<div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:16px">${subTabBtn('regular','定期試験')}${subTabBtn('quiz','小テスト')}</div>`;
@@ -2044,6 +2078,33 @@ ${isDeliveryPaused ? `
                       adminQuizList = null;
                       await switchTab('exam');
                       showToast('✅ 小テストを登録し学生に通知しました');
+                  } else {
+                      showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
+              }
+          });
+      }
+
+      function startEditQuiz(quizId) { editingQuizId = quizId; renderApp(); }
+      function cancelEditQuiz() { editingQuizId = null; renderApp(); }
+      async function saveEditQuiz(quizId) {
+          const subjectName = document.getElementById(`editQuizSubject_${quizId}`)?.value;
+          const examDate    = document.getElementById(`editQuizDate_${quizId}`)?.value;
+          const quizName    = document.getElementById(`editQuizName_${quizId}`)?.value.trim() || '';
+          const scope       = document.getElementById(`editQuizScope_${quizId}`)?.value.trim() || '';
+          if (!subjectName || !examDate) { showToast('❌ 科目名と日程は必須です'); return; }
+          await guardedAction('saveEditQuiz', async () => {
+              try {
+                  const res = await fetch(`${GAS_URL}?action=updateQuiz&quizId=${encodeURIComponent(quizId)}&subjectName=${encodeURIComponent(subjectName)}&examDate=${encodeURIComponent(examDate)}&quizName=${encodeURIComponent(quizName)}&scope=${encodeURIComponent(scope)}`);
+                  const result = await res.json();
+                  if (result.success) {
+                      const idx = adminQuizList.findIndex(q => q.quizId === quizId);
+                      if (idx !== -1) adminQuizList[idx] = { ...adminQuizList[idx], subjectName, examDate, quizName, scope };
+                      editingQuizId = null;
+                      renderApp();
+                      showToast('✅ 保存しました');
                   } else {
                       showToast('❌ エラー: ' + result.error);
                   }
