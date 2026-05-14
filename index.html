@@ -366,6 +366,7 @@ async function init() {
     } catch (e) {}
     renderApp();
     if (!activeSessionState?.isActive) { await fetchLatestRanking(); renderApp(); }
+    else { scheduleLiveRefreshes(); }
     // プレビューバナーを表示
     const banner = document.createElement('div');
     banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a1208cc;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:6px;z-index:9999;backdrop-filter:blur(4px)';
@@ -402,6 +403,7 @@ async function init() {
     step = 'renderApp';
     renderApp();
     if (!activeSessionState?.isActive) { await fetchLatestRanking(); renderApp(); }
+    else { scheduleLiveRefreshes(); }
     const isPaid = myBillingStatus === '課金有効' || myBillingStatus === '管理者承認';
     if (!myNickname && isPaid) openNicknameModal();
   } catch (err) {
@@ -476,8 +478,23 @@ async function refreshActiveSession() {
   } catch (e) { activeSessionState = { isActive: false }; }
 }
 
-// ===== 手動更新（ポーリングなし） =====
-async function refreshLiveCard() {
+// ===== 手動更新・問題配信後タイマー =====
+let liveRefreshTimers = [];
+
+function clearLiveRefreshTimers() {
+  liveRefreshTimers.forEach(t => clearTimeout(t));
+  liveRefreshTimers = [];
+}
+
+function scheduleLiveRefreshes() {
+  clearLiveRefreshTimers();
+  if (!activeSessionState?.isActive || !activeSessionState.session?.currentQuestionId) return;
+  [60000, 120000, 180000].forEach(delay => {
+    liveRefreshTimers.push(setTimeout(refreshLiveCardSilent, delay));
+  });
+}
+
+async function refreshLiveCardSilent() {
   await refreshActiveSession();
   if (!activeSessionState?.isActive) {
     liveSessionTimeline = [];
@@ -501,6 +518,11 @@ async function refreshLiveCard() {
     liveSessionTimeline = d.answers || [];
   } catch (e) {}
   renderApp();
+}
+
+async function refreshLiveCard() {
+  await refreshLiveCardSilent();
+  scheduleLiveRefreshes();
 }
 
 

@@ -364,7 +364,7 @@
       let adminCurrentQuestionId = null;
       let adminCurrentQuestionText = null;
       let adminCurrentModelAnswer = null;
-      let adminRankingTimer = null;
+      let questionRefreshTimers = [];
       let lastEndedSessionId = null;
       let adminCurrentSessionId = null; // セッション終了後も保持
 
@@ -791,13 +791,15 @@
       }
 
       function startAdminRankingPoll() {
-        if (adminRankingTimer) clearInterval(adminRankingTimer);
-        pollAdminRanking();
-        adminRankingTimer = setInterval(pollAdminRanking, 10000);
+        stopAdminRankingPoll();
+        [60000, 120000, 180000].forEach(delay => {
+          questionRefreshTimers.push(setTimeout(pollAdminRanking, delay));
+        });
       }
 
       function stopAdminRankingPoll() {
-        if (adminRankingTimer) { clearInterval(adminRankingTimer); adminRankingTimer = null; }
+        questionRefreshTimers.forEach(t => clearTimeout(t));
+        questionRefreshTimers = [];
       }
 
       async function fetchAndShowSessionRanking(sessionId) {
