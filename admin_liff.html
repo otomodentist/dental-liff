@@ -672,7 +672,7 @@ ${isDeliveryPaused ? `
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         </div>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       ` : ""}
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       <div style="margin-top:10px">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ${(() => { const isCooldown = questionCooldownEnd && Date.now() < questionCooldownEnd; const btnDisabled = isDeliveryPaused || isCooldown; const btnLabel = isCooldown ? `⏱ 配信不可 (${Math.ceil((questionCooldownEnd - Date.now()) / 1000)}秒)` : '📢 全学生に出題する'; return `<button class="action-btn btn-question" onclick="broadcastQuestion()" ${btnDisabled ? 'disabled style="background:var(--border);color:var(--ink3);cursor:not-allowed"' : ''}>${btnLabel}</button>`; })()}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ${(() => { const isCooldown = questionCooldownEnd && Date.now() < questionCooldownEnd; const btnDisabled = isDeliveryPaused || isCooldown; const btnLabel = isDeliveryPaused ? '📝 学生が回答中です' : isCooldown ? `⏱ 配信不可 (${Math.ceil((questionCooldownEnd - Date.now()) / 1000)}秒)` : '📢 全学生に出題する'; return `<button class="action-btn btn-question" onclick="broadcastQuestion()" ${btnDisabled ? 'disabled style="background:var(--border);color:var(--ink3);cursor:not-allowed"' : ''}>${btnLabel}</button>`; })()}
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       </div>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           </div>
             ${isSessionActive || lastEndedSessionId ? `
@@ -733,11 +733,13 @@ ${isDeliveryPaused ? `
         const sid = adminCurrentSessionId || '';
         const name = encodeURIComponent(item.displayName || '');
         const nick = encodeURIComponent(item.nickname || '');
-        return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')">
+        const rowStyle = item.hideAnswer ? 'opacity:0.45;background:var(--surface2)' : '';
+        const hideTag = item.hideAnswer ? '<span style="font-size:9px;background:#ccc;color:#555;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">非表示</span>' : '';
+        return `<div class="admin-rank-row" style="${rowStyle}" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')">
           <div class="admin-rank-num ${cls}">${item.rank}</div>
           <img class="admin-rank-avatar" src="${item.avatarUrl || ''}" onerror="this.style.display='none'" />
           <div class="admin-rank-info">
-            <div class="admin-rank-name">${adminRankLabel(item)}</div>
+            <div class="admin-rank-name">${adminRankLabel(item)}${hideTag}</div>
             <div class="admin-rank-answer">${item.answerText ? item.answerText.slice(0,50)+(item.answerText.length>50?'…':'') : '（未回答）'}</div>
           </div>
           <div class="admin-rank-scores">
@@ -845,7 +847,10 @@ ${isDeliveryPaused ? `
         if (!sessionId) { content.innerHTML = '<div class="empty-state">セッションIDが不明です</div>'; return; }
 
         function drawPanelChart(answers) {
-          content.innerHTML = `<div style="position:relative;height:220px;padding:8px 0"><canvas id="studentPanelChart"></canvas></div>`;
+          content.innerHTML = `<div style="position:relative;height:220px;padding:8px 0"><canvas id="studentPanelChart"></canvas></div>
+            <div style="padding:6px 12px 10px;text-align:right">
+              <button onclick="navigateToStudentSession('${userId}','${sessionId}')" style="background:var(--accent);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;padding:6px 16px;cursor:pointer;font-family:inherit">詳細確認 ›</button>
+            </div>`;
           setTimeout(() => {
             const ctx = document.getElementById('studentPanelChart');
             if (!ctx) return;
@@ -912,6 +917,23 @@ ${isDeliveryPaused ? `
         if (e && e.target !== document.getElementById('studentPanelOverlay')) return;
         document.getElementById('studentPanelOverlay').classList.remove('open');
         closePointDetail();
+      }
+
+      async function navigateToStudentSession(targetUserId, targetSessionId) {
+        document.getElementById('studentPanelOverlay').classList.remove('open');
+        closePointDetail();
+        await switchTab('dashboard');
+        selectedStudentId = targetUserId;
+        studentSessionsData = null;
+        renderApp();
+        try {
+          const res = await fetch(`${GAS_URL}?action=getStudentSessions&userId=${encodeURIComponent(targetUserId)}`);
+          studentSessionsData = await res.json();
+          renderApp();
+          await showSessionDetail(targetSessionId);
+        } catch (e) {
+          showToast('❌ データ取得失敗');
+        }
       }
 
       // ===== マイページセレクター =====
@@ -1171,8 +1193,8 @@ ${isDeliveryPaused ? `
               ? '<div class="empty-state">授業データがありません</div>'
               : subjEntries.map(([subj, data], idx) => {
                   const isOpen = adminSubjectOpen === idx;
-                  const latestScore = data.sessions.length > 0 ? data.sessions[data.sessions.length - 1].sustainScore : 0;
-                  const sessionRows = isOpen ? data.sessions.slice().reverse().map(s => `
+                  const latestScore = data.sessions.length > 0 ? data.sessions[0].sustainScore : 0;
+                  const sessionRows = isOpen ? data.sessions.map(s => `
                       <div style="border-top:1px solid var(--border);background:#f0f6f1">
                           <div class="student-item" onclick="showSessionDetail('${s.sessionId}')" style="margin:0;border-radius:0;border:none;background:transparent;padding-left:20px">
                               <div class="student-info">

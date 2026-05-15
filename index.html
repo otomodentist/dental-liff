@@ -802,7 +802,7 @@ function renderPlanExamSection() {
   const rows = loading
     ? '<div style="padding:14px 16px;font-size:13px;color:var(--ink3)">読み込み中...</div>'
     : upcoming.length === 0
-      ? '<div style="padding:14px 16px;font-size:13px;color:var(--ink3)">試験日程は管理者が設定します</div>'
+      ? '<div style="padding:14px 16px;font-size:13px;color:var(--ink3)">授業最終日以降ご利用可能です</div>'
       : upcoming.map(e => {
           const p = blocks[e.subjectName] || {};
           const done = p.done || 0;
@@ -840,16 +840,25 @@ function renderPlanQuizSection() {
     ? '<div style="padding:14px 16px;font-size:13px;color:var(--ink3)">読み込み中...</div>'
     : quizzes.length === 0
       ? '<div style="padding:14px 16px;font-size:13px;color:var(--ink3)">登録中の小テストはありません</div>'
-      : quizzes.map(q => `
-          <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <div>
-                <div style="font-size:13px;font-weight:700;color:var(--ink)">${q.subjectName}${q.quizName ? `　<span style="font-weight:400;color:var(--ink2)">${q.quizName}</span>` : ''}</div>
-                ${q.scope ? `<div style="font-size:11px;color:var(--ink3);margin-top:2px">範囲：${q.scope}</div>` : ''}
-              </div>
-              <div style="font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap;margin-left:12px">${formatExamDate(q.examDate)}</div>
+      : quizzes.map(q => {
+          const d = new Date(q.examDate + 'T00:00:00');
+          const days = ['日','月','火','水','木','金','土'];
+          const dateLabel = `${d.getMonth()+1}/${d.getDate()}`;
+          const dayLabel = `（${days[d.getDay()]}）`;
+          return `
+          <div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border)">
+            <div style="text-align:center;min-width:40px;flex-shrink:0">
+              <div style="font-size:15px;font-weight:700;color:var(--accent);line-height:1.2">${dateLabel}</div>
+              <div style="font-size:10px;color:var(--ink3)">${dayLabel}</div>
             </div>
-          </div>`).join('');
+            <div style="width:1px;height:32px;background:var(--border);flex-shrink:0"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:0.04em">${q.subjectName}</div>
+              <div style="font-size:13px;font-weight:600;color:var(--ink);margin-top:1px">${q.quizName || 'テスト'}</div>
+              ${q.scope ? `<div style="font-size:11px;color:var(--ink3);margin-top:1px">範囲：${q.scope}</div>` : ''}
+            </div>
+          </div>`;
+        }).join('');
   return `<div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
     <div style="padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
       <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">小テスト</div>
@@ -987,6 +996,7 @@ function renderSettingsView() {
 function toggleHideAnswer() {
   hideAnswerInRanking = !hideAnswerInRanking;
   localStorage.setItem('hideAnswerInRanking', hideAnswerInRanking);
+  if (userId) fetch(`${GAS_URL}?action=setUserPref&userId=${encodeURIComponent(userId)}&key=hideAnswerInRanking&value=${hideAnswerInRanking}`).catch(() => {});
   renderSettingsView();
 }
 
