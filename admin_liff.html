@@ -468,7 +468,7 @@
                 if (!isSessionActive && lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
                 if (isSessionActive) {
                     startAdminRankingPoll();
-                    if (activeSessionInfo && activeSessionInfo.sessionStartTimeEpoch) {
+                    if (activeSessionInfo && activeSessionInfo.sessionStartTimeEpoch > 0) {
                         scheduleAutoEnd(activeSessionInfo.sessionStartTimeEpoch);
                     }
                 }
