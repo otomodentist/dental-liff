@@ -467,6 +467,7 @@
                 renderApp();
                 if (!isSessionActive && lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
                 if (isSessionActive) {
+                    if (adminCurrentQuestionId) pollAdminRanking();
                     startAdminRankingPoll();
                     if (activeSessionInfo && activeSessionInfo.sessionStartTimeEpoch > 0) {
                         scheduleAutoEnd(activeSessionInfo.sessionStartTimeEpoch);
@@ -510,6 +511,7 @@
               sessionDetailData = null;
               renderApp();
               if (!isSessionActive && lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
+              if (isSessionActive && adminCurrentQuestionId) pollAdminRanking();
               showToast('✅ 更新しました');
           } catch (e) {
               showToast('❌ 更新失敗');
