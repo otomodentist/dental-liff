@@ -760,7 +760,7 @@ function renderApp() {
     : latestSessionRanking.length > 0
       ? latestSessionRanking.map(item => buildSessionRankRowHTML(item, userId)).join('')
       : '<div class="rank-empty">ランキングデータなし</div>';
-  const sessionRankingCardHTML = !isLive && latestSessionData ? `
+  const sessionRankingCardHTML = latestSessionData ? `
     <div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
       <div style="padding:10px 14px;border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:700;color:var(--ink3)">直近授業ランキング</div>
