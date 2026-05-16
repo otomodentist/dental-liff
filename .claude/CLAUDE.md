@@ -10,12 +10,13 @@
 歯学部の授業中に**LINEを使って学生の集中度をリアルタイム計測**するシステム。  
 先生がLINEまたは管理画面（LIFF）で問題を出題し、学生が回答 → GPT-4o-miniが採点 → 集中度スコアを自動計算・蓄積。
 
-**集中度スコア = 正確性スコア（GPT採点: 0〜100）× 速度乗数（0.3〜1.0）**
+**集中度スコア = 正確性スコア（GPT採点: 0〜100）× 速度乗数（0.1〜1.0）**
 
 速度乗数の考え方: 授業をその場で聞いていれば即答できるはずなので、遅い回答は検索や見直しを疑う。
 - 60秒以内: ×1.0（ペナルティなし）
-- 60〜270秒: 30秒ごとに×0.1減衰（×0.9, ×0.8, …）
-- 270秒（4.5分）以降: ×0.3固定
+- 60〜180秒: 線形減少（×0.75 → ×0.08 ※clampで0.1に）
+- 180秒以降: ×0.1（最低保証 — 正解していれば必ず点が残る）
+- 実装: `Math.max(0.1, (180 - sec) / 120)`
 
 ---
 
@@ -57,7 +58,7 @@
 | Project ID | `1dfHpjEjSigxTJbSnuER99IKDBROzZ-ZXJ2XPiNJMfDsUZ9idejL35Cq8` |
 | Web App URL（Webhook & API） | `https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec` |
 | Deploy ID（`clasp deploy -i` に指定） | `AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug` |
-| 現在のバージョン | v129（2026/05/15） |
+| 現在のバージョン | v164（2026/05/16） |
 
 ### Google Sheets（Spreadsheet ID: `15UpJAol2SayyiEQDyOdKYX02eQQ4pMH4gq4SssJrYT4`）
 
@@ -101,7 +102,7 @@
 
 **採点**
 - `scoreAnswerWithGPT(answer, modelAnswer, question)` — GPT-4o-miniで正確性0〜100点採点。キーワード一致ではなく意味の正確性で判定。逆のこと・矛盾は0〜10点、似た言葉でも意味が異なれば0〜20点
-- `calculateSpeedMultiplier(responseTimeSec)` — 速度乗数算出（60秒以内=1.0、以降減衰、4.5分以降=0.3）
+- `calculateSpeedMultiplier(responseTimeSec)` — 速度乗数算出（60秒以内=×1.0、60〜180秒で線形減少、180秒以降=×0.1最低保証）
 - `geoMeanScore(scores)` — 集中度スコア配列の幾何平均を返す。一度でも低い回があると大きく引き下がり「維持」を評価する
 
 **セッション管理**
@@ -136,8 +137,13 @@
 - `getStudyPlanInitData(userId)` — 学習計画ビュー初期化（exams・plan・progressBlocks・attendedBySubject）
 - `getQuizList()` — 小テスト一覧（日程が今日以降のもの、日程昇順）
 - `addQuiz(subjectName, quizName, scope, examDate)` — 小テスト追加（シートなければ作成）→ 課金済み学生にLINE通知
+- `updateQuiz(quizId, ...)` — 小テスト更新
 - `deleteQuiz(quizId)` — 小テスト削除
+- `getQuestionRanking(questionId)` — 出題中問題のランキング（回答済み降順 + 未回答者をグレーアウト用フィールドで付加）
+- `getSessionRanking(sessionId)` — セッション通算ランキング（同上）
 - `getUserSessionGraph(sessionId, targetUserId)` — セッション内回答タイムライン（questionText・modelAnswer・answerText含む、問題マスタをjoin）
+- `setUserPref(userId, key, value)` / `getUserPref_(userId, key, default)` — PropertiesServiceでユーザー設定を保存（`PREF_{key}_{userId}`）
+- `deleteStudentData(studentName)` — 学生データ完全削除（回答データ・学習計画・学生マスタ行を削除。試験日程・小テストはクラス共通のため削除しない）
 - `getScheduledSessionStart_()` — コマ定刻に基づく授業開始時刻を返す（内部関数）
 
 **スプレッドシート操作**
@@ -174,6 +180,7 @@
 - `getOrCreatePaidStudentRichMenu()` — `name:'paid_student_richmenu'` を取得または作成（index.html行き）
 - `setUserRichMenu(userId, richMenuId)` — 特定ユーザーにリッチメニューをリンク
 - `deleteUserRichMenu(userId)` — 特定ユーザーの個別リッチメニュー設定を削除（デフォルトに戻す）
+- `refreshPaidStudentRichMenu()` — 既存 `paid_student_richmenu` を削除・再作成し、課金済み全学生に再リンク（手動実行）
 - `saveStudentRichMenuImageFromDataUrl(dataUrl)` — Canvas生成画像をDriveに保存
 - `openRichMenuGenerator()` — 学生用リッチメニュー画像ジェネレーターをSpreadsheetUIで開く
 
@@ -273,13 +280,14 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 10. **index.html の主要localStorageキー** — `hideAnswerInRanking`（ランキング回答非表示）、`dashboardFilter`（ダッシュボードフィルタ）
 11. **学習計画タブはlazy-load** — `switchMainTab('plan')` で初めて `loadPlanTabData()` を呼び出す。`planTabData = { exams, progressBlocks, quizzes }` にキャッシュ。`openStudyPlanView()` 後は exams/progressBlocks のみ更新
 12. **HTMLテンプレート文字列の深いインデント** — `admin_liff.html` / `index.html` のテンプレート文字列は数千文字のインデントが入ることがあり、Editツールの完全一致が失敗する場合は Python スクリプトで `content.replace()` を使うこと
+13. **ランキングポーリング仕様** — 問題配信後に20秒×9回（3分間）自動更新。admin側: `startAdminRankingPoll()` / index側: `scheduleLiveRefreshes()`。配信成功の瞬間にフォームの問題文・模範解答を即時描画し、GAS応答後に回答者リストで上書き
+14. **ランキング未回答者フィールド** — `getQuestionRanking`/`getSessionRanking` が返す `item.answered === false` で未回答者を判定。`item.hideAnswer` でユーザーの非表示設定を判定。未回答者はGASの `getPaidStudentIds()` 対象者のみ（課金有効 or 管理者承認）
+15. **試験日程・小テストはクラス共通データ** — `deleteStudentData()` は個人データのみ削除する。試験日程シート・小テストシートは触らないこと
 
 ---
 
 ## 未完了・今後の作業
 
-- [ ] 学生用リッチメニュー画像を新規生成・更新
-  - `openRichMenuGenerator()` → Save to Drive → `uploadRichMenuImage()` のFile IDを更新
 - [ ] 科目マスタ追加・編集UIをadmin_liffに追加
 
 ---
@@ -314,13 +322,30 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 | 2026/05/11 | GAS: `getActiveSession()` / `getInitData()` に currentQuestionId・currentQuestionText を追加 |
 | 2026/05/11 | demo.html: LIVEランキングカード・セッションランキングを静的デモデータで追加（授業中を想定、未回答者も「未回答」表示）|
 | 2026/05/15 | admin_liff.html: 問題配信フォームに問題文・模範解答クリアボタン追加、180秒クールダウン、フォームpadding整理（v120〜）|
-| 2026/05/15 | GAS: `calculateSpeedMultiplier` の許容秒数を30s→60sに変更（60秒以内=×1.0、以降30s毎に×0.1減衰、270s以降=×0.3固定）|
+| 2026/05/15 | GAS: `calculateSpeedMultiplier` を線形式に変更（60s以内=×1.0、60〜180sで線形減少、180s以降=×0.3固定）|
 | 2026/05/15 | GAS: `getUserSessionGraph()` を問題マスタjoin方式に修正（questionText・modelAnswer・answerTextを返すように）|
 | 2026/05/15 | index.html: スコア表記「回答」→「回答時間」、集中度＝正確性×速度 の計算式を表示 |
 | 2026/05/15 | index.html: ランキング未回答ロック（回答完了後のみランキング・模範解答を表示）|
 | 2026/05/15 | index.html: ランキング回答非表示設定（localStorage `hideAnswerInRanking`）、設定画面に「ランキング設定」セクション追加 |
 | 2026/05/15 | index.html: 学習計画タブをlazy-load（`loadPlanTabData()`）、定期試験リスト・小テストリストを直接表示（旧exam-sectionボタンUI削除）|
-| 2026/05/15 | GAS: 小テスト機能追加（`getQuizList`/`addQuiz`/`deleteQuiz`、シート「小テスト」）。`addQuiz`時に課金済み学生へLINE通知 |
+| 2026/05/15 | GAS: 小テスト機能追加（`getQuizList`/`addQuiz`/`deleteQuiz`/`updateQuiz`、シート「小テスト」）。`addQuiz`時に課金済み学生へLINE通知 |
 | 2026/05/15 | admin_liff.html: 試験タブに小テスト登録フォーム・一覧追加（`addQuiz()`/`deleteQuiz()`）|
 | 2026/05/15 | admin_liff.html・index.html: 科目ヘッダー色 `#e8f2eb`→`#b8d9bd`、セッション行 white→`#f0f6f1`（アコーディオン視認性改善）|
 | 2026/05/15 | index.html: 不要CSS削除（`.exam-btn`・`.exam-section`・関連クラス）（v129） |
+| 2026/05/16 | GAS: `getInitData()` に `sessionStartTimeEpoch` を追加・90分超過チェックを追加（クライアント側自動終了を修正） |
+| 2026/05/16 | GAS: `getQuestionRanking`/`getSessionRanking` に未回答者（`answered:false`）・`hideAnswer` フィールドを追加（課金済みのみ対象）|
+| 2026/05/16 | GAS: `deleteStudentData()` のバグ修正 — クラス共通の試験日程・小テストを誤削除していた問題を解消 |
+| 2026/05/16 | GAS: `setUserPref`/`getUserPref_` 追加（PropertiesServiceで `PREF_{key}_{userId}` 管理）|
+| 2026/05/16 | GAS: `calculateSpeedMultiplier` の最低値を0→0.1に変更（正解でも0点表記が出る問題を解消）|
+| 2026/05/16 | gas_richmenu.js.gs: `refreshPaidStudentRichMenu()` 追加 |
+| 2026/05/16 | index.html: ランキングカード（LIVE・直近授業）を常時表示。未回答時・非表示設定時はランキング行を非表示にしてメッセージ表示 |
+| 2026/05/16 | index.html: 未回答者をグレーアウト（`opacity:0.45`）表示・ランキング欄「—」・回答欄「未回答」 |
+| 2026/05/16 | index.html: 各ランキングカードヘッダーに「設定」ボタンを追加（設定画面へ遷移）|
+| 2026/05/16 | index.html: 設定→集中スコア画面への戻り時の bounce-back 競合を修正（`currentView` ガード）|
+| 2026/05/16 | index.html: `scheduleLiveRefreshes()` を 60/120/180s 1発タイマー → 20s×9回 setInterval に変更 |
+| 2026/05/16 | index.html: 「クラスランキング」→「直近授業ランキング」統一 |
+| 2026/05/16 | admin_liff.html: 未回答者・非表示設定者をランキング行に4パターン表示（`buildAdminRankRowHTML` / `buildAdminSessionRankRowHTML`）|
+| 2026/05/16 | admin_liff.html: `startAdminRankingPoll()` を 60/120/180s 1発タイマー → 20s×9回 setInterval に変更 |
+| 2026/05/16 | admin_liff.html: 問題配信成功時に `adminRankingSection` を即時描画（フォームの問題文・模範解答を使用）し、`pollAdminRanking()` で更新 |
+| 2026/05/16 | admin_liff.html: 配信不可ボタン文言に「学生が回答中です」追加・「5秒ごとに自動更新」表示削除 |
+| 2026/05/16 | GAS: 不要関数 `deleteAokiData()` 削除（`deleteStudentData()` に統合済み）（v164）|
