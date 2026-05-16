@@ -586,6 +586,7 @@ function buildLiveRankingCardHTML() {
           <span class="live-badge">NOW</span>
           <span style="font-size:12px;color:rgba(255,255,255,0.8);flex:1">${sess.subject} 第${sess.sessionNumber}回</span>
           <button onclick="refreshLiveCard()" style="background:rgba(255,255,255,0.15);border:none;border-radius:6px;color:white;font-size:14px;padding:3px 8px;cursor:pointer">↻</button>
+        <button onclick="openSettingsView()" style="background:rgba(255,255,255,0.15);border:none;border-radius:6px;color:white;font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;font-family:inherit">設定</button>
         </div>
         <div style="font-size:13px;font-weight:600;color:white">出題中の問題はありません</div>
       </div>
@@ -616,16 +617,13 @@ function buildLiveRankingCardHTML() {
         <span class="live-badge">LIVE</span>
         <span style="font-size:12px;color:rgba(255,255,255,0.8);flex:1">${sess.subject} 第${sess.sessionNumber}回</span>
         <button onclick="refreshLiveCard()" style="background:rgba(255,255,255,0.15);border:none;border-radius:6px;color:white;font-size:14px;padding:3px 8px;cursor:pointer">↻</button>
+        <button onclick="openSettingsView()" style="background:rgba(255,255,255,0.15);border:none;border-radius:6px;color:white;font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;font-family:inherit">設定</button>
       </div>
       <div style="font-size:13px;font-weight:600;color:white;line-height:1.4">${sess.currentQuestionText || '問題出題中'}</div>
       ${hasAnswered && sess.currentModelAnswer ? `<div style="font-size:11px;color:rgba(255,255,255,0.85);border-top:1px solid rgba(255,255,255,0.2);padding-top:6px;width:100%;line-height:1.6"><span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.6)">模範解答　</span>${sess.currentModelAnswer}</div>` : ''}
     </div>
     ${rowsHTML}
-    <div style="padding:8px 16px;border-top:1px solid rgba(255,255,255,0.15);text-align:right">
-      <button onclick="openSettingsView()" style="background:none;border:none;font-size:11px;color:rgba(255,255,255,0.55);cursor:pointer;padding:0;font-family:inherit">
-        ランキング設定 ›
-      </button>
-    </div>
+
   </div>`;
 }
 
@@ -762,9 +760,12 @@ function renderApp() {
       : '<div class="rank-empty">ランキングデータなし</div>';
   const sessionRankingCardHTML = latestSessionData ? `
     <div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      <div style="padding:10px 14px;border-bottom:1px solid var(--border)">
-        <div style="font-size:11px;font-weight:700;color:var(--ink3)">直近授業ランキング</div>
-        <div style="font-size:14px;font-weight:700;color:var(--ink);margin-top:2px">${latestSessionData.subject}　第${latestSessionData.sessionNumber}回</div>
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--ink3)">直近授業ランキング</div>
+          <div style="font-size:14px;font-weight:700;color:var(--ink);margin-top:2px">${latestSessionData.subject}　第${latestSessionData.sessionNumber}回</div>
+        </div>
+        <button onclick="openSettingsView()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--ink3);font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0">設定</button>
       </div>
       ${sessionRankingBodyHTML}
     </div>` : '';
