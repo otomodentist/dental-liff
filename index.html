@@ -754,7 +754,7 @@ function renderApp() {
   const sessionRankingCardHTML = !isLive && latestSessionRanking.length > 0 ? `
     <div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
       <div style="padding:10px 14px;border-bottom:1px solid var(--border)">
-        <div style="font-size:11px;font-weight:700;color:var(--ink3)">クラスランキング</div>
+        <div style="font-size:11px;font-weight:700;color:var(--ink3)">直近授業ランキング</div>
         <div style="font-size:14px;font-weight:700;color:var(--ink);margin-top:2px">${latestSessionData.subject}　第${latestSessionData.sessionNumber}回</div>
       </div>
       ${latestSessionRanking.map(item => buildSessionRankRowHTML(item, userId)).join('')}
@@ -1282,7 +1282,7 @@ async function checkLatestSession() {
           </div>
         </div>
       </div>
-      <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;margin-bottom:8px">クラスランキング</div>
+      <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;margin-bottom:8px">直近授業ランキング</div>
       <div id="sessionRankingArea" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden">
         <div class="rank-empty">読み込み中...</div>
       </div>
