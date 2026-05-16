@@ -546,33 +546,35 @@ function rankNumClass(r) { return r === 1 ? 'gold' : r === 2 ? 'silver' : r === 
 
 function buildRankRowHTML(item, highlightUserId) {
   const isMe = item.userId === highlightUserId;
+  const unanswered = item.answered === false;
   const numCls = rankNumClass(item.rank);
   const scoreColor = item.concentrationScore >= 70 ? '#2d5a3d' : item.concentrationScore >= 40 ? '#d97706' : '#c0392b';
   return `
-    <div class="rank-row${isMe ? ' me' : ''}">
-      <div class="rank-num ${numCls}">${item.rank}</div>
-      <img class="rank-avatar" src="${item.pictureUrl}" onerror="this.style.display='none'" />
+    <div class="rank-row${isMe ? ' me' : ''}" style="${unanswered ? 'opacity:0.45' : ''}">
+      <div class="rank-num ${numCls}">${unanswered ? '—' : item.rank}</div>
+      <img class="rank-avatar" src="${item.avatarUrl}" onerror="this.style.display='none'" />
       <div class="rank-info">
         <div class="rank-name">${item.nickname || item.displayName}${isMe ? ' 👤' : ''}</div>
-        <div class="rank-sub">${item.answerText ? item.answerText.slice(0, 40) + (item.answerText.length > 40 ? '…' : '') : ''}</div>
+        <div class="rank-sub">${unanswered ? '未回答' : (item.answerText ? item.answerText.slice(0, 40) + (item.answerText.length > 40 ? '…' : '') : '')}</div>
       </div>
-      <div class="rank-score" style="color:${scoreColor}">${item.concentrationScore}</div>
+      <div class="rank-score" style="color:${unanswered ? 'var(--ink3)' : scoreColor}">${unanswered ? '—' : item.concentrationScore}</div>
     </div>`;
 }
 
 function buildSessionRankRowHTML(item, highlightUserId) {
   const isMe = item.userId === highlightUserId;
+  const unanswered = item.answered === false;
   const numCls = rankNumClass(item.rank);
   const scoreColor = item.sustainScore >= 70 ? '#2d5a3d' : item.sustainScore >= 40 ? '#d97706' : '#c0392b';
   return `
-    <div class="rank-row${isMe ? ' me' : ''}">
-      <div class="rank-num ${numCls}">${item.rank}</div>
-      <img class="rank-avatar" src="${item.pictureUrl}" onerror="this.style.display='none'" />
+    <div class="rank-row${isMe ? ' me' : ''}" style="${unanswered ? 'opacity:0.45' : ''}">
+      <div class="rank-num ${numCls}">${unanswered ? '—' : item.rank}</div>
+      <img class="rank-avatar" src="${item.avatarUrl}" onerror="this.style.display='none'" />
       <div class="rank-info">
         <div class="rank-name">${item.nickname || item.displayName}${isMe ? ' 👤' : ''}</div>
-        <div class="rank-sub">${item.answerCount}問回答</div>
+        <div class="rank-sub">${unanswered ? '未回答' : `${item.answerCount}問回答`}</div>
       </div>
-      <div class="rank-score" style="color:${scoreColor}">${item.sustainScore}</div>
+      <div class="rank-score" style="color:${unanswered ? 'var(--ink3)' : scoreColor}">${unanswered ? '—' : item.sustainScore}</div>
     </div>`;
 }
 
@@ -592,7 +594,7 @@ function buildLiveRankingCardHTML() {
       </div>
     </div>`;
   }
-  const hasAnswered = questionRankingData?.ranking?.some(item => item.userId === userId) || false;
+  const hasAnswered = questionRankingData?.ranking?.some(item => item.userId === userId && item.answered === true) || false;
   const rows = questionRankingData?.ranking || [];
   let rowsHTML;
   if (hideAnswerInRanking) {

@@ -727,43 +727,45 @@ ${isDeliveryPaused ? `
       }
 
       function buildAdminRankRowHTML(item) {
+        const unanswered = item.answered === false;
         const cls = adminRankNumClass(item.rank);
         const scoreColor = item.concentrationScore>=70?'var(--accent)':item.concentrationScore>=40?'#b07d00':'#c0392b';
         const sid = adminCurrentSessionId || '';
         const name = encodeURIComponent(item.displayName || '');
         const nick = encodeURIComponent(item.nickname || '');
-        const rowStyle = item.hideAnswer ? 'opacity:0.45;background:var(--surface2)' : '';
+        const rowStyle = unanswered ? 'opacity:0.45' : item.hideAnswer ? 'opacity:0.45;background:var(--surface2)' : '';
         const hideTag = item.hideAnswer ? '<span style="font-size:9px;background:#ccc;color:#555;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">非表示</span>' : '';
         return `<div class="admin-rank-row" style="${rowStyle}" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')">
-          <div class="admin-rank-num ${cls}">${item.rank}</div>
+          <div class="admin-rank-num ${cls}">${unanswered ? '—' : item.rank}</div>
           <img class="admin-rank-avatar" src="${item.avatarUrl || ''}" onerror="this.style.display='none'" />
           <div class="admin-rank-info">
             <div class="admin-rank-name">${adminRankLabel(item)}${hideTag}</div>
-            <div class="admin-rank-answer">${item.answerText ? item.answerText.slice(0,50)+(item.answerText.length>50?'…':'') : '（未回答）'}</div>
+            <div class="admin-rank-answer">${unanswered ? '未回答' : (item.answerText ? item.answerText.slice(0,50)+(item.answerText.length>50?'…':'') : '')}</div>
           </div>
           <div class="admin-rank-scores">
-            <div class="admin-rank-main" style="color:${scoreColor}">${item.concentrationScore}</div>
-            <div class="admin-rank-sub">正${item.accuracyScore} · ${item.responseTimeSec}秒</div>
+            <div class="admin-rank-main" style="color:${unanswered ? 'var(--ink3)' : scoreColor}">${unanswered ? '—' : item.concentrationScore}</div>
+            <div class="admin-rank-sub">${unanswered ? '未回答' : `正${item.accuracyScore} · ${item.responseTimeSec}秒`}</div>
           </div>
         </div>`;
       }
 
       function buildAdminSessionRankRowHTML(item, sessionId) {
+        const unanswered = item.answered === false;
         const cls = adminRankNumClass(item.rank);
         const scoreColor = item.sustainScore>=70?'var(--accent)':item.sustainScore>=40?'#b07d00':'#c0392b';
         const sid = sessionId || '';
         const name = encodeURIComponent(item.displayName || '');
         const nick = encodeURIComponent(item.nickname || '');
-        return `<div class="admin-rank-row" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')">
-          <div class="admin-rank-num ${cls}">${item.rank}</div>
+        return `<div class="admin-rank-row" style="${unanswered ? 'opacity:0.45' : ''}" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')">
+          <div class="admin-rank-num ${cls}">${unanswered ? '—' : item.rank}</div>
           <img class="admin-rank-avatar" src="${item.avatarUrl || ''}" onerror="this.style.display='none'" />
           <div class="admin-rank-info">
             <div class="admin-rank-name">${adminRankLabel(item)}</div>
-            <div class="admin-rank-answer">${item.answerCount}問回答</div>
+            <div class="admin-rank-answer">${unanswered ? '未回答' : `${item.answerCount}問回答`}</div>
           </div>
           <div class="admin-rank-scores">
-            <div class="admin-rank-main" style="color:${scoreColor}">${item.sustainScore}</div>
-            <div class="admin-rank-sub">維持スコア</div>
+            <div class="admin-rank-main" style="color:${unanswered ? 'var(--ink3)' : scoreColor}">${unanswered ? '—' : item.sustainScore}</div>
+            <div class="admin-rank-sub">${unanswered ? '未回答' : '維持スコア'}</div>
           </div>
         </div>`;
       }
