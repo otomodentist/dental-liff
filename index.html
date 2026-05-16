@@ -595,11 +595,10 @@ function buildLiveRankingCardHTML() {
   const rows = questionRankingData?.ranking || [];
   let rowsHTML;
   if (hideAnswerInRanking) {
-    rowsHTML = `<div style="padding:20px 16px;text-align:center">
-        <div style="font-size:22px;margin-bottom:6px">🙈</div>
-        <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.95);margin-bottom:4px">非表示設定です</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:12px;line-height:1.6">見たい場合は設定から<br>自分のランキング表示を許可してください</div>
-        <button onclick="openSettingsView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:white;font-size:12px;font-weight:700;padding:7px 16px;cursor:pointer;font-family:inherit">⚙ 設定を開く</button>
+    rowsHTML = `<div style="padding:16px;text-align:center;line-height:1.7">
+        <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.95)">ランキングは非表示設定中です</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:10px">設定から自分のランキング表示を許可すると見られます</div>
+        <button onclick="openSettingsView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:white;font-size:12px;font-weight:700;padding:7px 16px;cursor:pointer;font-family:inherit">設定を開く</button>
       </div>`;
   } else if (!hasAnswered) {
     rowsHTML = `<div style="padding:16px;text-align:center;line-height:1.7">
@@ -1297,11 +1296,10 @@ async function checkLatestSession() {
       const area = document.getElementById('sessionRankingArea');
       if (area) {
         if (hideAnswerInRanking) {
-          area.innerHTML = `<div style="padding:20px 16px;text-align:center">
-            <div style="font-size:22px;margin-bottom:6px">🙈</div>
-            <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:4px">非表示設定です</div>
-            <div style="font-size:11px;color:var(--ink3);margin-bottom:12px;line-height:1.6">見たい場合は設定から<br>自分のランキング表示を許可してください</div>
-            <button onclick="openSettingsView()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--ink2);font-size:12px;font-weight:700;padding:7px 16px;cursor:pointer;font-family:inherit">⚙ 設定を開く</button>
+          area.innerHTML = `<div style="padding:16px;text-align:center;line-height:1.7">
+            <div style="font-size:13px;font-weight:700;color:var(--ink)">ランキングは非表示設定中です</div>
+            <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">設定から自分のランキング表示を許可すると見られます</div>
+            <button onclick="openSettingsView()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--ink2);font-size:12px;font-weight:700;padding:7px 16px;cursor:pointer;font-family:inherit">設定を開く</button>
           </div>`;
         } else {
           area.innerHTML = currentRankingData.length > 0
