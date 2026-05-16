@@ -821,13 +821,16 @@ ${isDeliveryPaused ? `
 
       function startAdminRankingPoll() {
         stopAdminRankingPoll();
-        [60000, 120000, 180000].forEach(delay => {
-          questionRefreshTimers.push(setTimeout(pollAdminRanking, delay));
-        });
+        let count = 0;
+        const id = setInterval(() => {
+          pollAdminRanking();
+          if (++count >= 9) stopAdminRankingPoll();
+        }, 20000);
+        questionRefreshTimers.push(id);
       }
 
       function stopAdminRankingPoll() {
-        questionRefreshTimers.forEach(t => clearTimeout(t));
+        questionRefreshTimers.forEach(t => clearInterval(t));
         questionRefreshTimers = [];
       }
 
@@ -1690,6 +1693,9 @@ function startQuestionCooldown() {
                       document.getElementById('questionText').value  = '';
                       document.getElementById('modelAnswer').value   = '';
                       adminCurrentQuestionId = result.questionId || null;
+                      const rankEl = document.getElementById('adminRankingSection');
+                      if (rankEl) rankEl.innerHTML = '<div style="padding:14px;font-size:13px;color:var(--ink3);text-align:center">読み込み中...</div>';
+                      pollAdminRanking();
                       startAdminRankingPoll();
                       startQuestionCooldown();
                       showToast(`📢 ${result.studentCount}名に配信しました`);

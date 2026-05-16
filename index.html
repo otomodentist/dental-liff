@@ -478,16 +478,19 @@ async function refreshActiveSession() {
 let liveRefreshTimers = [];
 
 function clearLiveRefreshTimers() {
-  liveRefreshTimers.forEach(t => clearTimeout(t));
+  liveRefreshTimers.forEach(t => clearInterval(t));
   liveRefreshTimers = [];
 }
 
 function scheduleLiveRefreshes() {
   clearLiveRefreshTimers();
   if (!activeSessionState?.isActive || !activeSessionState.session?.currentQuestionId) return;
-  [60000, 120000, 180000].forEach(delay => {
-    liveRefreshTimers.push(setTimeout(refreshLiveCardSilent, delay));
-  });
+  let count = 0;
+  const id = setInterval(() => {
+    refreshLiveCardSilent();
+    if (++count >= 9) clearLiveRefreshTimers();
+  }, 20000);
+  liveRefreshTimers.push(id);
 }
 
 async function refreshLiveCardSilent() {
