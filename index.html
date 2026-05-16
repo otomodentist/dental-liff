@@ -922,7 +922,7 @@ async function openSettingsView() {
       const r = await fetch(`${GAS_URL}?action=getAvailableSemesters&userId=${encodeURIComponent(userId)}`);
       availableSemesters = (await r.json()).semesters || [];
     } catch (e) { availableSemesters = []; }
-    renderSettingsView();
+    if (currentView === 'settings') renderSettingsView();
   }
 }
 
