@@ -472,6 +472,14 @@
                     if (activeSessionInfo && activeSessionInfo.sessionStartTimeEpoch > 0) {
                         scheduleAutoEnd(activeSessionInfo.sessionStartTimeEpoch);
                     }
+                    // リロード後のクールダウン復元
+                    if (activeSessionInfo && activeSessionInfo.questionSentTimeEpoch) {
+                        const remaining = 180000 - (Date.now() - activeSessionInfo.questionSentTimeEpoch);
+                        if (remaining > 0) {
+                            questionCooldownEnd = Date.now() + remaining;
+                            startQuestionCooldown();
+                        }
+                    }
                 }
           } catch (err) {
                 showError(err.message);
