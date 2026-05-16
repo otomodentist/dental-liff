@@ -602,10 +602,9 @@ function buildLiveRankingCardHTML() {
         <button onclick="openSettingsView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:white;font-size:12px;font-weight:700;padding:7px 16px;cursor:pointer;font-family:inherit">⚙ 設定を開く</button>
       </div>`;
   } else if (!hasAnswered) {
-    rowsHTML = `<div style="padding:18px 16px;text-align:center">
-        <div style="font-size:22px;margin-bottom:6px">✏️</div>
+    rowsHTML = `<div style="padding:16px;text-align:center;line-height:1.7">
         <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.95)">あなたの回答が未完了です</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:4px">回答後にランキングが表示されます</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.6)">回答後にランキングが表示されます</div>
       </div>`;
   } else {
     rowsHTML = rows.length > 0
