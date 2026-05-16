@@ -783,7 +783,7 @@ ${isDeliveryPaused ? `
           </div>
           <div class="admin-rank-scores">
             <div class="admin-rank-main" style="color:${unanswered ? 'var(--ink3)' : scoreColor}">${unanswered ? '—' : item.sustainScore}</div>
-            <div class="admin-rank-sub">${unanswered ? '' : '維持スコア'}</div>
+            <div class="admin-rank-sub">${unanswered ? '' : '集中度維持スコア'}</div>
           </div>
         </div>`;
       }
@@ -1234,7 +1234,7 @@ ${isDeliveryPaused ? `
                                   <div style="font-size:11px;color:var(--ink3);margin-top:2px">${data.sessions.length}回授業</div>
                               </div>
                               <div style="text-align:right;margin-right:6px">
-                                  <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">直近維持スコア</div>
+                                  <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">直近集中度維持スコア</div>
                                   <div style="font-size:20px;font-weight:700;color:var(--accent)">${latestScore}</div>
                               </div>
                               <div style="font-size:12px;color:var(--ink3);transform:${isOpen ? 'rotate(180deg)' : 'none'}">▼</div>

@@ -718,7 +718,7 @@ function renderApp() {
             <div style="font-size:11px;color:var(--ink3);margin-top:2px">${subj.sessions.length}回授業</div>
           </div>
           <div style="text-align:right;margin-right:6px">
-            <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">維持スコア</div>
+            <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">集中度維持スコア</div>
             <div style="font-size:20px;font-weight:700;color:var(--accent)">${latestScore}</div>
           </div>
           <div style="font-size:12px;color:var(--ink3);transition:transform 0.2s;transform:${isOpen?'rotate(180deg)':'none'}">▼</div>
@@ -767,7 +767,7 @@ function renderApp() {
     <div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
       <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
         <div>
-          <div style="font-size:11px;font-weight:700;color:var(--ink3)">直近授業ランキング</div>
+          <div style="font-size:11px;font-weight:700;color:var(--ink3)">直近授業ランキング（集中度維持スコア）</div>
           <div style="font-size:14px;font-weight:700;color:var(--ink);margin-top:2px">${latestSessionData.subject}　第${latestSessionData.sessionNumber}回</div>
         </div>
         <button onclick="openSettingsView()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--ink3);font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0">設定</button>
@@ -1263,7 +1263,7 @@ function drawHistoryChart(canvasId, sessions) {
       scales: {
         ...CHART_DEFAULTS.scales,
         x: { ...CHART_DEFAULTS.scales.x, title: { display: true, text: '授業回', color: '#8a7a68', font: { size: 10 } } },
-        y: { ...CHART_DEFAULTS.scales.y, title: { display: true, text: '維持スコア', color: '#8a7a68', font: { size: 10 } } },
+        y: { ...CHART_DEFAULTS.scales.y, title: { display: true, text: '集中度維持スコア', color: '#8a7a68', font: { size: 10 } } },
       },
     },
   });
@@ -1288,7 +1288,7 @@ async function checkLatestSession() {
         <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px">第${data.sessionNumber}回授業</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div style="text-align:center">
-            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">維持スコア</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">集中度維持スコア</div>
             <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:${scoreColor}">${data.sustainScore}</div>
           </div>
           <div style="text-align:center">
