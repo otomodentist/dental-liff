@@ -341,7 +341,7 @@ async function checkVersion() {
 
 function loadDemoData() {
   myNickname = 'デモキチ';
-  myBillingStatus = '課金有効';
+  myBillingStatus = '契約中';
   myAvatarUrl = '';
   activeSessionState = { isActive: false };
   availableSemesters = [{ grade: 4, semester: 'spring' }];
@@ -470,7 +470,7 @@ async function init() {
     const nickRes = await fetch(`${GAS_URL}?action=getNickname&userId=${encodeURIComponent(userId)}`);
     const nickData = await nickRes.json();
     const billingStatus = nickData.billingStatus || '';
-    if (billingStatus === '課金有効' || billingStatus === '管理者承認') { location.href = 'index.html'; return; }
+    if (billingStatus === '契約中' || billingStatus === '管理者承認') { location.href = 'index.html'; return; }
 
     loadDemoData();
     renderApp();
@@ -951,7 +951,7 @@ function renderSettingsView() {
   const app = document.getElementById('app');
   const name = myNickname || (profileData ? profileData.displayName : '');
   const avatarSrc = myAvatarUrl || (profileData ? profileData.pictureUrl : '');
-  const isPaid = myBillingStatus === '課金有効' || myBillingStatus === '管理者承認';
+  const isPaid = myBillingStatus === '契約中' || myBillingStatus === '管理者承認';
   app.innerHTML = `
     <div style="background:var(--accent);color:white;padding:16px 20px 12px">
       <div style="font-size:10px;opacity:0.7;letter-spacing:0.1em">授業のオトモ</div>
