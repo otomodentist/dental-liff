@@ -247,7 +247,7 @@
 <script>
 // ===== 設定 =====
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec';
-const LIFF_ID = '2009739219-dSnPUVFj';
+const LIFF_ID = '2009739219-N7Pi2ywn';
 
 let userId = null;
 let profileData = null;
@@ -365,10 +365,11 @@ async function init() {
     } catch (e) { todayStudyItems = []; tomorrowStudyItems = []; }
 
     step = 'renderApp';
+    const isPaid = myBillingStatus === '課金有効' || myBillingStatus === '管理者承認';
+    if (isPaid) { location.href = 'index.html'; return; }
     renderApp();
     if (!activeSessionState?.isActive) { await fetchLatestRanking(); renderApp(); }
     else { scheduleLiveRefreshes(); }
-    const isPaid = myBillingStatus === '課金有効' || myBillingStatus === '管理者承認';
   } catch (err) {
     showError(`[${step}] ${err.message}`);
   }
