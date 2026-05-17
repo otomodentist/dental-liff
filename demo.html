@@ -308,6 +308,104 @@ async function checkVersion() {
   return true;
 }
 
+function loadDemoData() {
+  myNickname = 'デモ';
+  myBillingStatus = '';
+  myAvatarUrl = '';
+  activeSessionState = { isActive: false };
+
+  const now = Date.now();
+  dashboardData = {
+    subjects: [
+      {
+        name: '歯科補綴学', sustainScore: 78, totalAnswers: 15,
+        latestAnswerAt: now - 2 * 86400000,
+        sessions: [
+          { sessionNumber: 1, sustainScore: 72, latestAnswerAt: now - 14 * 86400000, timeline: [
+            { minutesElapsed: 12, answerText: 'クラウンとブリッジの違いは支台歯の数', accuracyScore: 80, responseTimeSec: 38, concentrationScore: 80, questionText: 'クラウンとブリッジの違いを説明せよ', modelAnswer: '単独歯を修復するのがクラウン、複数歯をつないで欠損を補うのがブリッジ' },
+            { minutesElapsed: 28, answerText: 'インプラントは顎骨に直接埋入して支台とする', accuracyScore: 90, responseTimeSec: 55, concentrationScore: 82, questionText: 'インプラント治療の特徴を述べよ', modelAnswer: '骨内にフィクスチャーを埋入し、天然歯に近い機能と審美を回復する' },
+            { minutesElapsed: 45, answerText: '義歯の維持・支持・把持の三機能が重要', accuracyScore: 65, responseTimeSec: 72, concentrationScore: 57, questionText: '部分義歯の機能を説明せよ', modelAnswer: '維持（脱落防止）・支持（咬合力負担）・把持（水平力抵抗）の三要素が必要' },
+          ]},
+          { sessionNumber: 2, sustainScore: 75, latestAnswerAt: now - 7 * 86400000, timeline: [
+            { minutesElapsed: 15, answerText: '咬合接触が均等で力が分散される状態が理想', accuracyScore: 85, responseTimeSec: 44, concentrationScore: 85, questionText: '理想的な咬合の条件を述べよ', modelAnswer: '全歯均等接触・適切な咬合高径・スムーズな下顎運動が基本条件' },
+            { minutesElapsed: 32, answerText: '前歯誘導とは側方運動時に前歯が後歯を離開させること', accuracyScore: 72, responseTimeSec: 68, concentrationScore: 61, questionText: '前歯誘導について説明せよ', modelAnswer: '側方運動時に前歯接触によって後歯が離開するガイダンス機能のこと' },
+            { minutesElapsed: 50, answerText: 'ブラキシズムはエナメル質摩耗や補綴物破折を引き起こす', accuracyScore: 78, responseTimeSec: 51, concentrationScore: 78, questionText: 'ブラキシズムの口腔への影響を答えよ', modelAnswer: '歯の病的摩耗・補綴物の破折・歯周組織への過負荷が主な影響' },
+          ]},
+          { sessionNumber: 3, sustainScore: 82, latestAnswerAt: now - 2 * 86400000, timeline: [
+            { minutesElapsed: 10, answerText: 'アルジネートは親水性で操作が容易だが精度はやや低い', accuracyScore: 88, responseTimeSec: 35, concentrationScore: 88, questionText: 'アルジネート印象材の特徴を述べよ', modelAnswer: '寸法安定性はやや劣るが操作性が良く、予備印象・対合歯印象に使用する' },
+            { minutesElapsed: 25, answerText: 'シリコーン系は精度が高く寸法変化が少ない', accuracyScore: 92, responseTimeSec: 42, concentrationScore: 92, questionText: 'シリコーン印象材の利点を答えよ', modelAnswer: '弾性回復性が高く、精密印象に適する。付加型と縮合型がある' },
+            { minutesElapsed: 42, answerText: '最終補綴物製作には精密印象が必要', accuracyScore: 75, responseTimeSec: 60, concentrationScore: 69, questionText: '精密印象の目的を説明せよ', modelAnswer: '補綴物の適合精度を高め、辺縁封鎖性を確保するために行う' },
+            { minutesElapsed: 60, answerText: '作業模型と対合模型を咬合器に装着して補綴物を製作する', accuracyScore: 83, responseTimeSec: 48, concentrationScore: 83, questionText: '咬合器の役割を述べよ', modelAnswer: '顎運動を再現し、口腔外での補綴物製作を可能にする器具' },
+          ]},
+        ],
+      },
+      {
+        name: '口腔外科学', sustainScore: 71, totalAnswers: 10,
+        latestAnswerAt: now - 5 * 86400000,
+        sessions: [
+          { sessionNumber: 1, sustainScore: 68, latestAnswerAt: now - 12 * 86400000, timeline: [
+            { minutesElapsed: 18, answerText: '下顎孔伝達麻酔は下歯槽神経をブロックする', accuracyScore: 76, responseTimeSec: 55, concentrationScore: 68, questionText: '下顎孔伝達麻酔の麻酔部位を答えよ', modelAnswer: '下顎孔付近で下歯槽神経・舌神経・頬神経をブロックする' },
+            { minutesElapsed: 35, answerText: 'エピネフリンは血管収縮作用で効果時間を延長する', accuracyScore: 82, responseTimeSec: 48, concentrationScore: 82, questionText: '局所麻酔薬に添加するエピネフリンの役割を述べよ', modelAnswer: '血管収縮により麻酔薬の吸収を遅らせ、効果時間延長と出血量減少をもたらす' },
+            { minutesElapsed: 52, answerText: 'アナフィラキシーショックは即時型アレルギー反応', accuracyScore: 58, responseTimeSec: 85, concentrationScore: 43, questionText: 'アナフィラキシーショックを説明せよ', modelAnswer: 'IgE介在のI型アレルギー反応で、アドレナリン筋注が第一選択治療' },
+          ]},
+          { sessionNumber: 2, sustainScore: 74, latestAnswerAt: now - 5 * 86400000, timeline: [
+            { minutesElapsed: 20, answerText: '整復・固定・リハビリが骨折治療の三原則', accuracyScore: 88, responseTimeSec: 45, concentrationScore: 88, questionText: '顎骨骨折の治療原則を述べよ', modelAnswer: '観血的または非観血的整復後に固定し、機能回復リハビリを行う' },
+            { minutesElapsed: 38, answerText: '顎骨嚢胞は摘出または開窓療法で治療する', accuracyScore: 65, responseTimeSec: 72, concentrationScore: 57, questionText: '顎骨嚢胞の治療法を答えよ', modelAnswer: '小嚢胞は摘出術、大嚢胞や術後性嚢胞は開窓療法で縮小後に摘出' },
+            { minutesElapsed: 55, answerText: 'ドライソケットは血餅消失後に激しい疼痛が生じる', accuracyScore: 79, responseTimeSec: 52, concentrationScore: 79, questionText: 'ドライソケットの症状と原因を述べよ', modelAnswer: '抜歯後の血餅が消失し、骨面が露出して激痛が生じる抜歯後合併症' },
+          ]},
+        ],
+      },
+      {
+        name: '歯科矯正学', sustainScore: 65, totalAnswers: 6,
+        latestAnswerAt: now - 10 * 86400000,
+        sessions: [
+          { sessionNumber: 1, sustainScore: 65, latestAnswerAt: now - 10 * 86400000, timeline: [
+            { minutesElapsed: 22, answerText: 'アングルⅢ級は上顎前歯に対し下顎前歯が前方位', accuracyScore: 72, responseTimeSec: 65, concentrationScore: 63, questionText: 'アングルⅢ級の咬合状態を説明せよ', modelAnswer: '下顎第一大臼歯が上顎第一大臼歯に対し近心位にある咬合関係' },
+            { minutesElapsed: 40, answerText: '骨格性は顎骨自体のずれ、歯性は歯の傾きのずれ', accuracyScore: 68, responseTimeSec: 78, concentrationScore: 56, questionText: '骨格性と歯性の不正咬合の違いを述べよ', modelAnswer: '骨格性は顎骨の位置異常、歯性は歯軸傾斜異常が主因の不正咬合' },
+            { minutesElapsed: 58, answerText: 'マルチブラケットにより個々の歯を三次元的に移動できる', accuracyScore: 75, responseTimeSec: 55, concentrationScore: 75, questionText: 'マルチブラケット装置の特徴を答えよ', modelAnswer: 'ブラケット・ワイヤー・補助装置を組み合わせて三次元的歯の移動を実現する固定式装置' },
+          ]},
+        ],
+      },
+    ],
+  };
+
+  latestSessionData = { found: true, sessionId: 'demo-sess-3', subject: '歯科補綴学', sessionNumber: 3, sustainScore: 82, answerCount: 4 };
+  latestSessionRanking = [
+    { rank: 1, userId: 'demo-u1', displayName: '田中', nickname: '田中', avatarUrl: '', answered: true, answerCount: 4, sustainScore: 91 },
+    { rank: 2, userId: userId || 'demo-me', displayName: 'あなた', nickname: 'あなた', avatarUrl: profileData?.pictureUrl || '', answered: true, answerCount: 4, sustainScore: 82 },
+    { rank: 3, userId: 'demo-u2', displayName: '山田', nickname: '山田', avatarUrl: '', answered: true, answerCount: 4, sustainScore: 76 },
+    { rank: 4, userId: 'demo-u3', displayName: '佐藤', nickname: '佐藤', avatarUrl: '', answered: true, answerCount: 4, sustainScore: 68 },
+    { rank: 5, userId: 'demo-u4', displayName: '鈴木', nickname: '鈴木', avatarUrl: '', answered: false, answerCount: 0, sustainScore: 0 },
+  ];
+  currentRankingData = latestSessionRanking;
+  currentRankingSessionId = 'demo-sess-3';
+
+  todayStudyItems = [
+    { planId: 'dp1', subject: '歯科補綴学', type: 'review', sessionNumber: 3, durationMin: 30, status: 'pending' },
+    { planId: 'dp2', subject: '口腔外科学', type: 'review', sessionNumber: 2, durationMin: 25, status: 'pending' },
+  ];
+  tomorrowStudyItems = [
+    { planId: 'dp3', subject: '歯科矯正学', type: 're-review', sessionNumber: 1, durationMin: 20, status: 'pending' },
+  ];
+
+  planTabData = {
+    exams: [
+      { examId: 'de1', subjectName: '歯科補綴学', examDate: '2026-06-18', startTime: '09:00', reviewMinutes: 60, requiredSessions: 3 },
+      { examId: 'de2', subjectName: '口腔外科学', examDate: '2026-06-20', startTime: '13:00', reviewMinutes: 50, requiredSessions: 2 },
+      { examId: 'de3', subjectName: '歯科矯正学', examDate: '2026-06-25', startTime: '10:00', reviewMinutes: 45, requiredSessions: 2 },
+    ],
+    progressBlocks: {
+      '歯科補綴学': { done: 2, attended: 3, remaining: 1 },
+      '口腔外科学': { done: 1, attended: 2, remaining: 1 },
+      '歯科矯正学': { done: 0, attended: 1, remaining: 1 },
+    },
+    quizzes: [
+      { quizId: 'dq1', subjectName: '歯科矯正学', quizName: '矯正装置の種類', scope: '第1〜3回', examDate: '2026-05-25' },
+      { quizId: 'dq2', subjectName: '口腔外科学', quizName: '局所麻酔薬', scope: '第1〜2回', examDate: '2026-05-28' },
+    ],
+  };
+}
+
 async function init() {
   if (!await checkVersion()) return;
   // プレビューモード: ?preview=<userId> でLIFF認証をスキップ
@@ -315,22 +413,9 @@ async function init() {
   if (previewUserId) {
     userId = previewUserId;
     profileData = { userId: previewUserId, displayName: '', pictureUrl: '' };
-    try {
-      [dashboardData] = await Promise.all([
-        fetchDashboard(userId),
-        refreshActiveSession(),
-        fetchNickname(userId),
-      ]);
-      try {
-        const r = await fetch(`${GAS_URL}?action=getTodayStudyItems&userId=${encodeURIComponent(userId)}`);
-        const d = await r.json();
-        todayStudyItems = d.todayItems || [];
-        tomorrowStudyItems = d.tomorrowItems || [];
-      } catch (e) { todayStudyItems = []; tomorrowStudyItems = []; }
-    } catch (e) {}
+    loadDemoData();
     renderApp();
-    if (!activeSessionState?.isActive) { await fetchLatestRanking(); renderApp(); }
-    else { scheduleLiveRefreshes(); }
+    renderApp();
     // プレビューバナーを表示
     const banner = document.createElement('div');
     banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a1208cc;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:6px;z-index:9999;backdrop-filter:blur(4px)';
@@ -349,27 +434,15 @@ async function init() {
     userId = profile.userId;
     profileData = profile;
 
-    step = 'fetchDashboard';
-    [dashboardData] = await Promise.all([
-      fetchDashboard(userId),
-      refreshActiveSession(),
-      fetchNickname(userId),
-    ]);
+    step = 'checkBilling';
+    const nickRes = await fetch(`${GAS_URL}?action=getNickname&userId=${encodeURIComponent(userId)}`);
+    const nickData = await nickRes.json();
+    const billingStatus = nickData.billingStatus || '';
+    if (billingStatus === '課金有効' || billingStatus === '管理者承認') { location.href = 'index.html'; return; }
 
-    step = 'getTodayStudyItems';
-    try {
-      const r = await fetch(`${GAS_URL}?action=getTodayStudyItems&userId=${encodeURIComponent(userId)}`);
-      const d = await r.json();
-      todayStudyItems    = d.todayItems    || [];
-      tomorrowStudyItems = d.tomorrowItems || [];
-    } catch (e) { todayStudyItems = []; tomorrowStudyItems = []; }
-
-    step = 'renderApp';
-    const isPaid = myBillingStatus === '課金有効' || myBillingStatus === '管理者承認';
-    if (isPaid) { location.href = 'index.html'; return; }
+    loadDemoData();
     renderApp();
-    if (!activeSessionState?.isActive) { await fetchLatestRanking(); renderApp(); }
-    else { scheduleLiveRefreshes(); }
+    renderApp();
   } catch (err) {
     showError(`[${step}] ${err.message}`);
   }
