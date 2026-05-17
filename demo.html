@@ -1019,7 +1019,7 @@ function renderSettingsView() {
       <div style="padding:16px">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
           <div style="font-size:14px;color:var(--ink2)">契約状況</div>
-          <div style="font-size:13px;font-weight:700;color:${isPaid ? 'var(--accent)' : 'var(--accent3)'}">${isPaid ? '利用中' : (myBillingStatus || '未契約')}</div>
+          <div style="font-size:13px;font-weight:700;color:${isPaid ? 'var(--accent)' : 'var(--accent3)'}">${isPaid ? '契約中' : (myBillingStatus || '未契約')}</div>
         </div>
         <div style="padding-top:14px">
           <button class="cancel-btn" onclick="showCancelModal()">
