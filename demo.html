@@ -341,7 +341,7 @@ async function checkVersion() {
 
 function loadDemoData() {
   myNickname = 'デモキチ';
-  myBillingStatus = '';
+  myBillingStatus = '課金有効';
   myAvatarUrl = '';
   activeSessionState = { isActive: false };
   availableSemesters = [{ grade: 4, semester: 'spring' }];
@@ -404,7 +404,7 @@ function loadDemoData() {
   latestSessionData = { found: true, sessionId: 'demo-sess-3', subject: '冠・橋義歯補綴', sessionNumber: 3, sustainScore: 82, answerCount: 4 };
   latestSessionRanking = [
     { rank: 1, userId: 'demo-u1', displayName: 'たけぴ', nickname: 'たけぴ', avatarUrl: '', answered: true, answerCount: 4, sustainScore: 91 },
-    { rank: 2, userId: userId || 'demo-me', displayName: 'デモキチ', nickname: 'デモキチ', avatarUrl: profileData?.pictureUrl || '', answered: true, answerCount: 4, sustainScore: 82 },
+    { rank: 2, userId: userId || 'demo-me', displayName: 'デモキチ', nickname: 'デモキチ', avatarUrl: '', answered: true, answerCount: 4, sustainScore: 82 },
     { rank: 3, userId: 'demo-u2', displayName: 'みーちゃん', nickname: 'みーちゃん', avatarUrl: '', answered: true, answerCount: 4, sustainScore: 76 },
     { rank: 4, userId: 'demo-u3', displayName: 'りんりん', nickname: 'りんりん', avatarUrl: '', answered: true, answerCount: 4, sustainScore: 68 },
     { rank: 5, userId: 'demo-u4', displayName: 'のんちゃん', nickname: 'のんちゃん', avatarUrl: '', answered: false, answerCount: 0, sustainScore: 0 },
@@ -1051,7 +1051,7 @@ function openNicknameModal() {
   const input = document.getElementById('nicknameInput');
   if (input) input.value = myNickname || '';
   const preview = document.getElementById('avatarPreview');
-  if (preview) preview.src = myAvatarUrl || profileData?.pictureUrl || '';
+  if (preview) preview.src = myAvatarUrl || '';
   document.getElementById('nicknameModal').classList.add('open');
 }
 
