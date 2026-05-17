@@ -129,6 +129,16 @@
   .cancel-modal-btns .btn-keep { flex: 1; padding: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
   .cancel-modal-btns .btn-confirm-cancel { flex: 1; padding: 14px; background: var(--accent3); border: none; border-radius: 12px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
 
+  /* ニックネームモーダル */
+  .nickname-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; justify-content: center; }
+  .nickname-modal.open { display: flex; }
+  .nickname-modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px 20px 0 0; padding: 24px; width: 100%; max-width: 480px; padding-bottom: max(24px,env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto; }
+  .nickname-modal-title { font-family: 'Kaisei Tokumin', serif; font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
+  .nickname-warning { font-size: 12px; color: var(--accent3); background: rgba(192,57,43,0.07); border: 1px solid rgba(192,57,43,0.2); border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; line-height: 1.5; }
+  .nickname-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--ink); font-size: 15px; font-family: inherit; margin-bottom: 14px; outline: none; }
+  .nickname-input:focus { border-color: var(--accent); }
+  .nickname-save-btn { width: 100%; background: var(--accent); border: none; border-radius: 10px; color: white; font-size: 15px; font-weight: 700; padding: 13px; cursor: pointer; margin-bottom: 10px; font-family: inherit; }
+
   /* 今日の学習 */
   .today-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
   .today-label { font-size: 11px; letter-spacing: 0.05em; color: var(--accent); font-weight: 700; margin-bottom: 10px; }
@@ -201,6 +211,27 @@
 </head>
 <body>
 
+
+<div id="nicknameModal" class="nickname-modal">
+  <div class="nickname-modal-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="nickname-modal-title" style="margin-bottom:0">ニックネームを設定</div>
+      <button onclick="closeNicknameModal()" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;line-height:1;padding:2px 4px">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">ランキング表示時に他のユーザーに表示されます</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <label style="position:relative;cursor:pointer;flex-shrink:0">
+        <img id="avatarPreview" style="width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--surface2);border:2px solid var(--border)" src="" onerror="this.style.background='var(--surface2)'" />
+        <div style="position:absolute;bottom:0;right:0;background:var(--accent);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px">📷</div>
+        <input type="file" accept="image/*" style="display:none" onchange="onAvatarFileSelected(this)" />
+      </label>
+      <input id="nicknameInput" class="nickname-input" type="text" maxlength="20" placeholder="例: タロ、ヒロシ" style="margin-bottom:0;flex:1" />
+    </div>
+    <div class="nickname-warning">⚠️ 他の受講者が不快に感じるような表現は使用しないでください</div>
+    <button class="nickname-save-btn" onclick="saveNickname()">決定</button>
+    <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:8px">ユーザーネームは後から変更できます</div>
+  </div>
+</div>
 
 <div id="cancelModal" class="cancel-modal">
   <div class="cancel-modal-sheet">
@@ -309,16 +340,17 @@ async function checkVersion() {
 }
 
 function loadDemoData() {
-  myNickname = 'デモ';
+  myNickname = 'はるか';
   myBillingStatus = '';
   myAvatarUrl = '';
   activeSessionState = { isActive: false };
+  availableSemesters = [{ grade: 4, semester: 'spring' }];
 
   const now = Date.now();
   dashboardData = {
     subjects: [
       {
-        name: '歯科補綴学', sustainScore: 78, totalAnswers: 15,
+        name: '冠・橋義歯補綴', sustainScore: 78, totalAnswers: 15,
         latestAnswerAt: now - 2 * 86400000,
         sessions: [
           { sessionNumber: 1, sustainScore: 72, latestAnswerAt: now - 14 * 86400000, timeline: [
@@ -340,7 +372,7 @@ function loadDemoData() {
         ],
       },
       {
-        name: '口腔外科学', sustainScore: 71, totalAnswers: 10,
+        name: '歯科麻酔I', sustainScore: 71, totalAnswers: 10,
         latestAnswerAt: now - 5 * 86400000,
         sessions: [
           { sessionNumber: 1, sustainScore: 68, latestAnswerAt: now - 12 * 86400000, timeline: [
@@ -356,7 +388,7 @@ function loadDemoData() {
         ],
       },
       {
-        name: '歯科矯正学', sustainScore: 65, totalAnswers: 6,
+        name: '不正咬合の診断と治療', sustainScore: 65, totalAnswers: 6,
         latestAnswerAt: now - 10 * 86400000,
         sessions: [
           { sessionNumber: 1, sustainScore: 65, latestAnswerAt: now - 10 * 86400000, timeline: [
@@ -369,39 +401,39 @@ function loadDemoData() {
     ],
   };
 
-  latestSessionData = { found: true, sessionId: 'demo-sess-3', subject: '歯科補綴学', sessionNumber: 3, sustainScore: 82, answerCount: 4 };
+  latestSessionData = { found: true, sessionId: 'demo-sess-3', subject: '冠・橋義歯補綴', sessionNumber: 3, sustainScore: 82, answerCount: 4 };
   latestSessionRanking = [
-    { rank: 1, userId: 'demo-u1', displayName: '田中', nickname: '田中', avatarUrl: '', answered: true, answerCount: 4, sustainScore: 91 },
-    { rank: 2, userId: userId || 'demo-me', displayName: 'あなた', nickname: 'あなた', avatarUrl: profileData?.pictureUrl || '', answered: true, answerCount: 4, sustainScore: 82 },
-    { rank: 3, userId: 'demo-u2', displayName: '山田', nickname: '山田', avatarUrl: '', answered: true, answerCount: 4, sustainScore: 76 },
-    { rank: 4, userId: 'demo-u3', displayName: '佐藤', nickname: '佐藤', avatarUrl: '', answered: true, answerCount: 4, sustainScore: 68 },
-    { rank: 5, userId: 'demo-u4', displayName: '鈴木', nickname: '鈴木', avatarUrl: '', answered: false, answerCount: 0, sustainScore: 0 },
+    { rank: 1, userId: 'demo-u1', displayName: 'けんた', nickname: 'けんた', avatarUrl: '', answered: true, answerCount: 4, sustainScore: 91 },
+    { rank: 2, userId: userId || 'demo-me', displayName: 'はるか', nickname: 'はるか', avatarUrl: profileData?.pictureUrl || '', answered: true, answerCount: 4, sustainScore: 82 },
+    { rank: 3, userId: 'demo-u2', displayName: 'まい', nickname: 'まい', avatarUrl: '', answered: true, answerCount: 4, sustainScore: 76 },
+    { rank: 4, userId: 'demo-u3', displayName: 'りょう', nickname: 'りょう', avatarUrl: '', answered: true, answerCount: 4, sustainScore: 68 },
+    { rank: 5, userId: 'demo-u4', displayName: 'ゆな', nickname: 'ゆな', avatarUrl: '', answered: false, answerCount: 0, sustainScore: 0 },
   ];
   currentRankingData = latestSessionRanking;
   currentRankingSessionId = 'demo-sess-3';
 
   todayStudyItems = [
-    { planId: 'dp1', subject: '歯科補綴学', type: 'review', sessionNumber: 3, durationMin: 30, status: 'pending' },
-    { planId: 'dp2', subject: '口腔外科学', type: 'review', sessionNumber: 2, durationMin: 25, status: 'pending' },
+    { planId: 'dp1', subject: '冠・橋義歯補綴', type: 'review', sessionNumber: 3, durationMin: 30, status: 'pending' },
+    { planId: 'dp2', subject: '歯科麻酔I', type: 'review', sessionNumber: 2, durationMin: 25, status: 'pending' },
   ];
   tomorrowStudyItems = [
-    { planId: 'dp3', subject: '歯科矯正学', type: 're-review', sessionNumber: 1, durationMin: 20, status: 'pending' },
+    { planId: 'dp3', subject: '不正咬合の診断と治療', type: 're-review', sessionNumber: 1, durationMin: 20, status: 'pending' },
   ];
 
   planTabData = {
     exams: [
-      { examId: 'de1', subjectName: '歯科補綴学', examDate: '2026-06-18', startTime: '09:00', reviewMinutes: 60, requiredSessions: 3 },
-      { examId: 'de2', subjectName: '口腔外科学', examDate: '2026-06-20', startTime: '13:00', reviewMinutes: 50, requiredSessions: 2 },
-      { examId: 'de3', subjectName: '歯科矯正学', examDate: '2026-06-25', startTime: '10:00', reviewMinutes: 45, requiredSessions: 2 },
+      { examId: 'de1', subjectName: '冠・橋義歯補綴', examDate: '2026-06-18', startTime: '09:00', reviewMinutes: 60, requiredSessions: 3 },
+      { examId: 'de2', subjectName: '歯科麻酔I', examDate: '2026-06-20', startTime: '13:00', reviewMinutes: 50, requiredSessions: 2 },
+      { examId: 'de3', subjectName: '不正咬合の診断と治療', examDate: '2026-06-25', startTime: '10:00', reviewMinutes: 45, requiredSessions: 2 },
     ],
     progressBlocks: {
-      '歯科補綴学': { done: 2, attended: 3, remaining: 1 },
-      '口腔外科学': { done: 1, attended: 2, remaining: 1 },
-      '歯科矯正学': { done: 0, attended: 1, remaining: 1 },
+      '冠・橋義歯補綴': { done: 2, attended: 3, remaining: 1 },
+      '歯科麻酔I': { done: 1, attended: 2, remaining: 1 },
+      '不正咬合の診断と治療': { done: 0, attended: 1, remaining: 1 },
     },
     quizzes: [
-      { quizId: 'dq1', subjectName: '歯科矯正学', quizName: '矯正装置の種類', scope: '第1〜3回', examDate: '2026-05-25' },
-      { quizId: 'dq2', subjectName: '口腔外科学', quizName: '局所麻酔薬', scope: '第1〜2回', examDate: '2026-05-28' },
+      { quizId: 'dq1', subjectName: '不正咬合の診断と治療', quizName: '矯正装置の種類', scope: '第1〜3回', examDate: '2026-05-25' },
+      { quizId: 'dq2', subjectName: '歯科麻酔I', quizName: '局所麻酔薬の種類', scope: '第1〜2回', examDate: '2026-05-28' },
     ],
   };
 }
@@ -910,16 +942,9 @@ function toggleHistorySession(subjIdx, sessNum) {
   renderApp();
 }
 
-async function openSettingsView() {
+function openSettingsView() {
   currentView = 'settings';
   renderSettingsView();
-  if (!availableSemesters) {
-    try {
-      const r = await fetch(`${GAS_URL}?action=getAvailableSemesters&userId=${encodeURIComponent(userId)}`);
-      availableSemesters = (await r.json()).semesters || [];
-    } catch (e) { availableSemesters = []; }
-    if (currentView === 'settings') renderSettingsView();
-  }
 }
 
 function renderSettingsView() {
@@ -940,13 +965,15 @@ function renderSettingsView() {
       <div style="padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">ユーザー設定</div>
       </div>
-      <div style="display:flex;align-items:center;gap:14px;padding:16px">
+      <div onclick="openNicknameModal()" style="display:flex;align-items:center;gap:14px;padding:16px;cursor:pointer">
         <div style="width:52px;height:52px;border-radius:50%;background:var(--surface2);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px">
           <img src="${avatarSrc}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'" />
         </div>
         <div style="flex:1">
           <div style="font-size:15px;font-weight:700;color:var(--ink)">${name}</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:2px">ユーザーネーム・アイコンを変更</div>
         </div>
+        <div style="font-size:18px;color:var(--ink3)">›</div>
       </div>
     </div>
 
@@ -1012,13 +1039,45 @@ function toggleHideAnswer() {
   renderSettingsView();
 }
 
-async function saveGradeSemester(value) {
+function saveGradeSemester(value) {
   const [g, s] = value.split('_');
-  myGrade = parseInt(g); localStorage.setItem('myGrade', myGrade);
-  mySemester = s; localStorage.setItem('mySemester', mySemester);
-  dashboardData = await fetchDashboard(userId);
+  myGrade = parseInt(g);
+  mySemester = s;
   currentView = 'settings';
   renderApp();
+}
+
+function openNicknameModal() {
+  const input = document.getElementById('nicknameInput');
+  if (input) input.value = myNickname || '';
+  const preview = document.getElementById('avatarPreview');
+  if (preview) preview.src = myAvatarUrl || profileData?.pictureUrl || '';
+  document.getElementById('nicknameModal').classList.add('open');
+}
+
+function closeNicknameModal() {
+  document.getElementById('nicknameModal').classList.remove('open');
+}
+
+function saveNickname() {
+  const input = document.getElementById('nicknameInput');
+  const val = input ? input.value.trim() : '';
+  if (!val) return;
+  myNickname = val;
+  closeNicknameModal();
+  if (currentView === 'settings') renderSettingsView();
+  else renderApp();
+}
+
+function onAvatarFileSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('avatarPreview');
+    if (preview) preview.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 function switchSubject(index) {
