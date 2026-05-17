@@ -859,11 +859,10 @@ function renderPlanExamSection() {
 function renderPlanQuizSection() {
   const loading = !planTabData;
   const quizzes = planTabData?.quizzes || [];
+  if (!loading && quizzes.length === 0) return '';
   const rows = loading
     ? '<div style="padding:14px 16px;font-size:13px;color:var(--ink3)">読み込み中...</div>'
-    : quizzes.length === 0
-      ? '<div style="padding:14px 16px;font-size:13px;color:var(--ink3)">登録中の小テストはありません</div>'
-      : quizzes.map(q => {
+    : quizzes.map(q => {
           const d = new Date(q.examDate + 'T00:00:00');
           const days = ['日','月','火','水','木','金','土'];
           const dateLabel = `${d.getMonth()+1}/${d.getDate()}`;
