@@ -110,7 +110,7 @@
   .error-state .icon { font-size: 40px; margin-bottom: 12px; }
 
   /* フッター余白 */
-  .footer-pad { height: 40px; }
+  .footer-pad { height: 80px; }
 
   /* アカウント管理 */
   .account-section { padding: 0 16px 20px; margin-top: 8px; }
@@ -273,6 +273,12 @@
     <div class="spinner"></div>
     <div style="font-size:13px;color:var(--text-dim)">読み込み中...</div>
   </div>
+</div>
+
+<div id="contractBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--accent);padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:50;box-shadow:0 -2px 12px rgba(0,0,0,0.15)">
+  <button onclick="openStripeCheckout()" style="width:100%;background:white;border:none;border-radius:10px;color:var(--accent);font-size:15px;font-weight:700;padding:12px;cursor:pointer;font-family:inherit">
+    今すぐ契約する
+  </button>
 </div>
 
 <script>
@@ -476,6 +482,7 @@ async function init() {
     loadDemoData();
     renderApp();
     renderApp();
+    document.getElementById('contractBar').style.display = 'block';
     fetch(`${GAS_URL}?action=recordDemoAccess&userId=${encodeURIComponent(userId)}`).catch(() => {});
   } catch (err) {
     showError(`[${step}] ${err.message}`);
