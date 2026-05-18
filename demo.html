@@ -1036,8 +1036,8 @@ function renderSettingsView() {
           <div style="font-size:13px;font-weight:700;color:${isPaid ? 'var(--accent)' : 'var(--accent3)'}">${isPaid ? '契約中' : (myBillingStatus || '未契約')}</div>
         </div>
         <div style="padding-top:14px">
-          <button onclick="openStripeCheckout()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:var(--accent);border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">
-            今すぐはじめる
+          <button class="cancel-btn">
+            サブスクリプションを解約する
           </button>
         </div>
       </div>
