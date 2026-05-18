@@ -275,10 +275,9 @@
   </div>
 </div>
 
-<div id="contractBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e0e8f0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:50;box-shadow:0 -4px 16px rgba(0,0,0,0.10)">
-  <div style="font-size:11px;color:#5a7a9a;text-align:center;margin-bottom:6px;font-weight:600">登録後すぐに授業内で使えます</div>
-  <button onclick="openStripeCheckout()" style="width:100%;background:#1a6fc4;border:none;border-radius:12px;color:white;font-size:16px;font-weight:700;padding:14px;cursor:pointer;font-family:inherit;letter-spacing:0.03em">
-    今すぐはじめる
+<div id="contractBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:50">
+  <button onclick="openStripeCheckout()" style="width:100%;background:#1a3a6b;border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;padding:15px;cursor:pointer;font-family:inherit">
+    利用登録して授業で使う<br><span style="font-size:11px;font-weight:400;opacity:0.85">登録後すぐに授業内で問題を受け取れます</span>
   </button>
 </div>
 
@@ -711,12 +710,8 @@ function renderApp() {
         <button onclick="openSettingsView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:17px;cursor:pointer;padding:2px 9px;color:white;line-height:1.4">⚙</button>
       </div>
     </div>
-    <div style="background:#fff8e1;border-bottom:1px solid #ffe082;padding:8px 16px;display:flex;align-items:center;gap:8px">
-      <span style="font-size:15px">👀</span>
-      <div>
-        <div style="font-size:12px;font-weight:700;color:#b8860b">これはデモ画面です</div>
-        <div style="font-size:11px;color:#8a6914;margin-top:1px">実際のデータはサンプルです。登録後に本物のマイページが使えます。</div>
-      </div>
+    <div style="background:#1a3a6b;color:white;padding:9px 16px;text-align:center;font-size:12px;font-weight:700;letter-spacing:0.05em">
+      <span style="display:inline-block;background:rgba(255,255,255,0.2);border-radius:20px;padding:2px 10px;margin-right:6px;font-size:11px">DEMO</span>サービス体験中 — これはサンプルデータです
     </div>
     <div class="tab-nav">
       <button class="tab-btn ${mainTab === 'dashboard' ? 'active' : ''}" onclick="switchMainTab('dashboard')">集中度スコア</button>
