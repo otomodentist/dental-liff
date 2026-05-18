@@ -268,7 +268,11 @@
   </div>
 </div>
 
-<div id="app">
+<div style="position:fixed;top:0;left:0;right:0;background:#1a6fc4;color:white;padding:8px 16px;text-align:center;font-size:12px;font-weight:700;letter-spacing:0.05em;z-index:100">
+  <span style="display:inline-block;background:rgba(255,255,255,0.2);border-radius:20px;padding:2px 10px;margin-right:6px;font-size:11px">DEMO</span>サービス体験中 — これはサンプルデータです
+</div>
+
+<div id="app" style="padding-top:34px">
   <div class="loading" id="loading">
     <div class="spinner"></div>
     <div style="font-size:13px;color:var(--text-dim)">読み込み中...</div>
@@ -276,7 +280,7 @@
 </div>
 
 <div id="contractBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:50">
-  <button onclick="openStripeCheckout()" style="width:100%;background:#1a3a6b;border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;padding:15px;cursor:pointer;font-family:inherit">
+  <button onclick="openStripeCheckout()" style="width:100%;background:#1a6fc4;border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;padding:15px;cursor:pointer;font-family:inherit">
     利用登録して授業で使う<br><span style="font-size:11px;font-weight:400;opacity:0.85">登録後すぐに授業内で問題を受け取れます</span>
   </button>
 </div>
@@ -709,9 +713,6 @@ function renderApp() {
         <div class="header-title">${name}</div>
         <button onclick="openSettingsView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:17px;cursor:pointer;padding:2px 9px;color:white;line-height:1.4">⚙</button>
       </div>
-    </div>
-    <div style="background:#1a3a6b;color:white;padding:9px 16px;text-align:center;font-size:12px;font-weight:700;letter-spacing:0.05em">
-      <span style="display:inline-block;background:rgba(255,255,255,0.2);border-radius:20px;padding:2px 10px;margin-right:6px;font-size:11px">DEMO</span>サービス体験中 — これはサンプルデータです
     </div>
     <div class="tab-nav">
       <button class="tab-btn ${mainTab === 'dashboard' ? 'active' : ''}" onclick="switchMainTab('dashboard')">集中度スコア</button>
