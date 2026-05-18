@@ -711,6 +711,13 @@ function renderApp() {
         <button onclick="openSettingsView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:17px;cursor:pointer;padding:2px 9px;color:white;line-height:1.4">⚙</button>
       </div>
     </div>
+    <div style="background:#fff8e1;border-bottom:1px solid #ffe082;padding:8px 16px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:15px">👀</span>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#b8860b">これはデモ画面です</div>
+        <div style="font-size:11px;color:#8a6914;margin-top:1px">実際のデータはサンプルです。登録後に本物のマイページが使えます。</div>
+      </div>
+    </div>
     <div class="tab-nav">
       <button class="tab-btn ${mainTab === 'dashboard' ? 'active' : ''}" onclick="switchMainTab('dashboard')">集中度スコア</button>
       <button class="tab-btn ${mainTab === 'plan' ? 'active' : ''}" onclick="switchMainTab('plan')">学習計画</button>
