@@ -279,6 +279,7 @@
 // ===== 設定 =====
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec';
 const LIFF_ID = '2009739219-N7Pi2ywn';
+const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/8x25kCgP2gul9KigcHfbq03';
 
 let userId = null;
 let profileData = null;
@@ -1023,14 +1024,19 @@ function renderSettingsView() {
           <div style="font-size:13px;font-weight:700;color:${isPaid ? 'var(--accent)' : 'var(--accent3)'}">${isPaid ? '契約中' : (myBillingStatus || '未契約')}</div>
         </div>
         <div style="padding-top:14px">
-          <button class="cancel-btn" onclick="showCancelModal()">
-            サブスクリプションを解約する
+          <button onclick="openStripeCheckout()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:var(--accent);border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">
+            今すぐ契約する
           </button>
         </div>
       </div>
     </div>
 
     <div class="footer-pad"></div>`;
+}
+
+function openStripeCheckout() {
+  const url = STRIPE_PAYMENT_LINK + '?client_reference_id=' + encodeURIComponent(userId || '');
+  liff.openWindow({ url, external: true });
 }
 
 function toggleHideAnswer() {
