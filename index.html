@@ -184,7 +184,7 @@
   .rank-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: var(--surface2); flex-shrink: 0; }
   .rank-info { flex: 1; min-width: 0; }
   .rank-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
-  .rank-sub { font-size: 10px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .rank-sub { font-size: 10px; color: var(--ink3); margin-top: 1px; line-height: 1.4; word-break: break-all; }
   .rank-score { font-size: 18px; font-weight: 700; flex-shrink: 0; }
   .rank-empty { padding: 20px; text-align: center; color: var(--ink3); font-size: 13px; }
 
@@ -482,14 +482,22 @@ function clearLiveRefreshTimers() {
   liveRefreshTimers = [];
 }
 
+let _liveLastAnswerTs = '0';
+
 function scheduleLiveRefreshes() {
   clearLiveRefreshTimers();
   if (!activeSessionState?.isActive || !activeSessionState.session?.currentQuestionId) return;
-  let count = 0;
-  const id = setInterval(() => {
-    refreshLiveCardSilent();
-    if (++count >= 9) clearLiveRefreshTimers();
-  }, 20000);
+  const id = setInterval(async () => {
+    if (!activeSessionState?.isActive) { clearLiveRefreshTimers(); return; }
+    try {
+      const r = await fetch(`${GAS_URL}?action=getLastAnswerTimestamp`);
+      const d = await r.json();
+      if (d.ts && d.ts !== _liveLastAnswerTs) {
+        _liveLastAnswerTs = d.ts;
+        refreshLiveCardSilent();
+      }
+    } catch (e) {}
+  }, 10000);
   liveRefreshTimers.push(id);
 }
 
@@ -558,7 +566,7 @@ function buildRankRowHTML(item, highlightUserId) {
       <img class="rank-avatar" src="${item.avatarUrl}" onerror="this.style.display='none'" />
       <div class="rank-info">
         <div class="rank-name">${item.nickname || item.displayName}${isMe ? ' 👤' : ''}</div>
-        <div class="rank-sub">${unanswered ? '未回答' : (item.answerText ? item.answerText.slice(0, 40) + (item.answerText.length > 40 ? '…' : '') : '')}</div>
+        <div class="rank-sub">${unanswered ? '未回答' : (item.answerText || '')}</div>
       </div>
       <div class="rank-score" style="color:${unanswered ? 'var(--ink3)' : scoreColor}">${unanswered ? '—' : item.concentrationScore}</div>
     </div>`;
