@@ -475,6 +475,7 @@ async function init() {
     loadDemoData();
     renderApp();
     renderApp();
+    fetch(`${GAS_URL}?action=recordDemoAccess&userId=${encodeURIComponent(userId)}`).catch(() => {});
   } catch (err) {
     showError(`[${step}] ${err.message}`);
   }
