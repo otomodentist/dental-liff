@@ -415,6 +415,7 @@
       let studentSessionsData = null;
       let sessionDetailData = null;
       let adminSubjectOpen = null;
+      let currentStudentRestricted = false;
       let adminChart = null;
       let billingListData = null;
 
@@ -758,6 +759,7 @@ ${isDeliveryPaused ? `
       function buildAdminRankRowHTML(item) {
         const unanswered = item.answered === false;
         const isHidden = !!item.hideAnswer;
+        const isRestricted = !!item.restricted;
         const cls = adminRankNumClass(item.rank);
         const scoreColor = item.concentrationScore>=70?'var(--accent)':item.concentrationScore>=40?'#b07d00':'#c0392b';
         const sid = adminCurrentSessionId || '';
@@ -766,8 +768,10 @@ ${isDeliveryPaused ? `
         const rowStyle = [
           unanswered ? 'opacity:0.5' : '',
           isHidden ? 'background:var(--surface2)' : '',
+          isRestricted ? 'background:#fff5f5' : '',
         ].filter(Boolean).join(';');
         const badges = [
+          isRestricted ? '<span style="font-size:9px;background:#e53935;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">制限中</span>' : '',
           isHidden ? '<span style="font-size:9px;background:#e0e0e0;color:#555;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">非表示</span>' : '',
           unanswered ? '<span style="font-size:9px;background:#fff0e0;color:#c05000;border:1px solid #f0c080;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">未回答</span>' : '',
         ].join('');
@@ -788,6 +792,7 @@ ${isDeliveryPaused ? `
       function buildAdminSessionRankRowHTML(item, sessionId) {
         const unanswered = item.answered === false;
         const isHidden = !!item.hideAnswer;
+        const isRestricted = !!item.restricted;
         const cls = adminRankNumClass(item.rank);
         const scoreColor = item.sustainScore>=70?'var(--accent)':item.sustainScore>=40?'#b07d00':'#c0392b';
         const sid = sessionId || '';
@@ -796,8 +801,10 @@ ${isDeliveryPaused ? `
         const rowStyle = [
           unanswered ? 'opacity:0.5' : '',
           isHidden ? 'background:var(--surface2)' : '',
+          isRestricted ? 'background:#fff5f5' : '',
         ].filter(Boolean).join(';');
         const badges = [
+          isRestricted ? '<span style="font-size:9px;background:#e53935;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">制限中</span>' : '',
           isHidden ? '<span style="font-size:9px;background:#e0e0e0;color:#555;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">非表示</span>' : '',
           unanswered ? '<span style="font-size:9px;background:#fff0e0;color:#c05000;border:1px solid #f0c080;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">未回答</span>' : '',
         ].join('');
@@ -986,6 +993,7 @@ ${isDeliveryPaused ? `
         try {
           const res = await fetch(`${GAS_URL}?action=getStudentSessions&userId=${encodeURIComponent(targetUserId)}`);
           studentSessionsData = await res.json();
+          currentStudentRestricted = !!(studentSessionsData && studentSessionsData.adminRestricted);
           renderApp();
           await showSessionDetail(targetSessionId);
         } catch (e) {
@@ -1218,6 +1226,7 @@ ${isDeliveryPaused ? `
           try {
               const res = await fetch(`${GAS_URL}?action=getStudentSessions&userId=${encodeURIComponent(userId)}`);
               studentSessionsData = await res.json();
+              currentStudentRestricted = !!(studentSessionsData && studentSessionsData.adminRestricted);
           } catch (e) {
               showToast('❌ データ取得失敗');
               selectedStudentId = null;
@@ -1290,10 +1299,27 @@ ${isDeliveryPaused ? `
                   <div class="student-avatar" style="width:30px;height:30px;font-size:13px">
                       ${student && student.avatarUrl ? `<img src="${student.avatarUrl}" alt="">` : '👤'}
                   </div>
-                  <div class="detail-name">${name}</div>
+                  <div class="detail-name" style="flex:1">${name}</div>
+                  <button onclick="toggleStudentRestriction()" style="font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;background:${currentStudentRestricted ? 'var(--accent)' : 'var(--danger)'};color:white">
+                    ${currentStudentRestricted ? '制限解除' : '制限する'}
+                  </button>
               </div>
               <div class="student-list" style="margin-top:8px">${listHTML}</div>
           `;
+      }
+
+      async function toggleStudentRestriction() {
+        if (!selectedStudentId) return;
+        const newState = !currentStudentRestricted;
+        try {
+          const r = await fetch(`${GAS_URL}?action=setAdminRestriction&userId=${encodeURIComponent(selectedStudentId)}&restricted=${newState}`);
+          const d = await r.json();
+          if (d.success) {
+            currentStudentRestricted = d.restricted;
+            showToast(currentStudentRestricted ? '🚫 制限しました' : '✅ 制限を解除しました');
+            renderApp();
+          }
+        } catch (e) { showToast('❌ 通信エラー'); }
       }
 
       function backToStudentList() {
