@@ -115,8 +115,8 @@
   /* アカウント管理 */
   .account-section { padding: 0 16px 20px; margin-top: 8px; }
   .account-section-title { font-size: 11px; letter-spacing: 0.05em; color: var(--ink3); font-weight: 700; margin-bottom: 12px; padding-top: 14px; }
-  .cancel-btn { display: inline-block; background: none; border: none; color: var(--ink3); font-size: 12px; font-weight: 400; cursor: pointer; font-family: inherit; text-decoration: underline; text-underline-offset: 2px; padding: 4px 0; opacity: 0.7; }
-  .cancel-btn:active { opacity: 0.4; }
+  .cancel-btn { display: inline-block; background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--ink2); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; padding: 5px 10px; }
+  .cancel-btn:active { opacity: 0.6; }
 
   /* 解約確認モーダル */
   .cancel-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; }
@@ -1030,15 +1030,11 @@ function renderSettingsView() {
       <div style="padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">契約内容</div>
       </div>
-      <div style="padding:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
-          <div style="font-size:14px;color:var(--ink2)">契約状況</div>
-          <div style="font-size:13px;font-weight:700;color:${isPaid ? 'var(--accent)' : 'var(--accent3)'}">${isPaid ? '契約中' : (myBillingStatus || '未契約')}</div>
-        </div>
-        <div style="padding-top:14px">
-          <button class="cancel-btn">
-            サブスクリプションを解約する
-          </button>
+      <div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:14px;color:var(--ink2)">契約状況</div>
+        <div style="text-align:right">
+          <div style="font-size:13px;font-weight:700;color:${isPaid ? 'var(--accent)' : 'var(--accent3)'};margin-bottom:6px">${isPaid ? '契約中' : (myBillingStatus || '未契約')}</div>
+          <button class="cancel-btn">サブスクリプションを解約する</button>
         </div>
       </div>
     </div>
