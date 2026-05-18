@@ -292,6 +292,22 @@
       </div>
     </div>
 
+    <div id="scoreEditModal" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-title">回答正当度を修正</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:14px">GPT採点の結果が不適切な場合、スコアを直接修正できます。集中度スコアは速度乗数と再計算されます。</div>
+        <div style="text-align:center">
+          <input id="scoreEditInput" type="number" min="0" max="100" step="1"
+            style="width:100px;padding:10px 8px;font-size:22px;font-weight:700;border:2px solid var(--border);border-radius:10px;text-align:center">
+          <span style="font-size:14px;color:var(--ink2);margin-left:6px">/ 100</span>
+        </div>
+        <div class="modal-btns" style="margin-top:14px">
+          <button class="modal-btn-cancel" onclick="closeScoreEditModal()">キャンセル</button>
+          <button class="modal-btn-save" onclick="submitScoreEdit()">保存</button>
+        </div>
+      </div>
+    </div>
+
     <div id="rescoreModal" class="modal-overlay">
       <div class="modal">
         <div class="modal-title">模範解答を修正して再採点</div>
@@ -674,6 +690,7 @@
       <button onclick="document.getElementById('modelAnswer').value=''" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink3);font-size:11px;padding:2px 8px;cursor:pointer;line-height:1.4">クリア</button>
     </div>
     <textarea class="form-textarea" id="modelAnswer" rows="3" placeholder="模範解答を入力..."></textarea>
+    <div style="font-size:10px;color:var(--ink3);margin-top:5px;line-height:1.5">⚠️ 採点に使うキーワード・要素を最低限含めてください。省略すると採点が限定的になります。</div>
   </div>
 </div>
 
@@ -1238,15 +1255,16 @@ ${isDeliveryPaused ? `
               ? '<div class="empty-state">授業データがありません</div>'
               : subjEntries.map(([subj, data], idx) => {
                   const isOpen = adminSubjectOpen === idx;
-                  const latestScore = data.sessions.length > 0 ? data.sessions[0].sustainScore : 0;
+                  const latestDelivered = data.sessions.find(s => !s.noDelivery);
+                  const latestScore = latestDelivered ? latestDelivered.sustainScore : null;
                   const sessionRows = isOpen ? data.sessions.map(s => `
                       <div style="border-top:1px solid var(--border);background:#f0f6f1">
-                          <div class="student-item" onclick="showSessionDetail('${s.sessionId}')" style="margin:0;border-radius:0;border:none;background:transparent;padding-left:20px">
+                          <div class="student-item" onclick="${s.noDelivery ? '' : `showSessionDetail('${s.sessionId}')`}" style="margin:0;border-radius:0;border:none;background:transparent;padding-left:20px;${s.noDelivery ? 'cursor:default;opacity:0.6' : ''}">
                               <div class="student-info">
                                   <div class="student-name" style="font-size:13px">第${s.sessionNumber}回</div>
-                                  <div class="student-meta">${s.answerCount}問回答</div>
+                                  <div class="student-meta">${s.noDelivery ? '配信なし' : s.answerCount + '問回答'}</div>
                               </div>
-                              <div class="student-score ${scoreClass(s.sustainScore)}">${s.sustainScore}</div>
+                              <div class="student-score ${s.noDelivery ? '' : scoreClass(s.sustainScore)}" style="${s.noDelivery ? 'color:var(--ink3);font-size:11px' : ''}">${s.noDelivery ? '—' : s.sustainScore}</div>
                           </div>
                       </div>`).join('') : '';
                   return `
@@ -1258,7 +1276,7 @@ ${isDeliveryPaused ? `
                               </div>
                               <div style="text-align:right;margin-right:6px">
                                   <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">直近集中度維持スコア</div>
-                                  <div style="font-size:20px;font-weight:700;color:var(--accent)">${latestScore}</div>
+                                  <div style="font-size:20px;font-weight:700;color:${latestScore != null ? 'var(--accent)' : 'var(--ink3)'}">${latestScore != null ? latestScore : '—'}</div>
                               </div>
                               <div style="font-size:12px;color:var(--ink3);transform:${isOpen ? 'rotate(180deg)' : 'none'}">▼</div>
                           </div>
@@ -1481,12 +1499,48 @@ ${isDeliveryPaused ? `
           `;
           document.getElementById('pointDetailActions').innerHTML = `
               ${a.answered ? `<button onclick="openRescoreModal()" style="width:100%;padding:10px;background:var(--accent);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✏️ 解答を修正して再採点</button>` : ''}
+              ${a.answered && a.answerId ? `<button onclick="openScoreEditModal()" style="width:100%;padding:10px;background:var(--surface2);color:var(--ink);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🔢 正当度スコアを直接修正</button>` : ''}
               <button onclick="deleteQuestion()" style="width:100%;padding:10px;background:var(--danger);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🗑️ この問題を全員分削除する</button>
           `;
           document.getElementById('pointDetailPopup').classList.add('open');
       }
 
       let currentPointDetailIndex = -1;
+
+      function openScoreEditModal() {
+        if (currentPointDetailIndex < 0 || !sessionDetailData) return;
+        const a = sessionDetailData.answers[currentPointDetailIndex];
+        document.getElementById('scoreEditInput').value = a.accuracyScore ?? '';
+        closePointDetail();
+        document.getElementById('scoreEditModal').classList.add('open');
+      }
+
+      function closeScoreEditModal() {
+        document.getElementById('scoreEditModal').classList.remove('open');
+      }
+
+      async function submitScoreEdit() {
+        if (currentPointDetailIndex < 0 || !sessionDetailData) return;
+        const a = sessionDetailData.answers[currentPointDetailIndex];
+        if (!a.answerId) return;
+        const newScore = parseInt(document.getElementById('scoreEditInput').value);
+        if (isNaN(newScore) || newScore < 0 || newScore > 100) { showToast('❌ 0〜100 の値を入力してください'); return; }
+        closeScoreEditModal();
+        showToast('保存中...');
+        try {
+          const r = await fetch(`${GAS_URL}?action=updateAccuracyScore&answerId=${encodeURIComponent(a.answerId)}&score=${newScore}`);
+          const d = await r.json();
+          if (d.success) {
+            a.accuracyScore = d.newAccuracy;
+            a.concentrationScore = d.newConcentration;
+            showToast('✅ スコアを更新しました');
+            if (adminChart) { adminChart.destroy(); adminChart = null; }
+            setTimeout(() => drawAdminChart(), 100);
+          } else {
+            showToast('❌ 更新失敗: ' + (d.error || ''));
+          }
+        } catch(e) { showToast('❌ 通信エラー'); }
+      }
 
       function openRescoreModal() {
           if (currentPointDetailIndex < 0 || !sessionDetailData) return;

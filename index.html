@@ -697,21 +697,24 @@ function renderApp() {
   // 科目アコーディオン
   const accordionHTML = subjects.map((subj, subjIdx) => {
     const isOpen = historySubjectOpen === subjIdx;
-    const latestScore = subj.sessions.length > 0 ? subj.sessions[subj.sessions.length - 1].sustainScore : 0;
+    const latestDelivered = subj.sessions.slice().reverse().find(s => !s.noDelivery);
+    const latestScore = latestDelivered ? latestDelivered.sustainScore : null;
     const sessionRows = isOpen ? subj.sessions.slice().reverse().map(sess => {
       const isSessOpen = historySubjectOpen === subjIdx && historySessionOpen === sess.sessionNumber;
       const sc = sess.sustainScore;
       return `
         <div style="border-top:1px solid var(--border);background:#f0f6f1">
-          <div onclick="toggleHistorySession(${subjIdx},${sess.sessionNumber})" style="display:flex;align-items:center;gap:12px;padding:11px 14px 11px 20px;cursor:pointer">
+          <div onclick="${sess.noDelivery ? '' : `toggleHistorySession(${subjIdx},${sess.sessionNumber})`}" style="display:flex;align-items:center;gap:12px;padding:11px 14px 11px 20px;${sess.noDelivery ? 'cursor:default;opacity:0.55' : 'cursor:pointer'}">
             <div style="flex:1">
               <div style="font-size:13px;font-weight:600;color:var(--ink)">第${sess.sessionNumber}回授業</div>
-              <div style="font-size:11px;color:var(--ink3);margin-top:1px">${sess.timeline.length}問回答</div>
+              <div style="font-size:11px;color:var(--ink3);margin-top:1px">${sess.noDelivery ? '配信なし' : sess.timeline.length + '問回答'}</div>
             </div>
-            <div class="score-badge ${sc>=70?'high':sc>=40?'mid':'low'}" style="font-size:18px;margin-right:4px">${sc}</div>
-            <div style="font-size:12px;color:var(--ink3);transition:transform 0.2s;transform:${isSessOpen?'rotate(180deg)':'none'}">▼</div>
+            ${sess.noDelivery
+              ? `<div style="font-size:12px;color:var(--ink3);margin-right:4px">—</div>`
+              : `<div class="score-badge ${sc>=70?'high':sc>=40?'mid':'low'}" style="font-size:18px;margin-right:4px">${sc}</div>`}
+            ${sess.noDelivery ? '' : `<div style="font-size:12px;color:var(--ink3);transition:transform 0.2s;transform:${isSessOpen?'rotate(180deg)':'none'}">▼</div>`}
           </div>
-          ${isSessOpen ? `
+          ${isSessOpen && !sess.noDelivery ? `
           <div style="background:var(--surface2);padding:0 0 10px">
             <div style="height:180px;position:relative;padding:8px 10px 0"><canvas id="hc-${subjIdx}-${sess.sessionNumber}"></canvas></div>
             <div id="hc-${subjIdx}-${sess.sessionNumber}-info" class="chart-point-info" style="margin:6px 12px 0"></div>
@@ -727,7 +730,7 @@ function renderApp() {
           </div>
           <div style="text-align:right;margin-right:6px">
             <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">集中度維持スコア</div>
-            <div style="font-size:20px;font-weight:700;color:var(--accent)">${latestScore}</div>
+            <div style="font-size:20px;font-weight:700;color:${latestScore != null ? 'var(--accent)' : 'var(--ink3)'}">${latestScore != null ? latestScore : '—'}</div>
           </div>
           <div style="font-size:12px;color:var(--ink3);transition:transform 0.2s;transform:${isOpen?'rotate(180deg)':'none'}">▼</div>
         </div>
