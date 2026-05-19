@@ -549,13 +549,12 @@ async function fetchDashboard(uid) {
 
 async function fetchLatestRanking() {
   try {
-    const res = await fetch(`${GAS_URL}?action=getLatestSessionData&userId=${encodeURIComponent(userId)}`);
-    latestSessionData = await res.json();
-    if (!latestSessionData.found) { latestSessionData = null; latestSessionRanking = []; return; }
-    const rr = await fetch(`${GAS_URL}?action=getSessionRanking&sessionId=${encodeURIComponent(latestSessionData.sessionId)}`);
-    const rd = await rr.json();
-    latestSessionRanking = rd.ranking || [];
-    currentRankingSessionId = latestSessionData.sessionId;
+    const res = await fetch(`${GAS_URL}?action=getLatestSessionRanking&userId=${encodeURIComponent(userId)}`);
+    const d = await res.json();
+    if (!d.found) { latestSessionData = null; latestSessionRanking = []; return; }
+    latestSessionData = { found: true, sessionId: d.sessionId, subject: d.subject, sessionNumber: d.sessionNumber, sustainScore: d.sustainScore, answerCount: d.answerCount };
+    latestSessionRanking = d.ranking || [];
+    currentRankingSessionId = d.sessionId;
     currentRankingData = latestSessionRanking;
   } catch (e) { latestSessionData = null; latestSessionRanking = []; }
 }
@@ -843,9 +842,8 @@ function switchMainTab(tab) {
   mainTab = tab;
   renderApp();
   if (tab === 'plan' && !planTabData) loadPlanTabData();
-  if (tab === 'dashboard') {
+  if (tab === 'dashboard' && activeSessionState?.isActive) {
     refreshLiveCardSilent().then(() => renderApp()).catch(() => {});
-    fetchLatestRanking().then(() => renderApp()).catch(() => {});
   }
 }
 
