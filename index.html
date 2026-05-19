@@ -423,7 +423,7 @@ function openNicknameModal() {
   if (input) input.value = myNickname || '';
   pendingAvatarDataUrl = '';
   const preview = document.getElementById('avatarPreview');
-  if (preview) preview.src = myAvatarUrl || profileData.pictureUrl || '';
+  if (preview) preview.src = myAvatarUrl || '';
   modal.classList.add('open');
 }
 
@@ -657,7 +657,7 @@ function renderApp() {
 
   if (subjects.length === 0) {
     const _n = myNickname || profileData.displayName;
-    const _a = myAvatarUrl || profileData.pictureUrl;
+    const _a = myAvatarUrl;
     app.innerHTML = `
       <div class="header">
         <div class="header-label">授業のオトモ</div>
@@ -678,7 +678,7 @@ function renderApp() {
   }
 
   const name = myNickname || profileData.displayName;
-  const avatarSrc = myAvatarUrl || profileData.pictureUrl;
+  const avatarSrc = myAvatarUrl;
 
   const headerHTML = `
     <div class="header">
@@ -953,7 +953,7 @@ async function openSettingsView() {
 function renderSettingsView() {
   const app = document.getElementById('app');
   const name = myNickname || (profileData ? profileData.displayName : '');
-  const avatarSrc = myAvatarUrl || (profileData ? profileData.pictureUrl : '');
+  const avatarSrc = myAvatarUrl;
   const isPaid = myBillingStatus === '契約中' || myBillingStatus === '管理者承認';
   app.innerHTML = `
     <div style="background:var(--accent);color:white;padding:16px 20px 12px">
