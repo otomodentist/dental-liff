@@ -842,6 +842,10 @@ function switchMainTab(tab) {
   mainTab = tab;
   renderApp();
   if (tab === 'plan' && !planTabData) loadPlanTabData();
+  if (tab === 'dashboard') {
+    refreshLiveCardSilent().then(() => renderApp()).catch(() => {});
+    fetchLatestRanking().then(() => renderApp()).catch(() => {});
+  }
 }
 
 function renderPlanExamSection() {
