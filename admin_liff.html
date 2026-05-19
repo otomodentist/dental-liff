@@ -1072,17 +1072,15 @@ ${isDeliveryPaused ? `
               return;
           }
           if (tab === 'billing') {
-              if (!billingListData) {
-                  renderLoadingScreen('billing');
-                  try {
-                      const res = await fetch(`${GAS_URL}?action=getAdminStudentListWithBilling`);
-                      const data = await res.json();
-                      if (!data.students) throw new Error(data.error || 'students undefined');
-                      billingListData = data;
-                  } catch (err) {
-                      showToast('❌ データ取得失敗: ' + err.message);
-                      activeTab = 'session';
-                  }
+              renderLoadingScreen('billing');
+              try {
+                  const res = await fetch(`${GAS_URL}?action=getAdminStudentListWithBilling`);
+                  const data = await res.json();
+                  if (!data.students) throw new Error(data.error || 'students undefined');
+                  billingListData = data;
+              } catch (err) {
+                  showToast('❌ データ取得失敗: ' + err.message);
+                  activeTab = 'session';
               }
               renderApp();
               return;

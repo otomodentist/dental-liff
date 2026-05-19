@@ -1802,6 +1802,14 @@ function showError(msg) {
 }
 
 init();
+
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && userId) {
+    const prev = myBillingStatus;
+    await fetchNickname(userId);
+    if (myBillingStatus !== prev) renderApp();
+  }
+});
 </script>
 </body>
 </html>
