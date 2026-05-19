@@ -1042,7 +1042,11 @@ function renderSettingsView() {
 }
 
 function openStripeCheckout() {
-  const url = STRIPE_PAYMENT_LINK + '?client_reference_id=' + encodeURIComponent(userId || '');
+  if (!userId) {
+    alert('LINEアプリから開き直してください');
+    return;
+  }
+  const url = STRIPE_PAYMENT_LINK + '?client_reference_id=' + encodeURIComponent(userId);
   liff.openWindow({ url, external: true });
 }
 
