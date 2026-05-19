@@ -698,7 +698,7 @@
       <button onclick="document.getElementById('modelAnswer').value=''" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink3);font-size:11px;padding:2px 8px;cursor:pointer;line-height:1.4">クリア</button>
     </div>
     <textarea class="form-textarea" id="modelAnswer" rows="3" placeholder="模範解答を入力..."></textarea>
-    <div style="font-size:10px;color:var(--ink3);margin-top:5px;line-height:1.5">⚠️ 採点に使うキーワード・要素を最低限含めてください。省略すると採点が限定的になります。</div>
+    <div style="font-size:10px;color:var(--ink3);margin-top:5px;line-height:1.5">最低限にとどめてください。書きすぎると採点が厳しくなります。</div>
   </div>
 </div>
 
@@ -1050,8 +1050,10 @@ ${isDeliveryPaused ? `
       async function switchTab(tab) {
           activeTab = tab;
           document.getElementById('pointDetailPopup').classList.remove('open');
-          if (tab === 'session' && isSessionActive) startAdminRankingPoll();
-          else if (tab === 'session' && lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
+          if (tab === 'session' && isSessionActive) {
+              startAdminRankingPoll();
+              if (adminCurrentQuestionId) pollAdminRanking();
+          } else if (tab === 'session' && lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
           else stopAdminRankingPoll();
           if (tab === 'exam') {
               if (!examListData || !adminQuizList) {
