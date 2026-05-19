@@ -1046,6 +1046,10 @@ function openStripeCheckout() {
     alert('LINEアプリから開き直してください');
     return;
   }
+  if (myBillingStatus === '契約中' || myBillingStatus === '管理者承認') {
+    alert('すでに登録済みです');
+    return;
+  }
   const url = STRIPE_PAYMENT_LINK + '?client_reference_id=' + encodeURIComponent(userId);
   liff.openWindow({ url, external: true });
 }
