@@ -666,7 +666,7 @@ function renderApp() {
     const _a = myAvatarUrl;
     app.innerHTML = `
       <div class="header">
-        <div style="display:flex;align-items:center;gap:7px"><img src="otomo_logo_litegreen.png" style="height:22px;border-radius:4px" alt="授業のOtomo" /><span style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;color:white;letter-spacing:0.02em">授業のOtomo</span></div>
+        <div style="display:flex;align-items:center;gap:7px"><div style="width:44px;height:44px;overflow:hidden;flex-shrink:0"><img src="otomo_logo_litegreen.png" style="width:125%;height:125%;margin:-12.5% 0 0 -12.5%;display:block" /></div><span style="font-family:'Kaisei Tokumin',serif;font-size:17px;font-weight:700;color:white;letter-spacing:0.02em">授業のOtomo</span></div>
         <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
           <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0">
             <img src="${_a}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'" />
@@ -688,7 +688,7 @@ function renderApp() {
 
   const headerHTML = `
     <div class="header">
-      <div style="display:flex;align-items:center;gap:7px"><img src="otomo_logo_litegreen.png" style="height:26px;border-radius:4px" alt="授業のOtomo" /><span style="font-family:'Kaisei Tokumin',serif;font-size:16px;font-weight:700;color:white;letter-spacing:0.02em">授業のOtomo</span></div>
+      <div style="display:flex;align-items:center;gap:7px"><div style="width:44px;height:44px;overflow:hidden;flex-shrink:0"><img src="otomo_logo_litegreen.png" style="width:125%;height:125%;margin:-12.5% 0 0 -12.5%;display:block" /></div><span style="font-family:'Kaisei Tokumin',serif;font-size:17px;font-weight:700;color:white;letter-spacing:0.02em">授業のOtomo</span></div>
       <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
         <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;flex-shrink:0">
           <img src="${avatarSrc}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'" />
@@ -970,7 +970,7 @@ function renderSettingsView() {
   const isPaid = myBillingStatus === '契約中' || myBillingStatus === '管理者承認';
   app.innerHTML = `
     <div style="background:var(--accent);color:white;padding:16px 20px 12px">
-      <div style="display:flex;align-items:center;gap:7px"><img src="otomo_logo_litegreen.png" style="height:26px;border-radius:4px" alt="授業のOtomo" /><span style="font-family:'Kaisei Tokumin',serif;font-size:16px;font-weight:700;color:white;letter-spacing:0.02em">授業のOtomo</span></div>
+      <div style="display:flex;align-items:center;gap:7px"><div style="width:44px;height:44px;overflow:hidden;flex-shrink:0"><img src="otomo_logo_litegreen.png" style="width:125%;height:125%;margin:-12.5% 0 0 -12.5%;display:block" /></div><span style="font-family:'Kaisei Tokumin',serif;font-size:17px;font-weight:700;color:white;letter-spacing:0.02em">授業のOtomo</span></div>
       <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
         <button onclick="currentView='dashboard';renderApp()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;padding:4px 12px;color:white;font-family:inherit">← 戻る</button>
         <div style="font-family:'Kaisei Tokumin',serif;font-size:18px;font-weight:700;color:white">設定</div>
