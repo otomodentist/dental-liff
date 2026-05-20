@@ -245,19 +245,19 @@
 
 <div id="cancelModal" class="cancel-modal">
   <div class="cancel-modal-sheet">
-    <div class="cancel-modal-title">サブスクリプションを解約しますか？</div>
+    <div class="cancel-modal-title">登録解除しますか？</div>
     <div class="cancel-modal-body">
-      解約すると：
+      登録解除すると：
       <ul>
-        <li>すぐにサービスが利用できなくなります</li>
+        <li>サービスが利用できなくなります</li>
         <li>授業データは保持されます</li>
-        <li>再度契約する場合は再度決済が必要です</li>
+        <li>再度ご利用の場合はデモ画面から登録できます</li>
       </ul>
-      <br>本当に解約しますか？
+      <br>本当に登録解除しますか？
     </div>
     <div class="cancel-modal-btns">
-      <button class="btn-keep" onclick="hideCancelModal()">キャンセル</button>
-      <button class="btn-confirm-cancel" onclick="confirmCancel()">解約する</button>
+      <button class="btn-keep" onclick="hideCancelModal()">戻る</button>
+      <button class="btn-confirm-cancel" onclick="confirmCancel()">登録解除する</button>
     </div>
   </div>
 </div>
@@ -1941,17 +1941,17 @@ async function confirmCancel() {
       document.getElementById('app').innerHTML = `
         <div class="error-state" style="padding-top:80px">
           <div class="icon">✅</div>
-          <div style="font-size:16px;font-weight:700;margin-bottom:8px">解約完了</div>
-          <div style="font-size:13px;color:var(--text-muted)">サブスクリプションの解約が完了しました。<br>ご利用ありがとうございました。</div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:8px">登録解除完了</div>
+          <div style="font-size:13px;color:var(--text-muted)">登録解除が完了しました。<br>ご利用ありがとうございました。</div>
         </div>`;
     } else {
       btn.disabled = false;
-      btn.textContent = '解約する';
+      btn.textContent = '登録解除する';
       alert('エラーが発生しました: ' + (data.error || '不明なエラー'));
     }
   } catch (e) {
     btn.disabled = false;
-    btn.textContent = '解約する';
+    btn.textContent = '登録解除する';
     alert('通信エラーが発生しました');
   }
 }
