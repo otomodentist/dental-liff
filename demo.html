@@ -486,6 +486,7 @@ async function init() {
     if (billingStatus === '契約中' || billingStatus === '管理者承認') { location.href = 'index.html'; return; }
 
     loadDemoData();
+    myBillingStatus = billingStatus;
     renderApp();
     renderApp();
     document.getElementById('contractBar').style.display = 'block';
