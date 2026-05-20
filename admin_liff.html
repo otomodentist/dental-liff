@@ -363,6 +363,7 @@
 
     <script>
       const GAS_URL = 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec';
+      const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c0c8d0'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M20 21a8 8 0 1 0-16 0'/%3E%3C/svg%3E";
       const LIFF_ID = '2009739219-9qVGb0Xm';
 
       let SUBJECTS = [];
@@ -783,7 +784,7 @@ ${isDeliveryPaused ? `
         ].join('');
         return `<div class="admin-rank-row" style="${rowStyle}" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')">
           <div class="admin-rank-num ${cls}">${unanswered ? '—' : item.rank}</div>
-          <img class="admin-rank-avatar" src="${item.avatarUrl || ''}" onerror="this.style.display='none'" />
+          <img class="admin-rank-avatar" src="${item.avatarUrl || DEFAULT_AVATAR}" onerror="this.src=DEFAULT_AVATAR" />
           <div class="admin-rank-info">
             <div class="admin-rank-name">${adminRankLabel(item)}${badges}</div>
             <div class="admin-rank-answer">${unanswered ? '' : (item.answerText || '')}</div>
@@ -816,7 +817,7 @@ ${isDeliveryPaused ? `
         ].join('');
         return `<div class="admin-rank-row" style="${rowStyle}" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')">
           <div class="admin-rank-num ${cls}">${unanswered ? '—' : item.rank}</div>
-          <img class="admin-rank-avatar" src="${item.avatarUrl || ''}" onerror="this.style.display='none'" />
+          <img class="admin-rank-avatar" src="${item.avatarUrl || DEFAULT_AVATAR}" onerror="this.src=DEFAULT_AVATAR" />
           <div class="admin-rank-info">
             <div class="admin-rank-name">${adminRankLabel(item)}${badges}</div>
             <div class="admin-rank-answer">${unanswered ? '' : `${item.answerCount}問回答`}</div>
@@ -1021,7 +1022,7 @@ ${isDeliveryPaused ? `
             ? '<div class="empty-state">課金済み学生がいません</div>'
             : students.map(s => `
                 <div class="mypage-student-row" onclick="selectStudentMyPage('${s.userId}')">
-                  <img class="mypage-student-avatar" src="${s.avatarUrl}" onerror="this.style.display='none'" />
+                  <img class="mypage-student-avatar" src="${s.avatarUrl || DEFAULT_AVATAR}" onerror="this.src=DEFAULT_AVATAR" />
                   <div>
                     <div style="font-size:14px;font-weight:600">${s.displayName}${s.nickname ? `<span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:5px">(${s.nickname})</span>` : ''}</div>
                   </div>
