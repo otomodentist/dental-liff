@@ -281,8 +281,8 @@
 </div>
 
 <div id="contractBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:50">
-  <button onclick="openStripeCheckout()" style="width:100%;background:#1a6fc4;border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;padding:15px;cursor:pointer;font-family:inherit">
-    利用登録して授業で使う<br><span style="font-size:11px;font-weight:400;opacity:0.85">🎁 5月中は無料　登録後すぐに授業内で問題を受け取れます</span>
+  <button id="registerBtn" onclick="registerFree()" style="width:100%;background:#1a6fc4;border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;padding:15px;cursor:pointer;font-family:inherit">
+    無料で利用登録する<br><span style="font-size:11px;font-weight:400;opacity:0.85">登録後すぐに授業内で問題を受け取れます</span>
   </button>
 </div>
 
@@ -1030,29 +1030,38 @@ function renderSettingsView() {
 
     <div style="margin:12px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
       <div style="padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">契約内容</div>
-        ${isPaid ? `<button class="cancel-btn">キャンセルする</button>` : ''}
+        <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">利用状況</div>
+        ${myBillingStatus === '契約中' ? `<button class="cancel-btn">キャンセルする</button>` : ''}
       </div>
       <div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
-        <div style="font-size:14px;color:var(--ink2)">契約状況</div>
-        <div style="font-size:13px;font-weight:700;color:${isPaid ? 'var(--accent)' : 'var(--accent3)'}">${isPaid ? '契約中' : (myBillingStatus || '未契約')}</div>
+        <div style="font-size:14px;color:var(--ink2)">登録状況</div>
+        <div style="font-size:13px;font-weight:700;color:${isPaid ? 'var(--accent)' : 'var(--accent3)'}">
+          ${myBillingStatus === '管理者承認' ? '利用中（春学期無料）' : isPaid ? '利用中' : (myBillingStatus || '未登録')}
+        </div>
       </div>
     </div>
 
     <div class="footer-pad"></div>`;
 }
 
-function openStripeCheckout() {
-  if (!userId) {
-    alert('LINEアプリから開き直してください');
-    return;
+async function registerFree() {
+  if (!userId) { alert('LINEアプリから開き直してください'); return; }
+  if (myBillingStatus === '契約中' || myBillingStatus === '管理者承認') { alert('すでに登録済みです'); return; }
+  const btn = document.getElementById('registerBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '登録中...'; }
+  try {
+    const r = await fetch(`${GAS_URL}?action=registerFreeSemester&userId=${encodeURIComponent(userId)}`);
+    const d = await r.json();
+    if (d.success) {
+      location.href = 'index.html';
+    } else {
+      alert('登録に失敗しました: ' + (d.error || '不明なエラー'));
+      if (btn) { btn.disabled = false; btn.innerHTML = '無料で利用登録する<br><span style="font-size:11px;font-weight:400;opacity:0.85">登録後すぐに授業内で問題を受け取れます</span>'; }
+    }
+  } catch (e) {
+    alert('通信エラーが発生しました。再度お試しください。');
+    if (btn) { btn.disabled = false; btn.innerHTML = '無料で利用登録する<br><span style="font-size:11px;font-weight:400;opacity:0.85">登録後すぐに授業内で問題を受け取れます</span>'; }
   }
-  if (myBillingStatus === '契約中' || myBillingStatus === '管理者承認') {
-    alert('すでに登録済みです');
-    return;
-  }
-  const url = STRIPE_PAYMENT_LINK + '?client_reference_id=' + encodeURIComponent(userId);
-  liff.openWindow({ url, external: true });
 }
 
 function toggleHideAnswer() {
