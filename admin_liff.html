@@ -502,8 +502,7 @@
                     if (activeSessionInfo && activeSessionInfo.questionSentTimeEpoch) {
                         const remaining = 180000 - (Date.now() - activeSessionInfo.questionSentTimeEpoch);
                         if (remaining > 0) {
-                            questionCooldownEnd = Date.now() + remaining;
-                            startQuestionCooldown();
+                            startQuestionCooldown(Date.now() + remaining);
                         }
                     }
                 }
@@ -1782,8 +1781,8 @@ ${isDeliveryPaused ? `
           });
       }
 
-function startQuestionCooldown() {
-          questionCooldownEnd = Date.now() + 180000;
+function startQuestionCooldown(endTime) {
+          questionCooldownEnd = endTime || Date.now() + 180000;
           if (questionCooldownInterval) clearInterval(questionCooldownInterval);
           questionCooldownInterval = setInterval(() => {
               const remaining = Math.ceil((questionCooldownEnd - Date.now()) / 1000);
