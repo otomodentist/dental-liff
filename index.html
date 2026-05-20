@@ -785,7 +785,7 @@ function buildLiveRankingCardHTML() {
         <div style="font-size:12px;color:var(--ink3)">回答後にランキングが表示されます</div>
       </div>`;
   } else {
-    const visibleRows = rows.filter(item => !item.restricted);
+    const visibleRows = rows.filter(item => !item.restricted && !item.hideAnswer);
     rowsHTML = visibleRows.length > 0
       ? visibleRows.map(item => buildRankRowHTML(item, userId)).join('')
       : '<div class="rank-empty">まだ誰も回答していません</div>';
@@ -942,7 +942,7 @@ function renderApp() {
         <button onclick="openSettingsView()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--ink2);font-size:12px;font-weight:700;padding:7px 16px;cursor:pointer;font-family:inherit">設定を開く</button>
       </div>`
     : (() => {
-        const visible = latestSessionRanking.filter(item => !item.restricted);
+        const visible = latestSessionRanking.filter(item => !item.restricted && !item.hideAnswer);
         return visible.length > 0
           ? visible.map(item => buildSessionRankRowHTML(item, userId)).join('')
           : '<div class="rank-empty">ランキングデータなし</div>';
