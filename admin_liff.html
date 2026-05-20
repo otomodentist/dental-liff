@@ -1072,17 +1072,36 @@ ${isDeliveryPaused ? `
               return;
           }
           if (tab === 'billing') {
-              renderLoadingScreen('billing');
-              try {
-                  const res = await fetch(`${GAS_URL}?action=getAdminStudentListWithBilling`);
-                  const data = await res.json();
-                  if (!data.students) throw new Error(data.error || 'students undefined');
-                  billingListData = data;
-              } catch (err) {
-                  showToast('❌ データ取得失敗: ' + err.message);
-                  activeTab = 'session';
+              // キャッシュがあれば即表示してバックグラウンドで最新取得
+              const cached = sessionStorage.getItem('billingCache');
+              if (cached) {
+                  try { billingListData = JSON.parse(cached); } catch(e) {}
               }
-              renderApp();
+              if (billingListData) {
+                  renderApp();
+                  // バックグラウンドで更新
+                  fetch(`${GAS_URL}?action=getAdminStudentListWithBilling`)
+                      .then(r => r.json()).then(data => {
+                          if (data.students) {
+                              billingListData = data;
+                              sessionStorage.setItem('billingCache', JSON.stringify(data));
+                              renderApp();
+                          }
+                      }).catch(() => {});
+              } else {
+                  renderLoadingScreen('billing');
+                  try {
+                      const res = await fetch(`${GAS_URL}?action=getAdminStudentListWithBilling`);
+                      const data = await res.json();
+                      if (!data.students) throw new Error(data.error || 'students undefined');
+                      billingListData = data;
+                      sessionStorage.setItem('billingCache', JSON.stringify(data));
+                  } catch (err) {
+                      showToast('❌ データ取得失敗: ' + err.message);
+                      activeTab = 'session';
+                  }
+                  renderApp();
+              }
               return;
           }
           if (tab === 'dashboard') {
@@ -1912,8 +1931,9 @@ function startQuestionCooldown() {
               </div>`;
 
           return `
-              <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">
-                  登録済み（${registered.length}名）
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px 4px">
+                  <span style="font-size:12px;font-weight:700;color:var(--ink3)">登録済み（${registered.length}名）</span>
+                  <button onclick="refreshBillingList()" style="font-size:11px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--ink3);cursor:pointer;font-family:'Noto Sans JP',sans-serif">🔄 更新</button>
               </div>
               <div class="student-list" style="padding-bottom:4px">
                   ${registered.length === 0
@@ -1928,6 +1948,12 @@ function startQuestionCooldown() {
                     ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
                     : unregistered.map(renderUnregistered).join('')}
               </div>`;
+      }
+
+      async function refreshBillingList() {
+          sessionStorage.removeItem('billingCache');
+          billingListData = null;
+          await switchTab('billing');
       }
 
       async function grantFreeAccess(userId) {
