@@ -1838,7 +1838,7 @@ function startQuestionCooldown(endTime) {
                       startAdminRankingPoll();
                       startQuestionCooldown();
                       if (result.lineWarning) {
-                          showToast('⚠️ LINE通知エラー: ' + result.lineWarning);
+                          showToast('⚠️ LINE通知エラー: ' + result.lineWarning.slice(0, 40));
                       } else if (result.studentCount === 0) {
                           showToast('⚠️ 配信対象の学生が0名です');
                       } else {
