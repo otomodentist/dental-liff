@@ -160,6 +160,27 @@
   .plan-item-btn.done { background: var(--surface2); color: var(--ink3); cursor: default; }
   .plan-alert { margin: 0 16px 12px; padding: 12px 16px; background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.25); border-radius: 12px; font-size: 13px; color: var(--accent3); }
 
+  /* 自由学習記録モーダル */
+  .free-study-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; }
+  .free-study-modal.open { display: flex; }
+  .free-study-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 20px max(32px,env(safe-area-inset-bottom)); width: 100%; }
+  .free-study-title { font-family: 'Kaisei Tokumin', serif; font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+  .free-study-sub { font-size: 12px; color: var(--ink3); margin-bottom: 16px; line-height: 1.5; }
+  .free-study-select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; background: var(--surface2); color: var(--ink); margin-bottom: 14px; }
+  .free-study-btns { display: flex; gap: 10px; }
+  .free-study-cancel { flex: 1; padding: 13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .free-study-submit { flex: 1; padding: 13px; background: var(--accent); border: none; border-radius: 12px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .free-study-submit:disabled { background: var(--border); color: var(--ink3); cursor: default; }
+  /* 学習到達度グラフ */
+  .progress-chart-wrap { padding: 14px 16px 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .progress-chart-inner { display: flex; gap: 10px; min-width: max-content; align-items: flex-end; }
+  .progress-bar-col { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 40px; }
+  .progress-bar-pct { font-size: 10px; font-weight: 700; color: var(--ink3); }
+  .progress-bar-track { width: 28px; height: 80px; background: var(--border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
+  .progress-bar-fill { width: 100%; border-radius: 6px; transition: height 0.4s; }
+  .progress-bar-name { font-size: 9px; color: var(--ink3); text-align: center; line-height: 1.3; max-width: 40px; word-break: break-all; margin-top: 1px; }
+  .progress-bar-count { font-size: 9px; color: var(--ink3); }
+
   /* 直近授業ボタン */
   .latest-btn { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin: 12px 16px 0; cursor: pointer; width: calc(100% - 32px); text-align: left; transition: border-color 0.2s; font-family: inherit; }
   .latest-btn:active { opacity: 0.8; }
@@ -258,6 +279,20 @@
     <div class="cancel-modal-btns">
       <button class="btn-keep" onclick="hideCancelModal()">戻る</button>
       <button class="btn-confirm-cancel" onclick="confirmCancel()">登録解除する</button>
+    </div>
+  </div>
+</div>
+
+<div id="freeStudyModal" class="free-study-modal">
+  <div class="free-study-sheet">
+    <div class="free-study-title">学習を記録する</div>
+    <div class="free-study-sub">計画にない科目の学習も記録できます</div>
+    <select id="freeStudySubjectSelect" class="free-study-select">
+      <option value="">科目を選択してください</option>
+    </select>
+    <div class="free-study-btns">
+      <button class="free-study-cancel" onclick="closeFreeStudyModal()">キャンセル</button>
+      <button id="freeStudySubmitBtn" class="free-study-submit" onclick="submitFreeStudy()">記録する</button>
     </div>
   </div>
 </div>
@@ -970,7 +1005,9 @@ function renderApp() {
     <div class="footer-pad"></div>`;
 
   const planHTML = `
+    ${renderProgressBarChart()}
     ${renderTodaySection()}
+    ${renderExamTimetable()}
     ${renderPlanExamSection()}
     ${renderPlanQuizSection()}
     <div class="footer-pad"></div>`;
@@ -1089,6 +1126,7 @@ async function loadPlanTabData() {
     planTabData = {
       exams: examData.exams || [],
       progressBlocks: examData.progressBlocks || {},
+      attendedBySubject: examData.attendedBySubject || {},
       quizzes: quizData.quizzes || [],
     };
     if (mainTab === 'plan') renderApp();
@@ -1674,7 +1712,8 @@ function renderTodaySection() {
        ${renderDayRows(tomorrowGroups, false)}`
     : '';
 
-  return `<div class="today-section">${todayHTML}${tomorrowHTML}</div>`;
+  const freeBtn = `<button onclick="openFreeStudyModal()" style="width:100%;margin-top:12px;padding:10px;background:none;border:1px dashed var(--border);border-radius:10px;font-size:12px;font-weight:600;color:var(--ink3);cursor:pointer;font-family:inherit">+ 計画外の学習を記録する</button>`;
+  return `<div class="today-section">${todayHTML}${tomorrowHTML}${freeBtn}</div>`;
 }
 
 async function completeTodayGroup(planIds, btn) {
@@ -1689,6 +1728,155 @@ async function completeTodayGroup(planIds, btn) {
     if (card) card.classList.add('done');
     btn.classList.add('done'); btn.textContent = '完了済み';
   } catch (e) { btn.disabled = false; btn.textContent = '学習済み'; }
+}
+
+// ===== 学習到達度グラフ =====
+function renderProgressBarChart() {
+  const loading = !planTabData;
+  const blocks = planTabData?.progressBlocks || {};
+  const entries = Object.entries(blocks).filter(([, v]) => v.attended > 0);
+  const rows = loading
+    ? '<div style="padding:14px 16px;font-size:13px;color:var(--ink3)">読み込み中...</div>'
+    : entries.length === 0
+      ? '<div style="padding:14px 16px;font-size:13px;color:var(--ink3)">授業データがありません</div>'
+      : `<div class="progress-chart-wrap"><div class="progress-chart-inner">` +
+        entries.map(([name, p]) => {
+          const pct = p.attended > 0 ? Math.round(p.done / p.attended * 100) : 0;
+          const done = p.done || 0;
+          const total = p.attended || 0;
+          const isDone = pct === 100;
+          const fillColor = isDone ? '#9ca3af' : 'var(--accent)';
+          const short = name.length > 6 ? name.slice(0, 5) + '…' : name;
+          return `<div class="progress-bar-col">
+            <div class="progress-bar-pct">${pct}%</div>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" style="height:${pct}%;background:${fillColor}"></div>
+            </div>
+            <div class="progress-bar-name">${short}</div>
+            <div class="progress-bar-count">${done}/${total}</div>
+          </div>`;
+        }).join('') + `</div></div>`;
+  return `<div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+    <div style="padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">学習到達度</div>
+      <div style="font-size:10px;color:var(--ink3)">完了 = グレー</div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+// ===== テスト時間割 =====
+function renderExamTimetable() {
+  const loading = !planTabData;
+  const exams = planTabData?.exams || [];
+  const quizzes = planTabData?.quizzes || [];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days = ['日','月','火','水','木','金','土'];
+
+  // 試験と小テストを統合して日付でグループ化
+  const allEvents = [
+    ...exams
+      .filter(e => e.examDate && new Date(e.examDate + 'T00:00:00') >= today)
+      .map(e => ({ date: e.examDate, label: e.subjectName, time: e.startTime || '', type: 'exam' })),
+    ...quizzes
+      .filter(q => q.examDate && new Date(q.examDate + 'T00:00:00') >= today)
+      .map(q => ({ date: q.examDate, label: (q.subjectName ? q.subjectName + ' ' : '') + (q.quizName || '小テスト'), time: '', type: 'quiz', scope: q.scope || '' })),
+  ].sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
+
+  const grouped = {};
+  allEvents.forEach(ev => {
+    if (!grouped[ev.date]) grouped[ev.date] = [];
+    grouped[ev.date].push(ev);
+  });
+
+  if (!loading && Object.keys(grouped).length === 0) return '';
+
+  const rows = loading
+    ? '<div style="padding:14px 16px;font-size:13px;color:var(--ink3)">読み込み中...</div>'
+    : Object.entries(grouped).map(([date, events]) => {
+        const d = new Date(date + 'T00:00:00');
+        const dateLabel = `${d.getMonth()+1}/${d.getDate()}`;
+        const dayLabel = days[d.getDay()];
+        const diff = Math.round((d - today) / 86400000);
+        const diffLabel = diff === 0 ? '今日' : diff === 1 ? '明日' : `${diff}日後`;
+        const diffColor = diff <= 3 ? 'var(--accent3)' : diff <= 7 ? '#d97706' : 'var(--ink3)';
+        const evRows = events.map(ev => {
+          const typeTag = ev.type === 'quiz'
+            ? `<span style="font-size:9px;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-weight:700">小テスト</span>`
+            : `<span style="font-size:9px;background:rgba(45,90,61,0.1);color:var(--accent);border-radius:4px;padding:1px 5px;font-weight:700">試験</span>`;
+          const scopeRow = ev.scope ? `<div style="font-size:10px;color:var(--ink3);margin-top:1px">範囲：${ev.scope}</div>` : '';
+          return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 16px 8px 0">
+            <div style="font-size:11px;color:var(--ink3);width:36px;text-align:right;flex-shrink:0;padding-top:2px">${ev.time || '—'}</div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:6px">
+                ${typeTag}
+                <div style="font-size:13px;font-weight:600;color:var(--ink)">${ev.label}</div>
+              </div>
+              ${scopeRow}
+            </div>
+          </div>`;
+        }).join('');
+        return `<div style="border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--surface2)">
+            <div style="text-align:center;min-width:32px">
+              <div style="font-size:15px;font-weight:700;color:var(--ink);line-height:1.1">${dateLabel}</div>
+              <div style="font-size:10px;color:var(--ink3)">${dayLabel}</div>
+            </div>
+            <div style="width:1px;height:28px;background:var(--border);flex-shrink:0"></div>
+            <div style="font-size:11px;font-weight:700;color:${diffColor}">${diffLabel}</div>
+          </div>
+          <div style="padding-left:16px">${evRows}</div>
+        </div>`;
+      }).join('');
+
+  return `<div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+    <div style="padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">テスト時間割</div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+// ===== 自由学習記録 =====
+function openFreeStudyModal() {
+  const sel = document.getElementById('freeStudySubjectSelect');
+  // 科目リストを progressBlocks + exams から構築
+  const subjects = new Set([
+    ...Object.keys(planTabData?.progressBlocks || {}),
+    ...(planTabData?.exams || []).map(e => e.subjectName),
+  ]);
+  sel.innerHTML = '<option value="">科目を選択してください</option>' +
+    [...subjects].map(s => `<option value="${s}">${s}</option>`).join('');
+  document.getElementById('freeStudyModal').classList.add('open');
+}
+
+function closeFreeStudyModal() {
+  document.getElementById('freeStudyModal').classList.remove('open');
+}
+
+async function submitFreeStudy() {
+  const subject = document.getElementById('freeStudySubjectSelect').value;
+  if (!subject) { showToast('科目を選択してください'); return; }
+  const btn = document.getElementById('freeStudySubmitBtn');
+  btn.disabled = true; btn.textContent = '記録中...';
+
+  // 今日・明日の計画に該当科目の未完了アイテムがあれば markStudyComplete を呼ぶ
+  const planItems = [...todayStudyItems, ...tomorrowStudyItems]
+    .filter(i => i.subject === subject && i.status !== 'done');
+  try {
+    if (planItems.length > 0) {
+      await fetch(`${GAS_URL}?action=markStudyComplete&userId=${encodeURIComponent(userId)}&planId=${encodeURIComponent(planItems[0].planId)}`);
+      planItems[0].status = 'done';
+    }
+    closeFreeStudyModal();
+    showToast('✅ ' + subject + ' の学習を記録しました');
+    if (mainTab === 'plan') renderApp();
+  } catch(e) {
+    closeFreeStudyModal();
+    showToast('✅ ' + subject + ' の学習を記録しました');
+  } finally {
+    btn.disabled = false; btn.textContent = '記録する';
+  }
 }
 
 // ===== 学習計画ビュー =====
