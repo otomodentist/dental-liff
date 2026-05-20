@@ -793,6 +793,7 @@ ${isDeliveryPaused ? `
             <div class="admin-rank-main" style="color:${unanswered ? 'var(--ink3)' : scoreColor}">${unanswered ? '—' : item.concentrationScore}</div>
             <div class="admin-rank-sub">${unanswered ? '' : `正${item.accuracyScore} · ${item.responseTimeSec}秒`}</div>
           </div>
+          ${!unanswered && item.answerId ? `<button onclick="openScoreEditFromRank(event,'${item.answerId}',${item.accuracyScore})" style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:6px;font-size:12px;padding:3px 7px;cursor:pointer;color:var(--ink3)">✏️</button>` : ''}
         </div>`;
       }
 
@@ -1559,6 +1560,15 @@ ${isDeliveryPaused ? `
 
       let currentPointDetailIndex = -1;
 
+      let _rankScoreAnswerId = null;
+
+      function openScoreEditFromRank(e, answerId, accuracyScore) {
+        e.stopPropagation();
+        _rankScoreAnswerId = answerId;
+        document.getElementById('scoreEditInput').value = accuracyScore;
+        document.getElementById('scoreEditModal').classList.add('open');
+      }
+
       function openScoreEditModal() {
         if (currentPointDetailIndex < 0 || !sessionDetailData) return;
         const a = sessionDetailData.answers[currentPointDetailIndex];
@@ -1568,26 +1578,32 @@ ${isDeliveryPaused ? `
       }
 
       function closeScoreEditModal() {
+        _rankScoreAnswerId = null;
         document.getElementById('scoreEditModal').classList.remove('open');
       }
 
       async function submitScoreEdit() {
-        if (currentPointDetailIndex < 0 || !sessionDetailData) return;
-        const a = sessionDetailData.answers[currentPointDetailIndex];
-        if (!a.answerId) return;
         const newScore = parseInt(document.getElementById('scoreEditInput').value);
         if (isNaN(newScore) || newScore < 0 || newScore > 100) { showToast('❌ 0〜100 の値を入力してください'); return; }
+        const fromRank = !!_rankScoreAnswerId;
+        const answerId = fromRank ? _rankScoreAnswerId : (sessionDetailData?.answers[currentPointDetailIndex]?.answerId);
+        if (!answerId) return;
         closeScoreEditModal();
         showToast('保存中...');
         try {
-          const r = await fetch(`${GAS_URL}?action=updateAccuracyScore&answerId=${encodeURIComponent(a.answerId)}&score=${newScore}`);
+          const r = await fetch(`${GAS_URL}?action=updateAccuracyScore&answerId=${encodeURIComponent(answerId)}&score=${newScore}`);
           const d = await r.json();
           if (d.success) {
-            a.accuracyScore = d.newAccuracy;
-            a.concentrationScore = d.newConcentration;
             showToast('✅ スコアを更新しました');
-            if (adminChart) { adminChart.destroy(); adminChart = null; }
-            setTimeout(() => drawAdminChart(), 100);
+            if (fromRank) {
+              pollAdminRanking();
+            } else {
+              const a = sessionDetailData.answers[currentPointDetailIndex];
+              a.accuracyScore = d.newAccuracy;
+              a.concentrationScore = d.newConcentration;
+              if (adminChart) { adminChart.destroy(); adminChart = null; }
+              setTimeout(() => drawAdminChart(), 100);
+            }
           } else {
             showToast('❌ 更新失敗: ' + (d.error || ''));
           }
