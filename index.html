@@ -232,6 +232,17 @@
   </div>
 </div>
 
+<div id="avatarCropModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.88);flex-direction:column;align-items:center;justify-content:center">
+  <div style="color:#fff;font-size:13px;margin-bottom:14px;opacity:.8">ドラッグで移動 ／ ピンチで拡大縮小</div>
+  <div id="cropCircle" style="width:260px;height:260px;border-radius:50%;overflow:hidden;position:relative;border:3px solid rgba(255,255,255,0.7);cursor:grab;flex-shrink:0;touch-action:none">
+    <img id="cropImg" style="position:absolute;user-select:none;pointer-events:none;touch-action:none" draggable="false" />
+  </div>
+  <div style="display:flex;gap:16px;margin-top:28px">
+    <button onclick="cancelAvatarCrop()" style="padding:11px 28px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.4);background:transparent;color:#fff;font-size:14px;font-weight:600;cursor:pointer">キャンセル</button>
+    <button onclick="confirmAvatarCrop()" style="padding:11px 28px;border-radius:10px;border:none;background:#fff;color:#1a3a6b;font-size:14px;font-weight:700;cursor:pointer">確定</button>
+  </div>
+</div>
+
 <div id="cancelModal" class="cancel-modal">
   <div class="cancel-modal-sheet">
     <div class="cancel-modal-title">サブスクリプションを解約しますか？</div>
@@ -456,27 +467,119 @@ async function saveNickname() {
   } catch (e) { alert('保存に失敗しました。もう一度お試しください。'); }
 }
 
+let _cropImg = null, _cropOffsetX = 0, _cropOffsetY = 0, _cropScale = 1;
+const _cropSize = 260;
+
 function onAvatarFileSelected(input) {
   const file = input.files && input.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = function(ev) {
     const img = new Image();
-    img.onload = function() {
-      const canvas = document.createElement('canvas');
-      canvas.width = canvas.height = 64;
-      const ctx = canvas.getContext('2d');
-      const size = Math.min(img.width, img.height);
-      const sx = (img.width - size) / 2;
-      const sy = (img.height - size) / 2;
-      ctx.drawImage(img, sx, sy, size, size, 0, 0, 64, 64);
-      pendingAvatarDataUrl = canvas.toDataURL('image/jpeg', 0.65);
-      const preview = document.getElementById('avatarPreview');
-      if (preview) preview.src = pendingAvatarDataUrl;
-    };
+    img.onload = function() { openAvatarCropModal(img); };
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+function openAvatarCropModal(img) {
+  _cropImg = img;
+  _cropScale = _cropSize / Math.min(img.width, img.height);
+  _cropOffsetX = 0;
+  _cropOffsetY = 0;
+  _updateCropImage();
+  document.getElementById('avatarCropModal').style.display = 'flex';
+  _setupCropEvents();
+}
+
+function _updateCropImage() {
+  const el = document.getElementById('cropImg');
+  const w = _cropImg.width * _cropScale;
+  const h = _cropImg.height * _cropScale;
+  el.src = _cropImg.src;
+  el.style.width = w + 'px';
+  el.style.height = h + 'px';
+  el.style.left = (_cropSize / 2 - w / 2 + _cropOffsetX) + 'px';
+  el.style.top  = (_cropSize / 2 - h / 2 + _cropOffsetY) + 'px';
+}
+
+function _clampCrop() {
+  const maxX = (_cropImg.width  * _cropScale - _cropSize) / 2;
+  const maxY = (_cropImg.height * _cropScale - _cropSize) / 2;
+  _cropOffsetX = Math.max(-maxX, Math.min(maxX, _cropOffsetX));
+  _cropOffsetY = Math.max(-maxY, Math.min(maxY, _cropOffsetY));
+}
+
+function cancelAvatarCrop() {
+  document.getElementById('avatarCropModal').style.display = 'none';
+}
+
+function confirmAvatarCrop() {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  const srcSize = _cropSize / _cropScale;
+  const srcX = -_cropOffsetX / _cropScale + _cropImg.width  / 2 - srcSize / 2;
+  const srcY = -_cropOffsetY / _cropScale + _cropImg.height / 2 - srcSize / 2;
+  ctx.drawImage(_cropImg, srcX, srcY, srcSize, srcSize, 0, 0, 64, 64);
+  pendingAvatarDataUrl = canvas.toDataURL('image/jpeg', 0.65);
+  const preview = document.getElementById('avatarPreview');
+  if (preview) preview.src = pendingAvatarDataUrl;
+  document.getElementById('avatarCropModal').style.display = 'none';
+}
+
+function _setupCropEvents() {
+  const circle = document.getElementById('cropCircle');
+  const fresh = circle.cloneNode(true);
+  circle.parentNode.replaceChild(fresh, circle);
+  // re-attach img reference after clone
+  const imgEl = document.getElementById('cropImg');
+
+  let dragging = false, lastX = 0, lastY = 0, lastDist = null;
+
+  fresh.addEventListener('mousedown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; e.preventDefault(); });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    _cropOffsetX += e.clientX - lastX; _cropOffsetY += e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    _clampCrop(); _updateCropImage();
+  });
+  document.addEventListener('mouseup', () => { dragging = false; });
+
+  fresh.addEventListener('wheel', e => {
+    e.preventDefault();
+    const min = _cropSize / Math.min(_cropImg.width, _cropImg.height);
+    _cropScale = Math.max(min, _cropScale * (e.deltaY > 0 ? 0.92 : 1.08));
+    _clampCrop(); _updateCropImage();
+  }, { passive: false });
+
+  fresh.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+      dragging = true; lastDist = null;
+      lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+    } else if (e.touches.length === 2) {
+      dragging = false;
+      lastDist = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  fresh.addEventListener('touchmove', e => {
+    if (e.touches.length === 1 && dragging) {
+      _cropOffsetX += e.touches[0].clientX - lastX; _cropOffsetY += e.touches[0].clientY - lastY;
+      lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+      _clampCrop(); _updateCropImage();
+    } else if (e.touches.length === 2 && lastDist !== null) {
+      const d = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
+      const min = _cropSize / Math.min(_cropImg.width, _cropImg.height);
+      _cropScale = Math.max(min, _cropScale * (d / lastDist));
+      lastDist = d;
+      _clampCrop(); _updateCropImage();
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  fresh.addEventListener('touchend', e => { if (e.touches.length < 2) lastDist = null; if (e.touches.length === 0) dragging = false; });
 }
 
 async function refreshActiveSession() {
