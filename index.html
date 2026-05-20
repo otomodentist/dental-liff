@@ -314,6 +314,7 @@ let liveSessionTimeline = [];
 let latestSessionData = null;
 let latestSessionRanking = [];
 let hideAnswerInRanking = localStorage.getItem('hideAnswerInRanking') === 'true';
+let dailyStudyHours = parseFloat(localStorage.getItem('dailyStudyHours') || '3');
 let myAdminRestricted = false;
 
 // 学習計画タブ
@@ -1186,6 +1187,24 @@ function renderSettingsView() {
     </div>
 
     <div style="margin:12px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">学習設定</div>
+      </div>
+      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;color:var(--ink2)">1日の学習時間</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:2px">学習計画の生成に使用されます</div>
+        </div>
+        <select onchange="saveDailyStudyHours(this.value)" style="font-size:14px;font-weight:700;color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:6px 10px;background:var(--surface2);font-family:inherit">
+          ${[0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6].map(h => {
+            const label = h % 1 === 0 ? h + '時間' : h + '時間';
+            return `<option value="${h}" ${dailyStudyHours === h ? 'selected' : ''}>${label}</option>`;
+          }).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div style="margin:12px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
       <div style="padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
         <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">契約内容</div>
         ${myBillingStatus === '契約中' ? `<button class="cancel-btn" onclick="showCancelModal()">キャンセルする</button>` : ''}
@@ -1197,6 +1216,11 @@ function renderSettingsView() {
     </div>
 
     <div class="footer-pad"></div>`;
+}
+
+function saveDailyStudyHours(val) {
+  dailyStudyHours = parseFloat(val);
+  localStorage.setItem('dailyStudyHours', dailyStudyHours);
 }
 
 let _hideAnswerSaving = false;
@@ -1833,7 +1857,7 @@ async function replanExam(examId, btn) {
   if (!confirm('この科目の未完了分を今日から再スケジュールしますか？')) return;
   btn.disabled = true; btn.textContent = '処理中...';
   try {
-    const r = await fetch(`${GAS_URL}?action=replanStudyForExam&userId=${encodeURIComponent(userId)}&examId=${encodeURIComponent(examId)}&dailyAvailableHours=4`);
+    const r = await fetch(`${GAS_URL}?action=replanStudyForExam&userId=${encodeURIComponent(userId)}&examId=${encodeURIComponent(examId)}&dailyAvailableHours=${dailyStudyHours}`);
     const d = await r.json();
     if (d.success) {
       const res = await fetch(`${GAS_URL}?action=getStudyPlan&userId=${encodeURIComponent(userId)}`);
@@ -1890,7 +1914,7 @@ async function generatePlan(examId) {
   const origText = btn.textContent;
   btn.disabled = true; btn.textContent = '生成中...';
   try {
-    const r = await fetch(`${GAS_URL}?action=generateStudyPlan&userId=${encodeURIComponent(userId)}&examId=${encodeURIComponent(examId)}&dailyAvailableHours=4`);
+    const r = await fetch(`${GAS_URL}?action=generateStudyPlan&userId=${encodeURIComponent(userId)}&examId=${encodeURIComponent(examId)}&dailyAvailableHours=${dailyStudyHours}`);
     const d = await r.json();
     if (d.success) {
       const newPlan = (await (await fetch(`${GAS_URL}?action=getStudyPlan&userId=${encodeURIComponent(userId)}`)).json()).plan || [];

@@ -234,6 +234,7 @@ LINEに回答テキスト送信
 // gas_main.js.gs の CONFIG 定数
 const CONFIG = {
   LINE_CHANNEL_ACCESS_TOKEN: '...',
+  FREE_SEMESTER_MODE: true, // true=春学期無料提供 / false=Stripe決済必須に戻す（秋学期以降）
   OPENAI_API_KEY: 'sk-proj-...',
   ADMIN_USER_ID: 'Ubf96bf52b57d4e329a5bcf4ce509c6be',
   SPREADSHEET_ID: '15UpJAol2SayyiEQDyOdKYX02eQQ4pMH4gq4SssJrYT4',
@@ -281,8 +282,11 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 11. **学習計画タブはlazy-load** — `switchMainTab('plan')` で初めて `loadPlanTabData()` を呼び出す。`planTabData = { exams, progressBlocks, quizzes }` にキャッシュ。`openStudyPlanView()` 後は exams/progressBlocks のみ更新
 12. **HTMLテンプレート文字列の深いインデント** — `admin_liff.html` / `index.html` のテンプレート文字列は数千文字のインデントが入ることがあり、Editツールの完全一致が失敗する場合は Python スクリプトで `content.replace()` を使うこと
 13. **ランキングポーリング仕様** — 問題配信後に20秒×9回（3分間）自動更新。admin側: `startAdminRankingPoll()` / index側: `scheduleLiveRefreshes()`。配信成功の瞬間にフォームの問題文・模範解答を即時描画し、GAS応答後に回答者リストで上書き
-14. **ランキング未回答者フィールド** — `getQuestionRanking`/`getSessionRanking` が返す `item.answered === false` で未回答者を判定。`item.hideAnswer` でユーザーの非表示設定を判定。未回答者はGASの `getPaidStudentIds()` 対象者のみ（課金有効 or 管理者承認）
+14. **ランキング未回答者フィールド** — `getQuestionRanking`/`getSessionRanking` が返す `item.answered === false` で未回答者を判定。`item.hideAnswer` でユーザーの非表示設定を判定。未回答者はGASの `getPaidStudentIds()` 対象者のみ（`FREE_SEMESTER_MODE=true` 時は全登録学生）
 15. **試験日程・小テストはクラス共通データ** — `deleteStudentData()` は個人データのみ削除する。試験日程シート・小テストシートは触らないこと
+16. **FREE_SEMESTER_MODE** — `true` の間は `isStudentPaid()` が常に `true` を返し、`getPaidStudentIds()` が全登録学生（userId が `U` 始まり）を返す。`customer.subscription.deleted` Webhook もスキップされる。秋学期以降に `false` に変えてデプロイするだけで Stripe 決済必須に戻る
+17. **Stripe連携の保存仕様** — 決済リンク: `https://buy.stripe.com/8x25kCgP2gul9KigcHfbq03`。Webhook: `checkout.session.completed` → `processStripePayment()`、`customer.subscription.deleted` → `cancelSubscription()`。Stripe Secret / Webhook Secret は PropertiesService 管理。再有効化は `FREE_SEMESTER_MODE: false` に変更してデプロイするだけ
+18. **既存Stripeトライアル登録者（3名）** — 2026/05/21 に `cancelAllTrialSubscriptions()` で Stripe サブスクをキャンセル済み。スプレッドシートのステータスは `契約中` のまま（`FREE_SEMESTER_MODE` ガードにより解約メッセージ・ステータス変更は発生しない）
 
 ---
 
@@ -349,3 +353,14 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 | 2026/05/16 | admin_liff.html: 問題配信成功時に `adminRankingSection` を即時描画（フォームの問題文・模範解答を使用）し、`pollAdminRanking()` で更新 |
 | 2026/05/16 | admin_liff.html: 配信不可ボタン文言に「学生が回答中です」追加・「5秒ごとに自動更新」表示削除 |
 | 2026/05/16 | GAS: 不要関数 `deleteAokiData()` 削除（`deleteStudentData()` に統合済み）（v164）|
+| 2026/05/21 | GAS: `FREE_SEMESTER_MODE` フラグ追加（`true`=春学期無償、`false`=Stripe決済必須）。Stripe連携コメントブロックで仕様保存（v260） |
+| 2026/05/21 | GAS: `isStudentPaid()` / `getPaidStudentIds()` を `FREE_SEMESTER_MODE` 対応に更新（v260） |
+| 2026/05/21 | GAS: `registerFreeSemester` doGetアクション追加（`processStripePayment` 経由で `契約中` に設定）（v261） |
+| 2026/05/21 | GAS: `cancelAllTrialSubscriptions()` 追加・`customer.subscription.deleted` Webhookに `FREE_SEMESTER_MODE` ガード追加（v263） |
+| 2026/05/21 | GAS: `handleStudentAnswer()` の未登録メッセージを無料モード対応に修正（Stripeリンクなし）（v260） |
+| 2026/05/21 | GAS: `sendCancellationMessage()` をStripeリンクなし・再登録案内に変更（v264） |
+| 2026/05/21 | GAS: `sendDecisionMessage()` を春学期無償案内に変更（v265） |
+| 2026/05/21 | demo.html: 登録ボタン上に「🎁 春学期は無償で提供します。」追加、ボタン文言「決済登録なしで無料で利用を開始」に変更（v262） |
+| 2026/05/21 | demo.html: 登録ボタン動作を Stripe → `registerFreeSemester` GAS呼び出しに変更、成功後 `index.html` へ遷移（v261） |
+| 2026/05/21 | demo.html: 設定画面「契約内容」→「利用状況」・`管理者承認` 時「利用中（春学期無料）」表示（v261） |
+| 2026/05/21 | index.html: キャンセルモーダルを「登録解除」表記に統一、「再度決済が必要」→「デモ画面から登録できます」に変更（v264） |
