@@ -1179,8 +1179,8 @@ function renderSettingsView() {
           <div style="font-size:14px;color:var(--ink2)">ランキングに自分を表示</div>
           <div style="font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.5">非表示にすると他の方のランキングも見えません</div>
         </div>
-        <button onclick="toggleHideAnswer()" style="min-width:52px;padding:6px 12px;border-radius:20px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;${hideAnswerInRanking ? 'background:var(--border);color:var(--ink3)' : 'background:var(--accent);color:white'}">
-          ${hideAnswerInRanking ? '非表示' : '表示'}
+        <button onclick="toggleHideAnswer()" ${_hideAnswerSaving ? 'disabled' : ''} style="min-width:52px;padding:6px 12px;border-radius:20px;border:none;font-size:13px;font-weight:700;cursor:${_hideAnswerSaving ? 'not-allowed' : 'pointer'};font-family:inherit;${_hideAnswerSaving ? 'background:var(--border);color:var(--ink3)' : hideAnswerInRanking ? 'background:var(--border);color:var(--ink3)' : 'background:var(--accent);color:white'}">
+          ${_hideAnswerSaving ? '保存中…' : hideAnswerInRanking ? '非表示' : '表示'}
         </button>
       </div>`}
     </div>
@@ -1199,10 +1199,19 @@ function renderSettingsView() {
     <div class="footer-pad"></div>`;
 }
 
-function toggleHideAnswer() {
+let _hideAnswerSaving = false;
+async function toggleHideAnswer() {
+  if (_hideAnswerSaving) return;
+  _hideAnswerSaving = true;
   hideAnswerInRanking = !hideAnswerInRanking;
   localStorage.setItem('hideAnswerInRanking', hideAnswerInRanking);
-  if (userId) fetch(`${GAS_URL}?action=setUserPref&userId=${encodeURIComponent(userId)}&key=hideAnswerInRanking&value=${hideAnswerInRanking}`).catch(() => {});
+  renderSettingsView();
+  if (userId) {
+    try {
+      await fetch(`${GAS_URL}?action=setUserPref&userId=${encodeURIComponent(userId)}&key=hideAnswerInRanking&value=${hideAnswerInRanking}`);
+    } catch(e) {}
+  }
+  _hideAnswerSaving = false;
   renderSettingsView();
 }
 
