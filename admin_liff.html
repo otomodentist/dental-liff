@@ -1844,7 +1844,7 @@ function startQuestionCooldown() {
                           showToast(`📢 ${result.studentCount}名に配信しました`);
                       }
                   } else {
-                      showToast('❌ エラー: ' + result.error);
+                      alert('配信エラー:\n' + result.error);
                       if (btn) { btn.disabled = false; btn.textContent = '📢 全学生に出題する'; }
                   }
               } catch (err) {
