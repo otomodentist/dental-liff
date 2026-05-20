@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>授業のオトモ — 歯学部の授業をAIで盛り上げる</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Kaisei+Tokumin:wght@500;700;800&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --green:#2d5a3d;
+    --green-700:#234a32;
+    --green-300:#5a8568;
+    --cream:#f5f0e8;
+    --cream-2:#ede5d6;
+    --surface:#ffffff;
+    --accent:#e8f2eb;
+    --danger:#8b2020;
+    --navy:#1a3a6b;
+    --navy-2:#264e8a;
+    --ink:#1c2520;
+    --gray:#6b6f6b;
+    --gray-2:#9aa09a;
+    --line:#e3dccf;
+    --chat-bg:#dde7d8;
+    --chat-mine:#2d5a3d;
+    --shadow-sm:0 1px 2px rgba(45,90,61,.06);
+    --shadow:0 12px 32px -14px rgba(45,90,61,.22), 0 2px 6px rgba(45,90,61,.06);
+    --shadow-lg:0 30px 60px -22px rgba(28,37,32,.35);
+    --radius-sm:8px;
+    --radius:14px;
+    --radius-lg:22px;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Noto Sans JP',system-ui,sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.75;
+    font-size:16px;
+  }
+  .serif{font-family:'Kaisei Tokumin',serif;font-weight:700;letter-spacing:.01em}
+  .en{font-family:'Inter','Noto Sans JP',sans-serif;letter-spacing:.04em}
+  .mono{font-family:'JetBrains Mono',monospace}
+
+  .wrap{max-width:1200px;margin:0 auto;padding:0 40px}
+  section{padding:120px 0;position:relative}
+
+  /* NAV */
+  .nav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(245,240,232,.85);backdrop-filter:saturate(180%) blur(12px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{max-width:1200px;margin:0 auto;padding:14px 40px;display:flex;align-items:center;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit}
+  .logo-mark{
+    width:36px;height:36px;border-radius:10px;
+    background:var(--green);display:grid;place-items:center;color:#fff;
+    font-family:'Kaisei Tokumin',serif;font-weight:800;font-size:18px;
+    box-shadow:0 4px 12px rgba(45,90,61,.3);
+  }
+  .logo-text{font-family:'Kaisei Tokumin',serif;font-size:17px;font-weight:700;line-height:1.1}
+  .logo-text small{display:block;font-size:10px;color:var(--gray);font-weight:500;letter-spacing:.12em;margin-top:2px;font-family:'Inter',sans-serif}
+  .nav-links{display:flex;gap:32px;font-size:14px;color:var(--ink)}
+  .nav-links a{color:inherit;text-decoration:none;transition:color .2s}
+  .nav-links a:hover{color:var(--green)}
+  .nav-cta{
+    padding:10px 20px;background:var(--navy);color:#fff;border-radius:999px;
+    font-size:13px;font-weight:500;text-decoration:none;transition:transform .2s, background .2s;
+  }
+  .nav-cta:hover{background:var(--navy-2);transform:translateY(-1px)}
+
+  /* HERO */
+  .hero{
+    padding:90px 0 110px;
+    background:
+      radial-gradient(800px 400px at 90% -10%, rgba(45,90,61,.08), transparent 60%),
+      radial-gradient(700px 380px at -5% 100%, rgba(232,242,235,.6), transparent 65%),
+      var(--cream);
+    overflow:hidden;
+  }
+  .hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:72px;align-items:center}
+  .badge{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:8px 16px;border-radius:999px;background:var(--accent);color:var(--green);
+    font-size:12px;font-weight:500;letter-spacing:.04em;border:1px solid rgba(45,90,61,.18);
+  }
+  .badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(45,90,61,.18)}
+  h1{
+    font-family:'Kaisei Tokumin',serif;font-weight:800;
+    font-size:64px;line-height:1.25;letter-spacing:-.005em;
+    margin:24px 0 22px;color:var(--green);
+  }
+  h1 .ink{color:var(--ink)}
+  h1 .danger{color:var(--danger)}
+  .hero-sub{font-size:18px;color:var(--ink);max-width:560px;margin:0 0 36px;opacity:.85}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:16px 28px;border-radius:12px;font-size:15px;font-weight:500;text-decoration:none;
+    transition:transform .2s, box-shadow .2s;
+  }
+  .btn-primary{background:var(--navy);color:#fff;box-shadow:0 8px 20px rgba(26,58,107,.3)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(26,58,107,.4)}
+  .btn-ghost{background:transparent;color:var(--green);border:1.5px solid var(--green)}
+  .btn-ghost:hover{background:var(--accent)}
+  .hero-stats{
+    display:flex;gap:32px;margin-top:48px;padding-top:32px;border-top:1px solid var(--line);
+  }
+  .hstat strong{display:block;font-family:'Kaisei Tokumin',serif;font-size:30px;color:var(--green);font-weight:800;line-height:1}
+  .hstat span{font-size:12px;color:var(--gray);letter-spacing:.05em;margin-top:6px;display:block}
+
+  /* PHONE */
+  .phone{
+    width:340px;height:680px;margin:0 auto;
+    background:#fff;border-radius:42px;border:10px solid #1c2520;
+    box-shadow:var(--shadow-lg);
+    overflow:hidden;position:relative;display:flex;flex-direction:column;
+  }
+  .phone::before{
+    content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);
+    width:106px;height:24px;background:#1c2520;border-radius:0 0 16px 16px;z-index:5;
+  }
+  .phone-status{
+    height:42px;background:#fff;display:flex;align-items:center;justify-content:space-between;
+    padding:8px 26px 0;font-size:12.5px;font-weight:600;color:var(--ink);
+  }
+  .phone-status .right{display:flex;gap:5px;align-items:center;font-size:11px}
+  .phone-header{
+    padding:12px 16px;background:#fff;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:12px;
+  }
+  .phone-header .back{color:var(--green);font-size:18px;font-weight:600}
+  .ph-avatar{
+    width:36px;height:36px;border-radius:50%;background:var(--green);
+    display:grid;place-items:center;color:#fff;font-size:14px;font-weight:700;
+    font-family:'Kaisei Tokumin',serif;
+  }
+  .ph-title{font-size:14px;font-weight:600;color:var(--ink)}
+  .ph-title small{display:block;font-size:10px;color:var(--gray);font-weight:400;margin-top:-2px;font-family:'Inter',sans-serif}
+  .phone-chat{
+    flex:1;background:var(--chat-bg);padding:14px 12px;
+    display:flex;flex-direction:column;gap:9px;overflow:hidden;
+  }
+  .bubble{max-width:78%;padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.55;word-break:break-word}
+  .bubble.from{align-self:flex-start;background:#fff;color:var(--ink);border-top-left-radius:4px;box-shadow:0 1px 1px rgba(0,0,0,.04)}
+  .bubble.mine{align-self:flex-end;background:var(--chat-mine);color:#fff;border-top-right-radius:4px}
+  .bubble.system{align-self:center;background:rgba(28,37,32,.55);color:#fff;font-size:10.5px;padding:3px 10px;border-radius:10px;letter-spacing:.02em}
+  .bubble.from strong{color:var(--green);font-weight:700}
+  .bubble .cmd{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--green);font-weight:500}
+  .bubble.score{
+    background:linear-gradient(135deg,#2d5a3d,#3e7551);color:#fff;
+    border:none;align-self:flex-start;
+  }
+  .bubble.score .num{font-family:'Kaisei Tokumin',serif;font-size:22px;font-weight:800;line-height:1;display:inline-block;margin:4px 0}
+  .phone-input{
+    background:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);
+  }
+  .phone-input .field{
+    flex:1;height:34px;border-radius:17px;background:#f1eee5;padding:0 14px;
+    display:flex;align-items:center;font-size:12px;color:var(--gray-2);
+  }
+  .phone-input .send{width:34px;height:34px;border-radius:50%;background:var(--green);display:grid;place-items:center;color:#fff;font-size:16px}
+
+  /* SECTION HEADERS */
+  .sec-eyebrow{font-family:'Inter',sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--green);font-weight:600}
+  h2{
+    font-family:'Kaisei Tokumin',serif;font-weight:800;
+    font-size:42px;line-height:1.4;letter-spacing:.005em;
+    color:var(--green);margin:14px 0 20px;max-width:880px;
+  }
+  .sec-sub{font-size:17px;color:var(--ink);max-width:680px;margin:0;opacity:.78}
+  .sec-head{margin-bottom:64px}
+
+  /* PROBLEM */
+  .problem{background:var(--surface)}
+  .problem-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+  .pcard{
+    background:var(--cream);border-radius:var(--radius-lg);padding:32px 28px;
+    border:1px solid var(--line);position:relative;
+  }
+  .pcard .num{
+    font-family:'Kaisei Tokumin',serif;font-size:36px;font-weight:800;color:var(--danger);
+    line-height:1;opacity:.85;
+  }
+  .pcard h3{font-family:'Kaisei Tokumin',serif;font-size:19px;color:var(--ink);margin:14px 0 10px;font-weight:700;line-height:1.5}
+  .pcard p{font-size:13.5px;color:var(--gray);margin:0;line-height:1.7}
+  .pcard .arrow{
+    margin:14px 0 6px;color:var(--green);font-size:18px;font-weight:700;
+  }
+  .pcard .solve{font-size:13.5px;color:var(--green);font-weight:600;line-height:1.6}
+
+  /* HOW IT WORKS */
+  .how{background:var(--cream)}
+  .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;position:relative}
+  .step{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:32px 28px;display:flex;flex-direction:column;box-shadow:var(--shadow-sm);
+  }
+  .step-num{font-family:'Inter',sans-serif;font-size:11px;letter-spacing:.16em;font-weight:600;color:var(--green-300)}
+  .step-num .big{display:block;font-family:'Kaisei Tokumin',serif;font-size:54px;color:var(--green);font-weight:800;line-height:1;margin-top:4px;letter-spacing:-.01em}
+  .step h3{font-family:'Kaisei Tokumin',serif;font-size:21px;color:var(--ink);margin:18px 0 10px;font-weight:700;line-height:1.5}
+  .step p{font-size:14px;color:var(--gray);margin:0 0 22px;line-height:1.75}
+  .mini-chat{background:var(--chat-bg);border-radius:12px;padding:11px;display:flex;flex-direction:column;gap:7px;margin-top:auto}
+  .mini-chat .bubble{font-size:12px;padding:8px 11px;border-radius:11px;max-width:90%}
+  .mini-chat .bubble.from{background:#fff;border-top-left-radius:3px}
+  .mini-chat .bubble.mine{background:var(--chat-mine);color:#fff;border-top-right-radius:3px}
+  .mini-chat .bubble.system{background:rgba(28,37,32,.5);color:#fff;font-size:10px;padding:3px 9px}
+  .mini-chat .cmd{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green)}
+  .step-arrow{
+    position:absolute;top:120px;right:-18px;width:32px;height:32px;border-radius:50%;
+    background:var(--green);color:#fff;display:grid;place-items:center;font-size:14px;
+    z-index:2;box-shadow:0 6px 14px rgba(45,90,61,.3);
+  }
+
+  /* FEATURES */
+  .features{background:var(--surface)}
+  .feat-list{display:flex;flex-direction:column;gap:90px;margin-top:24px}
+  .feat-row{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+  .feat-row.reverse{direction:rtl}
+  .feat-row.reverse > *{direction:ltr}
+  .feat-text .fnum{font-family:'Inter',sans-serif;font-size:11px;letter-spacing:.16em;color:var(--green-300);font-weight:600}
+  .feat-text h3{font-family:'Kaisei Tokumin',serif;font-size:32px;color:var(--green);margin:8px 0 18px;font-weight:800;line-height:1.4}
+  .feat-text p{font-size:15px;color:var(--ink);margin:0 0 18px;opacity:.85;line-height:1.85}
+  .feat-bullets{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+  .feat-bullets li{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:var(--ink)}
+  .feat-bullets li::before{
+    content:"";flex-shrink:0;width:6px;height:6px;margin-top:9px;
+    background:var(--green);transform:rotate(45deg);
+  }
+  /* feature visuals */
+  .fviz{
+    background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:32px;min-height:340px;position:relative;overflow:hidden;
+  }
+  /* ranking viz */
+  .rank-card{
+    background:#fff;border-radius:14px;padding:18px;box-shadow:var(--shadow-sm);
+    border:1px solid var(--line);
+  }
+  .rank-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:10px;
+  }
+  .rank-title{font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;color:var(--ink)}
+  .rank-live{
+    display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:600;
+    color:var(--danger);letter-spacing:.08em;
+  }
+  .rank-live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--danger);animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .rank-row{display:grid;grid-template-columns:28px 28px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--cream-2);font-size:13px}
+  .rank-row:last-child{border-bottom:none}
+  .rank-pos{font-family:'Kaisei Tokumin',serif;font-weight:800;color:var(--green);font-size:16px;text-align:center}
+  .rank-pos.top{color:var(--danger)}
+  .rank-ava{width:28px;height:28px;border-radius:50%;background:var(--accent);display:grid;place-items:center;font-size:11px;font-weight:600;color:var(--green)}
+  .rank-name{font-weight:500;color:var(--ink)}
+  .rank-name small{display:block;font-size:11px;color:var(--gray);font-weight:400;margin-top:-2px}
+  .rank-score{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--green);font-size:14px}
+  .rank-score.pending{color:var(--gray-2)}
+
+  /* score formula viz */
+  .formula-card{
+    background:#fff;border-radius:14px;padding:28px;box-shadow:var(--shadow-sm);
+    border:1px solid var(--line);
+  }
+  .formula-row{display:flex;align-items:center;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:24px}
+  .fterm{
+    background:var(--cream);border:1px solid var(--line);border-radius:10px;
+    padding:14px 18px;text-align:center;min-width:120px;
+  }
+  .fterm .lbl{font-size:10px;color:var(--gray);letter-spacing:.1em;font-family:'Inter',sans-serif;font-weight:600;text-transform:uppercase}
+  .fterm .name{font-family:'Kaisei Tokumin',serif;font-size:14px;color:var(--ink);font-weight:700;margin-top:4px}
+  .fop{font-size:22px;color:var(--green-300);font-weight:300}
+  .fterm.result{background:var(--green);border-color:var(--green);color:#fff}
+  .fterm.result .lbl{color:#cce0d2}
+  .fterm.result .name{color:#fff}
+  .speed-chart{margin-top:6px}
+  .speed-chart svg{width:100%;height:120px;display:block}
+  .speed-chart .axis{stroke:var(--line);stroke-width:1}
+  .speed-chart .grid{stroke:var(--cream-2);stroke-width:1}
+  .speed-chart .curve{stroke:var(--green);stroke-width:2.5;fill:none}
+  .speed-chart .area{fill:rgba(45,90,61,.1)}
+  .speed-chart text{font-family:'Inter',sans-serif;font-size:9px;fill:var(--gray)}
+  .speed-legend{display:flex;justify-content:space-between;font-size:11px;color:var(--gray);margin-top:6px}
+
+  /* mypage / chart viz */
+  .mypage{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:var(--shadow-sm);border:1px solid var(--line)}
+  .mp-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
+  .mp-title{font-family:'Kaisei Tokumin',serif;font-size:14px;font-weight:700;color:var(--ink)}
+  .mp-title small{display:block;font-size:10px;color:var(--gray);font-weight:400;margin-top:2px;font-family:'Inter',sans-serif;letter-spacing:.05em}
+  .mp-score{font-family:'Kaisei Tokumin',serif;font-size:28px;font-weight:800;color:var(--green);line-height:1}
+  .mp-score sup{font-size:11px;font-weight:500;color:var(--gray);margin-left:2px}
+  .mp-chart{margin-top:8px}
+  .mp-chart svg{width:100%;height:130px;display:block}
+  .mp-chart .bar{fill:var(--green)}
+  .mp-chart .bar.dim{fill:var(--accent)}
+  .mp-chart text{font-family:'Inter',sans-serif;font-size:9px;fill:var(--gray)}
+
+  /* exam planner viz */
+  .planner{background:#fff;border-radius:14px;padding:18px;box-shadow:var(--shadow-sm);border:1px solid var(--line)}
+  .planner-head{display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:6px}
+  .planner-title{font-family:'Kaisei Tokumin',serif;font-size:14px;font-weight:700;color:var(--ink)}
+  .planner-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--danger);font-weight:600}
+  .planner-row{display:grid;grid-template-columns:54px 1fr 28px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--cream-2);font-size:12.5px}
+  .planner-row:last-child{border-bottom:none}
+  .planner-day{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gray);font-weight:500}
+  .planner-task{color:var(--ink)}
+  .planner-task .tag{display:inline-block;font-size:9px;padding:1px 6px;border-radius:4px;background:var(--accent);color:var(--green);margin-left:6px;font-family:'Inter',sans-serif;font-weight:600;letter-spacing:.04em}
+  .planner-task .tag.review2{background:#f9e8d8;color:#a05a1a}
+  .planner-check{
+    width:20px;height:20px;border-radius:5px;border:1.5px solid var(--green-300);
+    display:grid;place-items:center;font-size:10px;color:#fff;
+  }
+  .planner-check.done{background:var(--green);border-color:var(--green)}
+
+  /* admin dashboard viz */
+  .dash{background:#fff;border-radius:14px;padding:18px;box-shadow:var(--shadow-sm);border:1px solid var(--line)}
+  .dash-tabs{display:flex;gap:6px;margin-bottom:14px;font-size:11px}
+  .dash-tab{padding:6px 12px;border-radius:6px;color:var(--gray);font-weight:500;background:var(--cream)}
+  .dash-tab.active{background:var(--green);color:#fff}
+  .dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+  .dstat{background:var(--cream);border-radius:10px;padding:12px}
+  .dstat .lbl{font-size:10px;color:var(--gray);letter-spacing:.04em;font-family:'Inter',sans-serif;font-weight:500}
+  .dstat .val{font-family:'Kaisei Tokumin',serif;font-size:22px;color:var(--green);font-weight:800;line-height:1.2;margin-top:2px}
+  .dstat .sub{font-size:10px;color:var(--gray);margin-top:2px}
+  .dash-bars{display:flex;align-items:flex-end;gap:7px;height:80px;padding:0 4px}
+  .dash-bar{flex:1;background:var(--green);border-radius:3px 3px 0 0;position:relative;opacity:.85}
+  .dash-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--gray);margin-top:6px;font-family:'Inter',sans-serif}
+
+  /* DEMO CTA */
+  .demo{
+    background:linear-gradient(135deg,var(--navy),#264e8a 70%, #2d5a8a);
+    color:#fff;position:relative;overflow:hidden;
+  }
+  .demo::before{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(700px 320px at 80% 20%, rgba(255,255,255,.08), transparent 60%);
+  }
+  .demo-content{position:relative;display:grid;grid-template-columns:1.2fr 1fr;gap:60px;align-items:center}
+  .demo .sec-eyebrow{color:#a8c3eb}
+  .demo h2{color:#fff}
+  .demo-content > div p{font-size:16px;color:#d8e3f4;max-width:520px;margin:0 0 28px;opacity:.95}
+  .demo-cta{display:flex;flex-wrap:wrap;gap:14px}
+  .btn-white{background:#fff;color:var(--navy)}
+  .btn-white:hover{background:var(--cream)}
+  .btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5)}
+  .btn-outline:hover{background:rgba(255,255,255,.08)}
+  .demo-url{
+    margin-top:20px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#a8c3eb;
+    background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.2);
+    padding:10px 16px;border-radius:8px;display:inline-block;
+  }
+  .demo-card{
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);
+    border-radius:var(--radius-lg);padding:32px;backdrop-filter:blur(10px);
+  }
+  .demo-card h4{font-family:'Kaisei Tokumin',serif;font-size:18px;color:#fff;margin:0 0 16px;font-weight:700}
+  .demo-card ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px}
+  .demo-card li{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:#d8e3f4;line-height:1.6}
+  .demo-card li::before{content:"✓";flex-shrink:0;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;margin-top:1px}
+
+  /* PRICING */
+  .pricing{background:var(--cream)}
+  .price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .price-card{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:36px 32px;display:flex;flex-direction:column;box-shadow:var(--shadow-sm);
+  }
+  .price-card.feature{
+    background:var(--green);color:#fff;border-color:var(--green);
+    box-shadow:0 20px 40px -20px rgba(45,90,61,.5);transform:scale(1.02);
+  }
+  .price-card.feature .price-name,
+  .price-card.feature .price-amount,
+  .price-card.feature .price-features li{color:#fff}
+  .price-card.feature .price-features li::before{background:#fff;color:var(--green)}
+  .price-tag{display:inline-block;font-family:'Inter',sans-serif;font-size:10px;letter-spacing:.16em;font-weight:600;color:var(--green);background:var(--accent);padding:4px 10px;border-radius:999px;margin-bottom:14px;align-self:flex-start;text-transform:uppercase}
+  .price-card.feature .price-tag{background:rgba(255,255,255,.2);color:#fff}
+  .price-name{font-family:'Kaisei Tokumin',serif;font-size:24px;color:var(--ink);font-weight:700;margin:0 0 8px}
+  .price-desc{font-size:13px;color:var(--gray);margin:0 0 20px;min-height:38px}
+  .price-card.feature .price-desc{color:#cce0d2}
+  .price-amount{font-family:'Kaisei Tokumin',serif;font-size:36px;color:var(--green);font-weight:800;line-height:1;margin-bottom:4px}
+  .price-amount small{font-size:13px;color:var(--gray);font-weight:500;margin-left:4px}
+  .price-card.feature .price-amount small{color:#cce0d2}
+  .price-features{list-style:none;padding:24px 0 0;margin:24px 0 28px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px;flex:1}
+  .price-card.feature .price-features{border-color:rgba(255,255,255,.18)}
+  .price-features li{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--ink)}
+  .price-features li::before{
+    content:"✓";flex-shrink:0;width:18px;height:18px;border-radius:50%;background:var(--accent);
+    display:grid;place-items:center;font-size:10px;font-weight:700;color:var(--green);margin-top:2px;
+  }
+  .price-btn{
+    text-align:center;padding:13px;border-radius:10px;font-size:14px;font-weight:500;
+    text-decoration:none;background:var(--accent);color:var(--green);
+  }
+  .price-card.feature .price-btn{background:#fff;color:var(--green)}
+
+  /* FOOTER */
+  .foot{background:var(--green);color:#cce0d2;padding:48px 0 36px}
+  .foot-grid{display:flex;justify-content:space-between;flex-wrap:wrap;gap:24px;align-items:center;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,.1)}
+  .foot .logo-text{color:#fff}
+  .foot .logo-text small{color:#a8c3a8}
+  .foot-tag{font-size:13px;color:#cce0d2;max-width:340px}
+  .foot-bottom{padding-top:24px;font-size:12px;color:#a8c3a8;display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px}
+
+  @media (max-width:960px){
+    .hero-grid,.problem-grid,.how-grid,.feat-row,.demo-content,.price-grid{grid-template-columns:1fr;gap:40px}
+    .feat-row.reverse{direction:ltr}
+    h1{font-size:42px}
+    h2{font-size:30px}
+    section{padding:80px 0}
+    .nav-links{display:none}
+    .step-arrow{display:none}
+    .price-card.feature{transform:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <div class="logo-mark">音</div>
+      <div class="logo-text">授業のオトモ<small>OTOMO · DENTAL LECTURE COMPANION</small></div>
+    </a>
+    <div class="nav-links">
+      <a href="#problem">課題</a>
+      <a href="#how">使い方</a>
+      <a href="#features">機能</a>
+      <a href="#demo">デモ体験</a>
+      <a href="#pricing">料金</a>
+    </div>
+    <a class="nav-cta" href="#demo">無料デモ →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <span class="badge"><span class="dot"></span>歯学部 × LINE × AI · 授業集中度モニタリング</span>
+        <h1>スマホを<span class="danger">敵</span>から、<br/>授業の<span class="ink">オトモ</span>へ。</h1>
+        <p class="hero-sub">
+          授業中にLINEで問題に答えるだけ。AIが即座に採点し、クラスのリアルタイムランキングで授業が盛り上がる。歯学部のための、集中度モニタリング & 試験対策サービス。
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#demo">無料でデモ体験 <span class="en">→</span></a>
+          <a class="btn btn-ghost" href="#how">使い方をみる</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hstat"><strong>0–100</strong><span class="en">AI 採点 / GPT-4o-mini</span></div>
+          <div class="hstat"><strong>5秒</strong><span class="en">ランキング更新</span></div>
+          <div class="hstat"><strong>2段階</strong><span class="en">復習スケジューラー</span></div>
+        </div>
+      </div>
+
+      <!-- HERO PHONE -->
+      <div>
+        <div class="phone" aria-label="授業のオトモ チャット画面">
+          <div class="phone-status">
+            <span class="en">9:41</span>
+            <span class="right en">●●●●&nbsp;100%</span>
+          </div>
+          <div class="phone-header">
+            <span class="back">&lsaquo;</span>
+            <div class="ph-avatar">音</div>
+            <div class="ph-title">授業のオトモ<small>歯科解剖学 第3回</small></div>
+          </div>
+          <div class="phone-chat">
+            <div class="bubble system">10月15日（木）</div>
+            <div class="bubble from"><strong>📚 出題</strong><br/>上顎中切歯の切縁結節は通常いくつあるか？</div>
+            <div class="bubble system">クラスメイト 32名に通知</div>
+            <div class="bubble mine">3つです</div>
+            <div class="bubble score">
+              <strong>✨ 採点完了</strong><br/>
+              正確性 100 × 速度 1.0<br/>
+              <span class="num">100 pt</span> <span style="font-size:11px;opacity:.85">クラス1位 🏆</span>
+            </div>
+            <div class="bubble from">📊 リアルタイムランキングを更新しました</div>
+          </div>
+          <div class="phone-input">
+            <div class="field">回答を入力…</div>
+            <div class="send" aria-hidden="true">➤</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem" id="problem">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-eyebrow">PROBLEM</div>
+      <h2 class="serif">こんな課題、<br/>歯学部の授業にありませんか？</h2>
+      <p class="sec-sub">「真面目に聞いてほしい」「理解度が見えない」「復習が続かない」— そのすべてを、チャットとAIで解決します。</p>
+    </div>
+    <div class="problem-grid">
+      <div class="pcard">
+        <span class="num">01</span>
+        <h3>授業中の<br/>集中力低下</h3>
+        <p>スマホ・内職・居眠り。ノートを取っているふりをしているだけの学生が増えていく。</p>
+        <div class="arrow">↓</div>
+        <p class="solve">リアルタイム出題で「今聞いてないと答えられない」状況を作る</p>
+      </div>
+      <div class="pcard">
+        <span class="num">02</span>
+        <h3>回答の<br/>積極性低下</h3>
+        <p>手を挙げて発言するのは恥ずかしい。質問を投げかけても、教室はシーンとしたまま。</p>
+        <div class="arrow">↓</div>
+        <p class="solve">LINEで匿名っぽく送信。みんなの回答が並ぶことで参加が当たり前に</p>
+      </div>
+      <div class="pcard">
+        <span class="num">03</span>
+        <h3>理解度の<br/>把握困難</h3>
+        <p>テストの結果を見るまで、誰がどこで詰まっているのか後から振り返るしかない。</p>
+        <div class="arrow">↓</div>
+        <p class="solve">集中度スコアで授業ごと・学生ごとに状況を可視化</p>
+      </div>
+      <div class="pcard">
+        <span class="num">04</span>
+        <h3>試験対策の<br/>非効率</h3>
+        <p>復習タイミングは学生まかせ。気づけば試験前に詰め込み学習になってしまう。</p>
+        <div class="arrow">↓</div>
+        <p class="solve">試験日から逆算して復習スケジュールをAIが自動生成</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-eyebrow">HOW IT WORKS</div>
+      <h2 class="serif">3ステップで、<br/>授業が「対話の場」になる。</h2>
+      <p class="sec-sub">出題側はボタン操作だけ、学生はLINEで返信するだけ。複雑な準備は一切ありません。</p>
+    </div>
+    <div class="how-grid">
+      <!-- 1 -->
+      <div class="step">
+        <div class="step-num">STEP<span class="big">01</span></div>
+        <h3>授業の開始<br/>＆ 出題</h3>
+        <p>ダッシュボード（LIFF）から科目・回数を選び、問題文と模範解答を入力。学生全員にLINEで一斉に通知が届きます。</p>
+        <div class="mini-chat">
+          <div class="bubble system">セッション #042 開始</div>
+          <div class="bubble from"><strong>📚 出題</strong><br/>切縁結節の数は？</div>
+          <div class="bubble system">📨 32名に配信</div>
+        </div>
+        <div class="step-arrow">→</div>
+      </div>
+      <!-- 2 -->
+      <div class="step">
+        <div class="step-num">STEP<span class="big">02</span></div>
+        <h3>学生がLINEで<br/>回答 → AIが採点</h3>
+        <p>学生はLINEのチャット画面に回答を入力するだけ。GPT-4o-miniが意味を理解した上で 0〜100点で正確性を採点します。</p>
+        <div class="mini-chat">
+          <div class="bubble mine">3つです</div>
+          <div class="bubble from">✅ 正確性 100点 / 速度 1.0×</div>
+          <div class="bubble from"><strong>集中度 100pt</strong> 記録</div>
+        </div>
+        <div class="step-arrow">→</div>
+      </div>
+      <!-- 3 -->
+      <div class="step">
+        <div class="step-num">STEP<span class="big">03</span></div>
+        <h3>クラス全員の<br/>ランキングが更新</h3>
+        <p>5秒ごとに更新されるリアルタイムランキングで、誰が今正解したかが分かる。授業が競い合いの場に変わります。</p>
+        <div class="mini-chat">
+          <div class="bubble system">🏆 LIVE Ranking</div>
+          <div class="bubble from"><b>1位</b> 田中さん 100pt</div>
+          <div class="bubble from"><b>2位</b> 鈴木さん 92pt</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-eyebrow">FEATURES</div>
+      <h2 class="serif">機能のすべては、<br/>「学生が動く」ために。</h2>
+      <p class="sec-sub">出題・採点・ランキング・復習。授業から試験までを一気通貫でサポートする5つの主要機能。</p>
+    </div>
+
+    <div class="feat-list">
+      <!-- F1: AI採点 -->
+      <div class="feat-row">
+        <div class="feat-text">
+          <div class="fnum">FEATURE 01</div>
+          <h3>意味を理解する<br/>AI採点</h3>
+          <p>GPT-4o-miniが、模範解答と学生の回答を比較し「意味の正確さ」で 0〜100 点をつけます。表記ゆれや言い換えにも柔軟に。逆のことを言っていれば低得点、似た言葉でも意味が違えば加点しません。</p>
+          <ul class="feat-bullets">
+            <li>キーワード一致ではなく、理解度で判定</li>
+            <li>0〜100点の連続スコアで部分点も対応</li>
+            <li>採点結果は即座にLINEへ返信</li>
+          </ul>
+        </div>
+        <div class="fviz">
+          <div class="formula-card">
+            <div style="font-size:11px;color:var(--gray);font-family:'Inter',sans-serif;letter-spacing:.12em;font-weight:600;margin-bottom:14px">SCORE FORMULA</div>
+            <div class="formula-row">
+              <div class="fterm"><div class="lbl">Accuracy</div><div class="name">正確性</div></div>
+              <span class="fop">×</span>
+              <div class="fterm"><div class="lbl">Speed</div><div class="name">速度乗数</div></div>
+              <span class="fop">=</span>
+              <div class="fterm result"><div class="lbl">Engagement</div><div class="name">集中度</div></div>
+            </div>
+            <div class="speed-chart">
+              <div style="font-size:11px;color:var(--gray);font-family:'Inter',sans-serif;letter-spacing:.05em;margin-bottom:6px;font-weight:500">速度乗数の減衰カーブ</div>
+              <svg viewBox="0 0 320 110" preserveAspectRatio="none">
+                <line class="grid" x1="0" y1="20" x2="320" y2="20"/>
+                <line class="grid" x1="0" y1="55" x2="320" y2="55"/>
+                <line class="grid" x1="0" y1="90" x2="320" y2="90"/>
+                <path class="area" d="M 0 10 L 60 10 L 280 92 L 320 95 L 320 110 L 0 110 Z"/>
+                <path class="curve" d="M 0 10 L 60 10 Q 160 22 280 92 L 320 95"/>
+                <text x="2" y="14">×1.0</text>
+                <text x="2" y="60">×0.6</text>
+                <text x="2" y="105">×0.3</text>
+              </svg>
+              <div class="speed-legend"><span>0秒</span><span>60秒</span><span>2.5分</span><span>4.5分〜</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F2: LIVE Ranking -->
+      <div class="feat-row reverse">
+        <div class="feat-text">
+          <div class="fnum">FEATURE 02</div>
+          <h3>LIVEクラス<br/>ランキング</h3>
+          <p>出題中は5秒ごとにランキングが更新。名前・アイコン・回答・スコアが全員に見えます。未回答者も「未回答」と表示され、参加していないことが見える化される。授業後は一コマ通じた維持スコアで集計。</p>
+          <ul class="feat-bullets">
+            <li>5秒間隔で自動更新するライブビュー</li>
+            <li>幾何平均（維持スコア）で1問のミスも反映</li>
+            <li>セッションランキング・科目ランキングを同時集計</li>
+          </ul>
+        </div>
+        <div class="fviz">
+          <div class="rank-card">
+            <div class="rank-head">
+              <div class="rank-title">第3問 ランキング</div>
+              <div class="rank-live en">LIVE · 残り 14秒</div>
+            </div>
+            <div class="rank-row"><div class="rank-pos top">1</div><div class="rank-ava">田</div><div class="rank-name">田中 美咲<small>「3つ」 · 8.2秒</small></div><div class="rank-score">100</div></div>
+            <div class="rank-row"><div class="rank-pos top">2</div><div class="rank-ava">鈴</div><div class="rank-name">鈴木 健太<small>「3つです」 · 12.4秒</small></div><div class="rank-score">98</div></div>
+            <div class="rank-row"><div class="rank-pos">3</div><div class="rank-ava">佐</div><div class="rank-name">佐藤 由香<small>「3」 · 21秒</small></div><div class="rank-score">92</div></div>
+            <div class="rank-row"><div class="rank-pos">4</div><div class="rank-ava">山</div><div class="rank-name">山本 翔太<small>「3つ程度」 · 38秒</small></div><div class="rank-score">81</div></div>
+            <div class="rank-row"><div class="rank-pos" style="color:var(--gray-2)">—</div><div class="rank-ava" style="background:#f1eee5;color:var(--gray-2)">…</div><div class="rank-name" style="color:var(--gray-2)">中村 蓮<small>未回答</small></div><div class="rank-score pending">--</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F3: マイページ -->
+      <div class="feat-row">
+        <div class="feat-text">
+          <div class="fnum">FEATURE 03</div>
+          <h3>学生マイページ<br/>（LIFF）</h3>
+          <p>科目ごと・授業回数ごとの集中度推移をグラフで一目で確認。今日・明日の復習タスクや、過去の問題と自分の回答も振り返れます。LINE内で完結するから、新しいアプリのダウンロードは不要。</p>
+          <ul class="feat-bullets">
+            <li>授業回ごとの集中度推移グラフ</li>
+            <li>過去の問題・自分の回答・スコアを履歴で確認</li>
+            <li>今日の復習タスクをワンタップでチェック</li>
+          </ul>
+        </div>
+        <div class="fviz">
+          <div class="mypage">
+            <div class="mp-head">
+              <div class="mp-title">歯科解剖学<small>SUBJECT · 全12回中9回まで</small></div>
+              <div class="mp-score">87<sup>pt</sup></div>
+            </div>
+            <div style="font-size:11px;color:var(--gray);font-family:'Inter',sans-serif;font-weight:500;margin-bottom:6px">集中度推移</div>
+            <div class="mp-chart">
+              <svg viewBox="0 0 300 130" preserveAspectRatio="none">
+                <line x1="0" y1="115" x2="300" y2="115" stroke="#e3dccf"/>
+                <rect class="bar" x="6"   y="50" width="22" height="65" rx="3"/>
+                <rect class="bar" x="36"  y="38" width="22" height="77" rx="3"/>
+                <rect class="bar" x="66"  y="62" width="22" height="53" rx="3"/>
+                <rect class="bar" x="96"  y="20" width="22" height="95" rx="3"/>
+                <rect class="bar" x="126" y="46" width="22" height="69" rx="3"/>
+                <rect class="bar" x="156" y="32" width="22" height="83" rx="3"/>
+                <rect class="bar" x="186" y="58" width="22" height="57" rx="3"/>
+                <rect class="bar" x="216" y="14" width="22" height="101" rx="3"/>
+                <rect class="bar" x="246" y="26" width="22" height="89" rx="3"/>
+                <text x="6"   y="128">第1</text>
+                <text x="96"  y="128">第4</text>
+                <text x="186" y="128">第7</text>
+                <text x="246" y="128">第9</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F4: 試験対策プランナー -->
+      <div class="feat-row reverse">
+        <div class="feat-text">
+          <div class="fnum">FEATURE 04</div>
+          <h3>AI試験対策<br/>プランナー</h3>
+          <p>試験日と科目を登録するだけで、授業回数ぶんの復習スケジュールを自動生成。復習 → 再復習の2段階構成で記憶の定着を最適化。毎朝LINEで「今日の復習タスク」が届きます。</p>
+          <ul class="feat-bullets">
+            <li>試験日から逆算した自動スケジューリング</li>
+            <li>復習 → 再復習の2段階で定着を後押し</li>
+            <li>「学習済み」ボタンで進捗管理・1タップでリプラン</li>
+          </ul>
+        </div>
+        <div class="fviz">
+          <div class="planner">
+            <div class="planner-head">
+              <div class="planner-title">試験対策プラン</div>
+              <div class="planner-date">試験まで 14日</div>
+            </div>
+            <div class="planner-row"><div class="planner-day">11/12 月</div><div class="planner-task">第1回 切歯の構造 <span class="tag">復習</span></div><div class="planner-check done">✓</div></div>
+            <div class="planner-row"><div class="planner-day">11/13 火</div><div class="planner-task">第2回 犬歯の特徴 <span class="tag">復習</span></div><div class="planner-check done">✓</div></div>
+            <div class="planner-row"><div class="planner-day">11/14 水</div><div class="planner-task">第3回 切縁結節 <span class="tag">復習</span></div><div class="planner-check"></div></div>
+            <div class="planner-row"><div class="planner-day">11/15 木</div><div class="planner-task">第1回 切歯の構造 <span class="tag review2">再復習</span></div><div class="planner-check"></div></div>
+            <div class="planner-row"><div class="planner-day">11/16 金</div><div class="planner-task">第4回 臼歯の咬合 <span class="tag">復習</span></div><div class="planner-check"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F5: 出題ダッシュボード -->
+      <div class="feat-row">
+        <div class="feat-text">
+          <div class="fnum">FEATURE 05</div>
+          <h3>出題ダッシュボード</h3>
+          <p>授業開始・出題・終了をボタン操作だけで実施。学生一覧・参加状況・スコアをリアルタイム確認できます。試験日程の登録・編集や復習量の調整もダッシュボード上で完結。</p>
+          <ul class="feat-bullets">
+            <li>ボタン操作だけで授業運営が完結</li>
+            <li>学生別・授業別・科目別の集中度ダッシュボード</li>
+            <li>試験日程・復習量の編集 / リプラン指示</li>
+          </ul>
+        </div>
+        <div class="fviz">
+          <div class="dash">
+            <div class="dash-tabs">
+              <div class="dash-tab active">セッション</div>
+              <div class="dash-tab">学生</div>
+              <div class="dash-tab">科目</div>
+              <div class="dash-tab">試験</div>
+            </div>
+            <div class="dash-stats">
+              <div class="dstat"><div class="lbl">参加学生</div><div class="val">32<small style="font-size:13px;color:var(--gray);font-weight:500">/32</small></div><div class="sub">出席率 100%</div></div>
+              <div class="dstat"><div class="lbl">平均スコア</div><div class="val">84.2</div><div class="sub">前回比 +6.4</div></div>
+              <div class="dstat"><div class="lbl">回答率</div><div class="val">96<small style="font-size:13px;color:var(--gray);font-weight:500">%</small></div><div class="sub">第7問まで</div></div>
+            </div>
+            <div style="font-size:11px;color:var(--gray);font-family:'Inter',sans-serif;font-weight:500;margin-bottom:6px">問題ごとの平均集中度</div>
+            <div class="dash-bars">
+              <div class="dash-bar" style="height:65%"></div>
+              <div class="dash-bar" style="height:78%"></div>
+              <div class="dash-bar" style="height:55%"></div>
+              <div class="dash-bar" style="height:90%"></div>
+              <div class="dash-bar" style="height:72%"></div>
+              <div class="dash-bar" style="height:88%"></div>
+              <div class="dash-bar" style="height:84%"></div>
+            </div>
+            <div class="dash-labels"><span>Q1</span><span>Q2</span><span>Q3</span><span>Q4</span><span>Q5</span><span>Q6</span><span>Q7</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- DEMO CTA -->
+<section class="demo" id="demo">
+  <div class="wrap">
+    <div class="demo-content">
+      <div>
+        <div class="sec-eyebrow">FREE DEMO</div>
+        <h2 class="serif" style="margin-top:14px">登録不要、いますぐ<br/>体験できます。</h2>
+        <p>サンプルデータで、出題・採点・ランキング・マイページの全機能をブラウザから試せます。LINEアプリの外からでもOK。</p>
+        <div class="demo-cta">
+          <a class="btn btn-white" href="https://otomodentist.github.io/dental-liff/demo.html">デモを開く <span class="en">→</span></a>
+          <a class="btn btn-outline" href="#">資料をダウンロード</a>
+        </div>
+        <div class="demo-url mono">https://otomodentist.github.io/dental-liff/demo.html</div>
+      </div>
+      <div class="demo-card">
+        <h4>デモで体験できること</h4>
+        <ul>
+          <li>出題ダッシュボードでのセッション開始・出題操作</li>
+          <li>学生視点での回答・AI採点フィードバック</li>
+          <li>リアルタイムランキングの自動更新</li>
+          <li>集中度推移グラフ・マイページの確認</li>
+          <li>試験対策プランナーの自動生成体験</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-eyebrow">PRICING</div>
+      <h2 class="serif">1アカウントから、<br/>学期単位で気軽に。</h2>
+      <p class="sec-sub">登録学生数・科目数の上限なし。担当する授業の規模に合わせて柔軟に選べる、シンプルな3プラン。</p>
+    </div>
+    <div class="price-grid">
+      <div class="price-card">
+        <span class="price-tag">Trial</span>
+        <h3 class="price-name">デモ体験</h3>
+        <p class="price-desc">サンプルデータでサービスを実際に触ってみたい方へ</p>
+        <div class="price-amount">¥0<small>/ 永久無料</small></div>
+        <ul class="price-features">
+          <li>登録不要・即体験</li>
+          <li>全機能のサンプル操作</li>
+          <li>ブラウザで動作</li>
+        </ul>
+        <a href="#demo" class="price-btn">デモを開く</a>
+      </div>
+      <div class="price-card feature">
+        <span class="price-tag">Standard</span>
+        <h3 class="price-name">月額プラン</h3>
+        <p class="price-desc">通年で授業に組み込み、継続的に活用したい方向け</p>
+        <div class="price-amount">¥9,800<small>/ 月・1アカウント</small></div>
+        <ul class="price-features">
+          <li>登録学生数・科目数 無制限</li>
+          <li>AI採点・ランキング全機能</li>
+          <li>試験対策プランナー</li>
+          <li>管理ダッシュボード</li>
+          <li>サポート対応</li>
+        </ul>
+        <a href="#" class="price-btn">お問い合わせ</a>
+      </div>
+      <div class="price-card">
+        <span class="price-tag">Term</span>
+        <h3 class="price-name">学期プラン</h3>
+        <p class="price-desc">学期（前期・後期）単位で、まずは試験的に導入したい場合</p>
+        <div class="price-amount">¥39,800<small>/ 学期</small></div>
+        <ul class="price-features">
+          <li>4〜5ヶ月分まとめて</li>
+          <li>月額換算より約20%お得</li>
+          <li>全機能利用可能</li>
+        </ul>
+        <a href="#" class="price-btn">お問い合わせ</a>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:12.5px;color:var(--gray);margin-top:32px">※ 表示価格は税抜・想定価格です。複数教員・学部単位での導入はお問い合わせください。</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div class="logo-mark" style="background:#fff;color:var(--green)">音</div>
+        <div class="logo-text">授業のオトモ<small>OTOMO · DENTAL LECTURE COMPANION</small></div>
+      </div>
+      <div class="foot-tag">歯学部の授業を、AIとLINEで「対話の場」に変える集中度モニタリングサービス。</div>
+    </div>
+    <div class="foot-bottom">
+      <span class="en">© 2026 Otomo Dental. All rights reserved.</span>
+      <span><a href="#" style="color:#cce0d2;text-decoration:none;margin-right:18px">利用規約</a><a href="#" style="color:#cce0d2;text-decoration:none">プライバシーポリシー</a></span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

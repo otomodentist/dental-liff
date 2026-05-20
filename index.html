@@ -280,9 +280,11 @@
 
 <div id="app">
   <div class="loading" id="loading">
-    <img src="otomo_logo.png" style="width:140px;margin-bottom:12px" alt="授業のOtomo" />
-    <div class="spinner"></div>
-    <div style="font-size:13px;color:var(--text-dim)">読み込み中...</div>
+    <img src="otomo_logo.png" style="width:140px;margin-bottom:16px" alt="授業のOtomo" />
+    <div style="width:180px;height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+      <div id="progressBar" style="height:100%;width:5%;background:var(--accent);border-radius:2px;transition:width 0.5s ease"></div>
+    </div>
+    <div id="progressLabel" style="font-size:12px;color:var(--text-dim);margin-top:10px">起動中...</div>
   </div>
 </div>
 
@@ -353,30 +355,57 @@ async function checkVersion() {
   return true;
 }
 
+// ===== プログレスバー =====
+function setProgress(pct, label) {
+  const bar = document.getElementById('progressBar');
+  const lbl = document.getElementById('progressLabel');
+  if (bar) bar.style.width = pct + '%';
+  if (lbl && label) lbl.textContent = label;
+}
+
+// ===== 初期化キャッシュ（stale-while-revalidate）=====
+const CACHE_KEY = 'otomo_init_v1_';
+function saveInitCache(uid, d) {
+  try { localStorage.setItem(CACHE_KEY + uid, JSON.stringify({ ...d, _at: Date.now() })); } catch (e) {}
+}
+function loadInitCache(uid) {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY + uid);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (Date.now() - d._at > 3600 * 1000) return null; // 1時間で失効
+    return d;
+  } catch (e) { return null; }
+}
+function applyInitCache(c) {
+  if (c.dashboard) dashboardData = c.dashboard;
+  if (c.activeSession) activeSessionState = c.activeSession;
+  myNickname    = c.nickname    || '';
+  myBillingStatus = c.billingStatus || '';
+  myAvatarUrl   = c.avatarUrl   || '';
+  todayStudyItems    = c.todayItems    || [];
+  tomorrowStudyItems = c.tomorrowItems || [];
+}
+
 async function init() {
   if (!await checkVersion()) return;
-  // プレビューモード: ?preview=<userId> でLIFF認証をスキップ
+
+  // プレビューモード
   const previewUserId = new URLSearchParams(location.search).get('preview');
   if (previewUserId) {
     userId = previewUserId;
     profileData = { userId: previewUserId, displayName: '', pictureUrl: '' };
     try {
-      [dashboardData] = await Promise.all([
-        fetchDashboard(userId),
-        refreshActiveSession(),
-        fetchNickname(userId),
-      ]);
-      try {
-        const r = await fetch(`${GAS_URL}?action=getTodayStudyItems&userId=${encodeURIComponent(userId)}`);
-        const d = await r.json();
-        todayStudyItems = d.todayItems || [];
-        tomorrowStudyItems = d.tomorrowItems || [];
-      } catch (e) { todayStudyItems = []; tomorrowStudyItems = []; }
+      const res = await fetch(`${GAS_URL}?action=getUserInitData&userId=${encodeURIComponent(userId)}`);
+      const d = await res.json();
+      dashboardData = d.dashboard || null;
+      activeSessionState = d.activeSession || { isActive: false };
+      myNickname = d.nickname || ''; myBillingStatus = d.billingStatus || ''; myAvatarUrl = d.avatarUrl || '';
+      todayStudyItems = d.todayItems || []; tomorrowStudyItems = d.tomorrowItems || [];
     } catch (e) {}
     renderApp();
     if (!activeSessionState?.isActive) { await fetchLatestRanking(); renderApp(); }
     else { scheduleLiveRefreshes(); }
-    // プレビューバナーを表示
     const banner = document.createElement('div');
     banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a1208cc;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:6px;z-index:9999;backdrop-filter:blur(4px)';
     banner.textContent = '👁 管理者プレビューモード';
@@ -384,35 +413,48 @@ async function init() {
     return;
   }
 
+  setProgress(5, '起動中...');
   let step = 'liff.init';
   try {
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isLoggedIn()) { liff.login(); return; }
 
+    setProgress(25, 'プロフィール取得中...');
     step = 'liff.getProfile';
     const profile = await liff.getProfile();
     userId = profile.userId;
     profileData = profile;
 
-    step = 'fetchDashboard';
-    [dashboardData] = await Promise.all([
-      fetchDashboard(userId),
-      refreshActiveSession(),
-      fetchNickname(userId),
-    ]);
+    // キャッシュがあれば即座に表示してからバックグラウンドで最新データ取得
+    const cache = loadInitCache(userId);
+    if (cache) {
+      applyInitCache(cache);
+      setProgress(50, '最新データを取得中...');
+      renderApp();
+    } else {
+      setProgress(45, 'データ取得中...');
+    }
 
-    step = 'getTodayStudyItems';
-    try {
-      const r = await fetch(`${GAS_URL}?action=getTodayStudyItems&userId=${encodeURIComponent(userId)}`);
-      const d = await r.json();
-      todayStudyItems    = d.todayItems    || [];
-      tomorrowStudyItems = d.tomorrowItems || [];
-    } catch (e) { todayStudyItems = []; tomorrowStudyItems = []; }
+    step = 'getUserInitData';
+    const res = await fetch(`${GAS_URL}?action=getUserInitData&userId=${encodeURIComponent(userId)}`);
+    const d = await res.json();
 
-    step = 'renderApp';
+    setProgress(90, '画面を構築中...');
+    dashboardData      = d.dashboard      || null;
+    activeSessionState = d.activeSession  || { isActive: false };
+    myNickname         = d.nickname       || '';
+    myBillingStatus    = d.billingStatus  || '';
+    myAvatarUrl        = d.avatarUrl      || '';
+    todayStudyItems    = d.todayItems     || [];
+    tomorrowStudyItems = d.tomorrowItems  || [];
+
+    saveInitCache(userId, d);
+    setProgress(100, '');
     renderApp();
+
     if (!activeSessionState?.isActive) { await fetchLatestRanking(); renderApp(); }
     else { scheduleLiveRefreshes(); }
+
     const isPaid = myBillingStatus === '契約中' || myBillingStatus === '管理者承認';
     if (!myNickname && isPaid) openNicknameModal();
   } catch (err) {
