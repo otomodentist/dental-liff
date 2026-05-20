@@ -1838,7 +1838,11 @@ function startQuestionCooldown() {
                       pollAdminRanking();
                       startAdminRankingPoll();
                       startQuestionCooldown();
-                      showToast(`📢 ${result.studentCount}名に配信しました`);
+                      if (result.studentCount === 0) {
+                          showToast('⚠️ 配信対象の学生が0名です（契約中ステータスの学生がいません）');
+                      } else {
+                          showToast(`📢 ${result.studentCount}名に配信しました`);
+                      }
                   } else {
                       showToast('❌ エラー: ' + result.error);
                       if (btn) { btn.disabled = false; btn.textContent = '📢 全学生に出題する'; }
