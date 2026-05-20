@@ -457,6 +457,11 @@ async function init() {
 
     const isPaid = myBillingStatus === '契約中' || myBillingStatus === '管理者承認';
     if (!myNickname && isPaid) openNicknameModal();
+    // 課金済みのリッチメニューをセッションごとに1回だけ自動修正（切り替え漏れを自己修復）
+    if (isPaid && !sessionStorage.getItem('rmFixed')) {
+      sessionStorage.setItem('rmFixed', '1');
+      fetch(`${GAS_URL}?action=setRichMenuForPaid&userId=${encodeURIComponent(userId)}`).catch(() => {});
+    }
   } catch (err) {
     showError(`[${step}] ${err.message}`);
   }
