@@ -1799,74 +1799,13 @@ function renderProgressBarChart() {
 
 // ===== テスト時間割 =====
 function renderExamTimetable() {
-  const loading = !planTabData;
-  const exams = planTabData?.exams || [];
-  const quizzes = planTabData?.quizzes || [];
+  if (!planTabData) return `
+    <div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:13px;color:var(--ink3)">読み込み中...</div>`;
   const today = new Date(); today.setHours(0,0,0,0);
-  const days = ['日','月','火','水','木','金','土'];
-
-  // 試験と小テストを統合して日付でグループ化
-  const allEvents = [
-    ...exams
-      .filter(e => e.examDate && new Date(e.examDate + 'T00:00:00') >= today)
-      .map(e => ({ date: e.examDate, label: e.subjectName, time: e.startTime || '', type: 'exam' })),
-    ...quizzes
-      .filter(q => q.examDate && new Date(q.examDate + 'T00:00:00') >= today)
-      .map(q => ({ date: q.examDate, label: (q.subjectName ? q.subjectName + ' ' : '') + (q.quizName || '小テスト'), time: '', type: 'quiz', scope: q.scope || '' })),
-  ].sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
-
-  const grouped = {};
-  allEvents.forEach(ev => {
-    if (!grouped[ev.date]) grouped[ev.date] = [];
-    grouped[ev.date].push(ev);
-  });
-
-  if (!loading && Object.keys(grouped).length === 0) return '';
-
-  const rows = loading
-    ? '<div style="padding:14px 16px;font-size:13px;color:var(--ink3)">読み込み中...</div>'
-    : Object.entries(grouped).map(([date, events]) => {
-        const d = new Date(date + 'T00:00:00');
-        const dateLabel = `${d.getMonth()+1}/${d.getDate()}`;
-        const dayLabel = days[d.getDay()];
-        const diff = Math.round((d - today) / 86400000);
-        const diffLabel = diff === 0 ? '今日' : diff === 1 ? '明日' : `${diff}日後`;
-        const diffColor = diff <= 3 ? 'var(--accent3)' : diff <= 7 ? '#d97706' : 'var(--ink3)';
-        const evRows = events.map(ev => {
-          const typeTag = ev.type === 'quiz'
-            ? `<span style="font-size:9px;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-weight:700">小テスト</span>`
-            : `<span style="font-size:9px;background:rgba(45,90,61,0.1);color:var(--accent);border-radius:4px;padding:1px 5px;font-weight:700">試験</span>`;
-          const scopeRow = ev.scope ? `<div style="font-size:10px;color:var(--ink3);margin-top:1px">範囲：${ev.scope}</div>` : '';
-          return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 16px 8px 0">
-            <div style="font-size:11px;color:var(--ink3);width:36px;text-align:right;flex-shrink:0;padding-top:2px">${ev.time || '—'}</div>
-            <div style="flex:1">
-              <div style="display:flex;align-items:center;gap:6px">
-                ${typeTag}
-                <div style="font-size:13px;font-weight:600;color:var(--ink)">${ev.label}</div>
-              </div>
-              ${scopeRow}
-            </div>
-          </div>`;
-        }).join('');
-        return `<div style="border-bottom:1px solid var(--border)">
-          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--surface2)">
-            <div style="text-align:center;min-width:32px">
-              <div style="font-size:15px;font-weight:700;color:var(--ink);line-height:1.1">${dateLabel}</div>
-              <div style="font-size:10px;color:var(--ink3)">${dayLabel}</div>
-            </div>
-            <div style="width:1px;height:28px;background:var(--border);flex-shrink:0"></div>
-            <div style="font-size:11px;font-weight:700;color:${diffColor}">${diffLabel}</div>
-          </div>
-          <div style="padding-left:16px">${evRows}</div>
-        </div>`;
-      }).join('');
-
-  return `<div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-    <div style="padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
-      <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">テスト時間割</div>
-    </div>
-    ${rows}
-  </div>`;
+  const futureExams = (planTabData.exams || [])
+    .filter(e => e.examDate && new Date(e.examDate + 'T00:00:00') >= today);
+  if (futureExams.length === 0) return '';
+  return buildExamTimetableHTML(futureExams);
 }
 
 // ===== 自由学習記録 =====
