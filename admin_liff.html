@@ -1277,7 +1277,14 @@ ${isDeliveryPaused ? `
               `;
           }
 
-          const sessions = studentSessionsData.sessions || [];
+          const allSessions = studentSessionsData.sessions || [];
+          // 初回回答以降のセッションのみ表示
+          const firstAnswerTime = allSessions
+            .filter(s => s.answerCount > 0)
+            .reduce((min, s) => (s.latestAnswerAt < min ? s.latestAnswerAt : min), Infinity);
+          const sessions = firstAnswerTime === Infinity
+            ? allSessions
+            : allSessions.filter(s => s.latestAnswerAt >= firstAnswerTime);
           const subjectMap = {};
           sessions.forEach(s => {
               if (!subjectMap[s.subject]) subjectMap[s.subject] = { sessions: [], latestAnswerAt: 0 };
