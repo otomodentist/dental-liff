@@ -235,19 +235,19 @@
 
 <div id="cancelModal" class="cancel-modal">
   <div class="cancel-modal-sheet">
-    <div class="cancel-modal-title">サブスクリプションを解約しますか？</div>
+    <div class="cancel-modal-title">登録を解除しますか？</div>
     <div class="cancel-modal-body">
-      解約すると：
+      解除すると：
       <ul>
-        <li>すぐにサービスが利用できなくなります</li>
+        <li>問題配信・通知が届かなくなります</li>
         <li>授業データは保持されます</li>
-        <li>再度契約する場合は再度決済が必要です</li>
+        <li>再登録はデモ画面の登録ボタンからできます</li>
       </ul>
-      <br>本当に解約しますか？
+      <br>本当に解除しますか？
     </div>
     <div class="cancel-modal-btns">
       <button class="btn-keep" onclick="hideCancelModal()">キャンセル</button>
-      <button class="btn-confirm-cancel" onclick="confirmCancel()">解約する</button>
+      <button class="btn-confirm-cancel" onclick="confirmCancel()">解除する</button>
     </div>
   </div>
 </div>
@@ -281,9 +281,8 @@
 </div>
 
 <div id="contractBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:50">
-  <div style="text-align:center;font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;letter-spacing:0.02em">🎁 春学期は無償で提供します。</div>
   <button id="registerBtn" onclick="registerFree()" style="width:100%;background:#1a6fc4;border:none;border-radius:12px;color:white;font-size:15px;font-weight:700;padding:14px;cursor:pointer;font-family:inherit">
-    決済登録なしで無料で利用を開始<br><span style="font-size:11px;font-weight:400;opacity:0.85">登録後すぐに授業内で問題を受け取れます</span>
+    利用を開始する<br><span style="font-size:11px;font-weight:400;opacity:0.85">登録後すぐに授業内で問題を受け取れます</span>
   </button>
 </div>
 
@@ -1037,7 +1036,7 @@ function renderSettingsView() {
       <div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
         <div style="font-size:14px;color:var(--ink2)">登録状況</div>
         <div style="font-size:13px;font-weight:700;color:${isPaid ? 'var(--accent)' : 'var(--accent3)'}">
-          ${myBillingStatus === '管理者承認' ? '利用中（春学期無料）' : isPaid ? '利用中' : (myBillingStatus || '未登録')}
+          ${isPaid ? '利用中' : (myBillingStatus || '未登録')}
         </div>
       </div>
     </div>
@@ -1057,11 +1056,11 @@ async function registerFree() {
       location.href = 'index.html';
     } else {
       alert('登録に失敗しました: ' + (d.error || '不明なエラー'));
-      if (btn) { btn.disabled = false; btn.innerHTML = '決済登録なしで無料で利用を開始<br><span style="font-size:11px;font-weight:400;opacity:0.85">登録後すぐに授業内で問題を受け取れます</span>'; }
+      if (btn) { btn.disabled = false; btn.innerHTML = '利用を開始する<br><span style="font-size:11px;font-weight:400;opacity:0.85">登録後すぐに授業内で問題を受け取れます</span>'; }
     }
   } catch (e) {
     alert('通信エラーが発生しました。再度お試しください。');
-    if (btn) { btn.disabled = false; btn.innerHTML = '無料で利用登録する<br><span style="font-size:11px;font-weight:400;opacity:0.85">登録後すぐに授業内で問題を受け取れます</span>'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = '利用を開始する<br><span style="font-size:11px;font-weight:400;opacity:0.85">登録後すぐに授業内で問題を受け取れます</span>'; }
   }
 }
 
