@@ -843,9 +843,11 @@ ${isDeliveryPaused ? `
 
       async function pollAdminRanking() {
         if (!adminCurrentQuestionId) return;
+        const fetchQId = adminCurrentQuestionId; // fetch開始時点の問題IDをキャプチャ
         try {
-          const r = await fetch(`${GAS_URL}?action=getQuestionRanking&questionId=${encodeURIComponent(adminCurrentQuestionId)}`);
+          const r = await fetch(`${GAS_URL}?action=getQuestionRanking&questionId=${encodeURIComponent(fetchQId)}`);
           const d = await r.json();
+          if (fetchQId !== adminCurrentQuestionId) return; // 問題が切り替わっていたら結果を捨てる
           adminCurrentQuestionText = d.currentQuestionText || adminCurrentQuestionText;
           adminCurrentModelAnswer  = d.currentModelAnswer  || adminCurrentModelAnswer;
           const el = document.getElementById('adminRankingSection');
