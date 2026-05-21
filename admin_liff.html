@@ -292,6 +292,19 @@
       </div>
     </div>
 
+    <div id="adminSecretModal" class="modal-overlay" style="z-index:9999">
+      <div class="modal">
+        <div class="modal-title">管理者シークレット</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:14px">GASのPropertiesServiceに設定した<code style="background:var(--surface2);padding:1px 5px;border-radius:3px">ADMIN_SECRET</code>を入力してください。このデバイスに保存されます。</div>
+        <input id="adminSecretInput" type="password" placeholder="シークレットを入力"
+          style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:'Noto Sans JP',sans-serif;box-sizing:border-box">
+        <div class="modal-btns" style="margin-top:14px">
+          <button class="modal-btn-cancel" onclick="document.getElementById('adminSecretModal').classList.remove('open')">スキップ</button>
+          <button class="modal-btn-save" onclick="saveAdminSecret()">保存</button>
+        </div>
+      </div>
+    </div>
+
     <div id="scoreEditModal" class="modal-overlay">
       <div class="modal">
         <div class="modal-title">回答正当度を修正</div>
@@ -430,11 +443,28 @@
       const FILTER_KEY = 'dashboardFilter';
       let sessionSemesterEditing = false;
 
+      let adminSecret = localStorage.getItem('adminSecret') || '';
+
       const _busy = new Set();
       async function guardedAction(key, fn) {
         if (_busy.has(key)) return;
         _busy.add(key);
         try { await fn(); } finally { _busy.delete(key); }
+      }
+
+      function saveAdminSecret() {
+          const val = document.getElementById('adminSecretInput').value.trim();
+          if (!val) { showToast('❌ シークレットを入力してください'); return; }
+          adminSecret = val;
+          localStorage.setItem('adminSecret', val);
+          document.getElementById('adminSecretModal').classList.remove('open');
+          showToast('✅ シークレットを保存しました');
+      }
+
+      function openAdminSecretModal() {
+          const input = document.getElementById('adminSecretInput');
+          if (input) input.value = adminSecret;
+          document.getElementById('adminSecretModal').classList.add('open');
       }
 
       async function checkVersion() {
@@ -498,6 +528,7 @@
                     if (lastEndedSessionId && !adminCurrentSessionId) adminCurrentSessionId = lastEndedSessionId;
                 }
                 renderApp();
+                if (!adminSecret) openAdminSecretModal();
                 if (!isSessionActive && lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
                 if (isSessionActive) {
                     if (adminCurrentQuestionId) pollAdminRanking();
@@ -568,6 +599,7 @@
                 </div>
                 <div style="display:flex;gap:8px;align-items:center">
                   <button onclick="softRefresh()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:16px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">↻</button>
+                  <button onclick="openAdminSecretModal()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:14px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">🔑</button>
                   <button onclick="openMyPageSelector()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:10px;color:#fff;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer">マイページ</button>
                 </div>
               </div>
@@ -1659,7 +1691,7 @@ ${isDeliveryPaused ? `
           closeRescoreModal();
           showToast('⏳ 再採点中...');
           try {
-              const res = await fetch(`${GAS_URL}?action=rescoreByModelAnswer&questionId=${encodeURIComponent(questionId)}&newModelAnswer=${encodeURIComponent(newModelAnswer)}`);
+              const res = await fetch(`${GAS_URL}?action=rescoreByModelAnswer&questionId=${encodeURIComponent(questionId)}&newModelAnswer=${encodeURIComponent(newModelAnswer)}&adminSecret=${encodeURIComponent(adminSecret)}`);
               const d = await res.json();
               if (!d.success) { showToast('❌ 再採点失敗: ' + (d.error || '')); return; }
               if (isRanking) {
@@ -1751,7 +1783,8 @@ ${isDeliveryPaused ? `
                   const res = await fetch(
                       `${GAS_URL}?action=adminStartSession` +
                       `&subject=${encodeURIComponent(selectedSubject)}` +
-                      `&sessionNumber=${selectedSession}`
+                      `&sessionNumber=${selectedSession}` +
+                      `&adminSecret=${encodeURIComponent(adminSecret)}`
                   );
                   const result = await res.json();
                   if (result.success) {
@@ -1805,7 +1838,7 @@ ${isDeliveryPaused ? `
           clearAutoEndTimer();
           await guardedAction('endSession', async () => {
               try {
-                  const res = await fetch(`${GAS_URL}?action=adminEndSession`);
+                  const res = await fetch(`${GAS_URL}?action=adminEndSession&adminSecret=${encodeURIComponent(adminSecret)}`);
                   const result = await res.json();
                   if (result.success) {
                       lastEndedSessionId = activeSessionInfo ? activeSessionInfo.sessionId : null;
@@ -1865,7 +1898,8 @@ function startQuestionCooldown(endTime) {
                   const res = await fetch(
                       `${GAS_URL}?action=adminBroadcast` +
                       `&question=${encodeURIComponent(question)}` +
-                      `&modelAnswer=${encodeURIComponent(modelAnswer)}`
+                      `&modelAnswer=${encodeURIComponent(modelAnswer)}` +
+                      `&adminSecret=${encodeURIComponent(adminSecret)}`
                   );
                   const result = await res.json();
                   if (result.success) {
@@ -1915,7 +1949,7 @@ function startQuestionCooldown(endTime) {
           await guardedAction('confirmPause', async () => {
               try {
                   const sessionId = activeSessionInfo ? activeSessionInfo.sessionId : '';
-                  const res = await fetch(`${GAS_URL}?action=pauseQuestionDelivery&sessionId=${encodeURIComponent(sessionId)}`);
+                  const res = await fetch(`${GAS_URL}?action=pauseQuestionDelivery&sessionId=${encodeURIComponent(sessionId)}&adminSecret=${encodeURIComponent(adminSecret)}`);
                   const result = await res.json();
                   if (result.success) {
                       isDeliveryPaused = true;
@@ -1933,7 +1967,7 @@ function startQuestionCooldown(endTime) {
           await guardedAction('resumeDelivery', async () => {
               try {
                   const sessionId = activeSessionInfo ? activeSessionInfo.sessionId : '';
-                  const res = await fetch(`${GAS_URL}?action=resumeQuestionDelivery&sessionId=${encodeURIComponent(sessionId)}`);
+                  const res = await fetch(`${GAS_URL}?action=resumeQuestionDelivery&sessionId=${encodeURIComponent(sessionId)}&adminSecret=${encodeURIComponent(adminSecret)}`);
                   const result = await res.json();
                   if (result.success) {
                       isDeliveryPaused = false;
@@ -2016,7 +2050,7 @@ function startQuestionCooldown(endTime) {
           if (!confirm(`登録者全員にメッセージを送信しますか？\n\n「${msg.slice(0, 50)}${msg.length > 50 ? '…' : ''}」`)) return;
           await guardedAction('broadcastToRegistered', async () => {
               try {
-                  const res = await fetch(`${GAS_URL}?action=broadcastToRegistered&message=${encodeURIComponent(msg)}`);
+                  const res = await fetch(`${GAS_URL}?action=broadcastToRegistered&message=${encodeURIComponent(msg)}&adminSecret=${encodeURIComponent(adminSecret)}`);
                   const d = await res.json();
                   if (d.success) {
                       showToast(`✅ ${d.count}名に送信しました`);
@@ -2039,7 +2073,7 @@ function startQuestionCooldown(endTime) {
       async function grantFreeAccess(userId) {
           await guardedAction('grantFreeAccess_' + userId, async () => {
               try {
-                  const res = await fetch(`${GAS_URL}?action=adminGrantFreeAccess&targetUserId=${encodeURIComponent(userId)}`);
+                  const res = await fetch(`${GAS_URL}?action=adminGrantFreeAccess&targetUserId=${encodeURIComponent(userId)}&adminSecret=${encodeURIComponent(adminSecret)}`);
                   const result = await res.json();
                   if (result.success) {
                       billingListData = null;
@@ -2058,7 +2092,7 @@ function startQuestionCooldown(endTime) {
           if (!confirm('登録を解除しますか？この学生はマイページを利用できなくなります。')) return;
           await guardedAction('revokeAccess_' + userId, async () => {
               try {
-                  const res = await fetch(`${GAS_URL}?action=adminRevokeAccess&targetUserId=${encodeURIComponent(userId)}`);
+                  const res = await fetch(`${GAS_URL}?action=adminRevokeAccess&targetUserId=${encodeURIComponent(userId)}&adminSecret=${encodeURIComponent(adminSecret)}`);
                   const result = await res.json();
                   if (result.success) {
                       billingListData = null;
