@@ -329,6 +329,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdx
 const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c0c8d0'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M20 21a8 8 0 1 0-16 0'/%3E%3C/svg%3E";
 const LIFF_ID = '2009739219-dSnPUVFj';
 
+const ADMIN_USER_ID = 'Ubf96bf52b57d4e329a5bcf4ce509c6be';
 let userId = null;
 let profileData = null;
 let dashboardData = null;
@@ -838,7 +839,7 @@ function buildLiveRankingCardHTML() {
     rowsHTML = `<div style="padding:16px;text-align:center;line-height:1.7">
         <div style="font-size:13px;font-weight:700;color:var(--ink)">ユーザーネーム/アイコンが不適切なため管理者によって表示を制限されています</div>
       </div>`;
-  } else if (hideAnswerInRanking) {
+  } else if (hideAnswerInRanking && userId !== ADMIN_USER_ID) {
     rowsHTML = `<div style="padding:16px;text-align:center;line-height:1.7">
         <div style="font-size:13px;font-weight:700;color:var(--ink)">ランキングは非表示設定中です</div>
         <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">設定から自分のランキング表示を許可すると見られます</div>
@@ -846,7 +847,7 @@ function buildLiveRankingCardHTML() {
       </div>`;
   } else if (questionRankingData === null) {
     rowsHTML = `<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">読み込み中...</div>`;
-  } else if (!hasAnswered) {
+  } else if (!hasAnswered && userId !== ADMIN_USER_ID) {
     rowsHTML = `<div style="padding:16px;text-align:center;line-height:1.7">
         <div style="font-size:13px;font-weight:700;color:var(--ink)">あなたの回答が未完了です</div>
         <div style="font-size:12px;color:var(--ink3)">回答後にランキングが表示されます</div>
@@ -1002,7 +1003,7 @@ function renderApp() {
     ? `<div style="padding:16px;text-align:center;line-height:1.7">
         <div style="font-size:13px;font-weight:700;color:var(--ink)">ユーザーネーム/アイコンが不適切なため管理者によって表示を制限されています</div>
       </div>`
-    : hideAnswerInRanking
+    : (hideAnswerInRanking && userId !== ADMIN_USER_ID)
     ? `<div style="padding:16px;text-align:center;line-height:1.7">
         <div style="font-size:13px;font-weight:700;color:var(--ink)">ランキングは非表示設定中です</div>
         <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">設定から自分のランキング表示を許可すると見られます</div>
