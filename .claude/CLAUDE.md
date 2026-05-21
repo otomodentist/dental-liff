@@ -34,8 +34,9 @@
 [Google Sheets（otomo_data）]
 ↓ GAS Web App API（CORS対応）
 [LIFF（GitHub Pages）]
-  admin_liff.html … 管理者ダッシュボード（授業管理・学生ダッシュボード）
-  index.html      … 学生マイページ（集中度・直近授業確認）
+  admin_liff.html … 管理者ダッシュボード（授業管理・学生ダッシュボード・登録管理）
+  index.html      … 学生マイページ（集中度・直近授業確認）← リッチメニューの行き先
+  demo.html       … デモ画面（現在は未使用・デフォルト動線なし）
 ```
 
 ---
@@ -49,7 +50,9 @@
 | Channel ID | `2008587142` |
 | Channel Name | 授業のオトモ |
 | Admin User ID | `Ubf96bf52b57d4e329a5bcf4ce509c6be` |
-| LIFF ID | `2009739219-9qVGb0Xm` |
+| Admin LIFF ID | `2009739219-9qVGb0Xm` |
+| 学生マイページ LIFF ID | `2009739219-dSnPUVFj`（index.html） |
+| デモ LIFF ID | `2009739219-N7Pi2ywn`（demo.html、現在は未使用） |
 
 ### Google Apps Script
 
@@ -58,7 +61,7 @@
 | Project ID | `1dfHpjEjSigxTJbSnuER99IKDBROzZ-ZXJ2XPiNJMfDsUZ9idejL35Cq8` |
 | Web App URL（Webhook & API） | `https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec` |
 | Deploy ID（`clasp deploy -i` に指定） | `AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug` |
-| 現在のバージョン | v164（2026/05/16） |
+| 現在のバージョン | v288（2026/05/22） |
 
 ### Google Sheets（Spreadsheet ID: `15UpJAol2SayyiEQDyOdKYX02eQQ4pMH4gq4SssJrYT4`）
 
@@ -114,6 +117,7 @@
 
 **LIFF用 Web API (`doGet`)**
 - `getInitData()` — 一括初期化API（activeSession + semesterData + subjects）。GASコールドスタートを1回に削減
+- `getUserInitData(userId)` — 学生マイページ初期化API（activeSession + dashboard + nickname + billingStatus + todayItems/tomorrowItems）
 - `getActiveSession()` — アクティブセッション情報取得
 - `getSubjectMaster()` — アクティブ学年・学期の科目一覧
 - `getActiveSemester()` / `setActiveSemester(grade, semester)` — アクティブクール取得・設定
@@ -124,6 +128,8 @@
 - `queryBySessionAndStudent(sessionId, userId)` — セッション×学生の回答詳細（問題文・模範解答付き）
 - `getLatestSessionData(userId)` — 直近終了セッションのサマリ（sustainScore付き）
 - `getDashboardData(userId)` — 科目・セッション別集計（学生LIFF用、sustainScore・latestAnswerAt付き・科目を直近活動順でソート）
+- `registerFreeSemester(userId)` — 未登録ユーザーを無償で登録（`processStripePayment` 経由で billingStatus='契約中' に設定）。index.html からの自動登録に使用
+- `broadcastToRegistered(message)` — 登録済み学生全員へ一斉メッセージ送信（`getPaidStudentIds()` 対象）
 - `getExamSchedule()` — 試験日程一覧（startTime・requiredSessions含む）
 - `addExamDate(subjectName, examDate, reviewMinutes, startTime, requiredSessions)` — 試験日程追加
 - `updateExamDate(examId, examDate, reviewMinutes, startTime, requiredSessions)` — 試験日程更新
@@ -172,7 +178,7 @@
 
 ### `gas_richmenu.js.gs`（手動実行用）
 
-- `createAndSetRichMenu()` — 学生用リッチメニュー作成・画像アップ・デフォルト設定（demo.html行き）
+- `createAndSetRichMenu()` — 学生用リッチメニュー作成・画像アップ・デフォルト設定（index.html行き。デモ廃止済み）
 - `createAndSetAdminRichMenu()` — 管理者用リッチメニュー作成・設定
 - `getAdminRichMenuIdFromList()` — LINE APIから `name:'admin_richmenu'` のIDを検索（followイベントから呼び出し）
 - `setRichMenuForAdmin(adminRichMenuId)` — 管理者ユーザーにリッチメニューをリンク
@@ -219,11 +225,15 @@ LINEに回答テキスト送信
 
 ```
 初回セットアップ:
-  createAndSetRichMenu()        ← 学生用（デフォルト、全ユーザー）
+  createAndSetRichMenu()        ← 学生用デフォルト（index.html行き、全ユーザー）
   createAndSetAdminRichMenu()   ← 管理者用（ADMIN_USER_IDにリンク）
 
 ブロック解除時（自動）:
   follow event → getAdminRichMenuIdFromList() → setRichMenuForAdmin()
+
+初回マイページ開封時（自動）:
+  index.html init → billingStatus未登録 → registerFreeSemester() → billingStatus='契約中'
+  → setRichMenuForPaidUser()（paid_student_richmenu: index.html行き）
 ```
 
 ---
@@ -247,7 +257,8 @@ const CONFIG = {
 };
 
 // gas_richmenu.js.gs の定数
-const LIFF_DASHBOARD_URL = 'https://otomodentist.github.io/dental-liff/';
+const LIFF_DASHBOARD_URL = 'https://liff.line.me/2009739219-dSnPUVFj'; // index.html
+const LIFF_DEMO_URL      = 'https://liff.line.me/2009739219-N7Pi2ywn'; // demo.html（未使用）
 const LIFF_ADMIN_URL     = 'https://liff.line.me/2009739219-9qVGb0Xm';
 const ADMIN_RICHMENU_FOLDER_ID = '1PEBapWgq6JwpSMElYjqoxn2PTnRp189_';
 
@@ -287,6 +298,8 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 16. **FREE_SEMESTER_MODE** — `true` の間は `isStudentPaid()` が常に `true` を返し、`getPaidStudentIds()` が全登録学生（userId が `U` 始まり）を返す。`customer.subscription.deleted` Webhook もスキップされる。秋学期以降に `false` に変えてデプロイするだけで Stripe 決済必須に戻る
 17. **Stripe連携の保存仕様** — 決済リンク: `https://buy.stripe.com/8x25kCgP2gul9KigcHfbq03`。Webhook: `checkout.session.completed` → `processStripePayment()`、`customer.subscription.deleted` → `cancelSubscription()`。Stripe Secret / Webhook Secret は PropertiesService 管理。再有効化は `FREE_SEMESTER_MODE: false` に変更してデプロイするだけ
 18. **既存Stripeトライアル登録者（3名）** — 2026/05/21 に `cancelAllTrialSubscriptions()` で Stripe サブスクをキャンセル済み。スプレッドシートのステータスは `契約中` のまま（`FREE_SEMESTER_MODE` ガードにより解約メッセージ・ステータス変更は発生しない）
+19. **自動登録フロー（FREE_SEMESTER_MODE）** — 未登録ユーザーが index.html を開くと、`getUserInitData` で `billingStatus` が空であることを検知し、非同期で `registerFreeSemester` を呼び出す。成功後 `myBillingStatus='契約中'` にして再レンダリング。`setRichMenuForPaidUser` も自動実行される（`processStripePayment` 内）
+20. **登録者一斉送信** — admin_liff.html「登録管理」タブ上部の textarea から送信。GAS `broadcastToRegistered` アクションが `getPaidStudentIds()` 全員（管理者除く）に `multicastMessage` する
 
 ---
 
@@ -364,3 +377,9 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 | 2026/05/21 | demo.html: 登録ボタン動作を Stripe → `registerFreeSemester` GAS呼び出しに変更、成功後 `index.html` へ遷移（v261） |
 | 2026/05/21 | demo.html: 設定画面「契約内容」→「利用状況」・`管理者承認` 時「利用中（春学期無料）」表示（v261） |
 | 2026/05/21 | index.html: キャンセルモーダルを「登録解除」表記に統一、「再度決済が必要」→「デモ画面から登録できます」に変更（v264） |
+| 2026/05/22 | gas_richmenu.js.gs: デフォルトリッチメニューのリンク先を `LIFF_DEMO_URL`（demo.html）→ `LIFF_DASHBOARD_URL`（index.html）に変更。デモ画面廃止 |
+| 2026/05/22 | index.html: 未登録ユーザーが index.html を開いた際に `registerFreeSemester` を自動呼び出し・マイページを開くだけで登録完了する仕様に変更 |
+| 2026/05/22 | GAS: `sendSessionSustainScores()` の授業終了メッセージを「他のユーザーのランキングも確認できます」に変更 |
+| 2026/05/22 | GAS: `broadcastToRegistered` doGetアクション追加（登録済み学生全員へ一斉メッセージ送信） |
+| 2026/05/22 | GAS: 各メッセージ文言からデモ画面動線を削除（`sendCompletionMessage` / `sendCancellationMessage` / `sendDecisionMessage` / 未登録ユーザー返信） |
+| 2026/05/22 | admin_liff.html: 登録管理タブに「登録者への一斉メッセージ」送信UIを追加（`sendBroadcastMessage()`） |
