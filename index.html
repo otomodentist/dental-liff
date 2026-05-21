@@ -495,11 +495,24 @@ async function init() {
     else { fetchLatestRanking().then(() => renderApp()); scheduleLiveRefreshes(); }
 
     const isPaid = myBillingStatus === '契約中' || myBillingStatus === '管理者承認';
-    if (!myNickname && isPaid) openNicknameModal();
-    // 課金済みのリッチメニューをセッションごとに1回だけ自動修正（切り替え漏れを自己修復）
-    if (isPaid && !sessionStorage.getItem('rmFixed')) {
-      sessionStorage.setItem('rmFixed', '1');
-      fetch(`${GAS_URL}?action=setRichMenuForPaid&userId=${encodeURIComponent(userId)}`).catch(() => {});
+    if (!isPaid) {
+      // 未登録ユーザーを自動登録（FREE_SEMESTER_MODE）
+      fetch(`${GAS_URL}?action=registerFreeSemester&userId=${encodeURIComponent(userId)}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            myBillingStatus = '契約中';
+            renderApp();
+            if (!myNickname) openNicknameModal();
+          }
+        }).catch(() => {});
+    } else {
+      if (!myNickname) openNicknameModal();
+      // リッチメニューをセッションごとに1回だけ自動修正（切り替え漏れを自己修復）
+      if (!sessionStorage.getItem('rmFixed')) {
+        sessionStorage.setItem('rmFixed', '1');
+        fetch(`${GAS_URL}?action=setRichMenuForPaid&userId=${encodeURIComponent(userId)}`).catch(() => {});
+      }
     }
   } catch (err) {
     showError(`[${step}] ${err.message}`);

@@ -1975,6 +1975,11 @@ function startQuestionCooldown(endTime) {
               </div>`;
 
           return `
+              <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+                  <div style="font-size:12px;font-weight:700;color:var(--ink3);margin-bottom:6px">📢 登録者への一斉メッセージ</div>
+                  <textarea id="broadcastMsgInput" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Noto Sans JP',sans-serif;resize:vertical;min-height:64px" placeholder="メッセージを入力..."></textarea>
+                  <button onclick="sendBroadcastMessage()" style="margin-top:6px;width:100%;padding:9px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer">登録者全員に送信（${registered.length}名）</button>
+              </div>
               <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px 4px">
                   <span style="font-size:12px;font-weight:700;color:var(--ink3)">登録済み（${registered.length}名）</span>
                   <button onclick="refreshBillingList()" style="font-size:11px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--ink3);cursor:pointer;font-family:'Noto Sans JP',sans-serif">🔄 更新</button>
@@ -1992,6 +1997,27 @@ function startQuestionCooldown(endTime) {
                     ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
                     : unregistered.map(renderUnregistered).join('')}
               </div>`;
+      }
+
+      async function sendBroadcastMessage() {
+          const input = document.getElementById('broadcastMsgInput');
+          const msg = input ? input.value.trim() : '';
+          if (!msg) { showToast('❌ メッセージを入力してください'); return; }
+          if (!confirm(`登録者全員にメッセージを送信しますか？\n\n「${msg.slice(0, 50)}${msg.length > 50 ? '…' : ''}」`)) return;
+          await guardedAction('broadcastToRegistered', async () => {
+              try {
+                  const res = await fetch(`${GAS_URL}?action=broadcastToRegistered&message=${encodeURIComponent(msg)}`);
+                  const d = await res.json();
+                  if (d.success) {
+                      showToast(`✅ ${d.count}名に送信しました`);
+                      if (input) input.value = '';
+                  } else {
+                      showToast('❌ エラー: ' + (d.error || '不明'));
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
+              }
+          });
       }
 
       async function refreshBillingList() {
@@ -2019,7 +2045,7 @@ function startQuestionCooldown(endTime) {
       }
 
       async function revokeAccess(userId) {
-          if (!confirm('登録を解除しますか？この学生はデモ画面のみ利用可能になります。')) return;
+          if (!confirm('登録を解除しますか？この学生はマイページを利用できなくなります。')) return;
           await guardedAction('revokeAccess_' + userId, async () => {
               try {
                   const res = await fetch(`${GAS_URL}?action=adminRevokeAccess&targetUserId=${encodeURIComponent(userId)}`);
