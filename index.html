@@ -721,6 +721,7 @@ async function refreshLiveCardSilent() {
     liveSessionTimeline = [];
     questionRankingData = null;
     await fetchLatestRanking();
+    try { dashboardData = await fetchDashboard(userId); } catch(e) {}
     renderApp();
     return;
   }
