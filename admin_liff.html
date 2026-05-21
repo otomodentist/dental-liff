@@ -385,6 +385,7 @@
       let adminCurrentQuestionId = null;
       let adminCurrentQuestionText = null;
       let adminCurrentModelAnswer = null;
+      let _rankingRescoreMode = false;
       let questionRefreshTimers = [];
       let lastEndedSessionId = null;
       let adminCurrentSessionId = null; // セッション終了後も保持
@@ -857,7 +858,7 @@ ${isDeliveryPaused ? `
             <div style="padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
               <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">出題中の問題</div>
               <div style="font-size:13px;line-height:1.5;margin-bottom:6px">${adminCurrentQuestionText}</div>
-              ${adminCurrentModelAnswer ? `<div style="font-size:10px;color:var(--ink3);margin-bottom:2px">模範解答</div><div style="font-size:12px;color:var(--ink2);line-height:1.4">${adminCurrentModelAnswer}</div>` : ''}
+              ${adminCurrentModelAnswer ? `<div style="font-size:10px;color:var(--ink3);margin-bottom:2px">模範解答</div><div style="display:flex;align-items:flex-start;gap:8px"><div style="font-size:12px;color:var(--ink2);line-height:1.4;flex:1">${adminCurrentModelAnswer}</div><button onclick="openRankingRescoreModal()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink2);font-size:10px;padding:2px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0">修正</button></div>` : ''}
             </div>` : '';
           el.innerHTML = qHtml + (rows.length > 0
             ? rows.map(item => buildAdminRankRowHTML(item)).join('')
@@ -1628,27 +1629,39 @@ ${isDeliveryPaused ? `
       }
 
       function closeRescoreModal() {
+          _rankingRescoreMode = false;
           document.getElementById('rescoreModal').classList.remove('open');
       }
 
+      function openRankingRescoreModal() {
+          if (!adminCurrentQuestionId || !adminCurrentModelAnswer) return;
+          _rankingRescoreMode = true;
+          document.getElementById('rescoreInput').value = adminCurrentModelAnswer;
+          document.getElementById('rescoreModal').classList.add('open');
+      }
+
       async function submitRescore() {
-          if (currentPointDetailIndex < 0 || !sessionDetailData) return;
-          const a = sessionDetailData.answers[currentPointDetailIndex];
-          if (!a.questionId) return;
           const newModelAnswer = document.getElementById('rescoreInput').value.trim();
           if (!newModelAnswer) { showToast('❌ 模範解答を入力してください'); return; }
+          const isRanking = _rankingRescoreMode;
+          const questionId = isRanking ? adminCurrentQuestionId : sessionDetailData?.answers[currentPointDetailIndex]?.questionId;
+          if (!questionId) return;
           closeRescoreModal();
           showToast('⏳ 再採点中...');
           try {
-              const res = await fetch(`${GAS_URL}?action=rescoreByModelAnswer&questionId=${encodeURIComponent(a.questionId)}&newModelAnswer=${encodeURIComponent(newModelAnswer)}`);
+              const res = await fetch(`${GAS_URL}?action=rescoreByModelAnswer&questionId=${encodeURIComponent(questionId)}&newModelAnswer=${encodeURIComponent(newModelAnswer)}`);
               const d = await res.json();
               if (!d.success) { showToast('❌ 再採点失敗: ' + (d.error || '')); return; }
-              // ローカルの模範解答を更新
-              sessionDetailData.answers.forEach(ans => {
-                  if (ans.questionId === a.questionId) ans.modelAnswer = newModelAnswer;
-              });
+              if (isRanking) {
+                  adminCurrentModelAnswer = newModelAnswer;
+                  pollAdminRanking();
+              } else {
+                  sessionDetailData.answers.forEach(ans => {
+                      if (ans.questionId === questionId) ans.modelAnswer = newModelAnswer;
+                  });
+                  drawAdminChart();
+              }
               showToast(`✅ 再採点完了（${d.updatedCount}名）`);
-              drawAdminChart();
           } catch (e) { showToast('❌ 通信エラー'); }
       }
 
