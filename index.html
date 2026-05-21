@@ -931,9 +931,8 @@ function renderApp() {
 
   // 科目アコーディオン
   const accordionHTML = subjects.map((subj, subjIdx) => {
-    // 初回実回答以降のコマのみ表示
-    const firstActualIdx = subj.sessions.findIndex(s => !s.noDelivery && s.timeline.some(t => t.answerText !== ''));
-    const displaySessions = firstActualIdx === -1 ? [] : subj.sessions.slice(firstActualIdx);
+    // 実回答が1つでもあるコマのみ表示（未回答0点コマは非表示）
+    const displaySessions = subj.sessions.filter(s => s.timeline.some(t => t.answerText !== ''));
     if (displaySessions.length === 0) return '';
 
     const isOpen = historySubjectOpen === subjIdx;
