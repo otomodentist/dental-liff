@@ -442,7 +442,7 @@ async function init() {
     } catch (e) {}
     renderApp();
     if (!activeSessionState?.isActive) { await fetchLatestRanking(); renderApp(); }
-    else { scheduleLiveRefreshes(); }
+    else { fetchLatestRanking().then(() => renderApp()); scheduleLiveRefreshes(); }
     const banner = document.createElement('div');
     banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a1208cc;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:6px;z-index:9999;backdrop-filter:blur(4px)';
     banner.textContent = '👁 管理者プレビューモード';
@@ -490,7 +490,7 @@ async function init() {
     renderApp();
 
     if (!activeSessionState?.isActive) { await fetchLatestRanking(); renderApp(); }
-    else { scheduleLiveRefreshes(); }
+    else { fetchLatestRanking().then(() => renderApp()); scheduleLiveRefreshes(); }
 
     const isPaid = myBillingStatus === '契約中' || myBillingStatus === '管理者承認';
     if (!myNickname && isPaid) openNicknameModal();
@@ -738,16 +738,36 @@ async function fetchDashboard(uid) {
   return await res.json();
 }
 
+function loadRankingCache(uid) {
+  try { return JSON.parse(localStorage.getItem('rankingCache_' + uid) || 'null'); } catch (e) { return null; }
+}
+function saveRankingCache(uid, sessionData, ranking) {
+  try { localStorage.setItem('rankingCache_' + uid, JSON.stringify({ sessionData, ranking })); } catch (e) {}
+}
+
 async function fetchLatestRanking() {
+  // キャッシュがあれば即時表示（ローディングなし）
+  const cache = loadRankingCache(userId);
+  if (cache?.sessionData) {
+    latestSessionData = cache.sessionData;
+    latestSessionRanking = cache.ranking || [];
+    currentRankingSessionId = cache.sessionData.sessionId;
+    currentRankingData = latestSessionRanking;
+    renderApp();
+  }
+  // バックグラウンドで最新取得し、差分があれば即再描画
   try {
     const res = await fetch(`${GAS_URL}?action=getLatestSessionRanking&userId=${encodeURIComponent(userId)}`);
     const d = await res.json();
-    if (!d.found) { latestSessionData = null; latestSessionRanking = []; return; }
+    const prevSessionId = latestSessionData?.sessionId;
+    if (!d.found) { latestSessionData = null; latestSessionRanking = []; saveRankingCache(userId, null, []); renderApp(); return; }
     latestSessionData = { found: true, sessionId: d.sessionId, subject: d.subject, sessionNumber: d.sessionNumber, sustainScore: d.sustainScore, answerCount: d.answerCount };
     latestSessionRanking = d.ranking || [];
     currentRankingSessionId = d.sessionId;
     currentRankingData = latestSessionRanking;
-  } catch (e) { latestSessionData = null; latestSessionRanking = []; }
+    saveRankingCache(userId, latestSessionData, latestSessionRanking);
+    if (d.sessionId !== prevSessionId) renderApp(); // セッションが変わっていたら即更新
+  } catch (e) { if (!cache) { latestSessionData = null; latestSessionRanking = []; } }
 }
 
 // ===== ランキング描画 =====
