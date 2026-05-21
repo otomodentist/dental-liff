@@ -739,10 +739,18 @@ async function fetchDashboard(uid) {
 }
 
 function loadRankingCache(uid) {
-  try { return JSON.parse(localStorage.getItem('rankingCache_' + uid) || 'null'); } catch (e) { return null; }
+  try {
+    const d = JSON.parse(localStorage.getItem('rankingCache_' + uid) || 'null');
+    if (!d) return null;
+    if (d._v !== (localStorage.getItem('appVersion') || '')) return null; // バージョン不一致で無効化
+    return d;
+  } catch (e) { return null; }
 }
 function saveRankingCache(uid, sessionData, ranking) {
-  try { localStorage.setItem('rankingCache_' + uid, JSON.stringify({ sessionData, ranking })); } catch (e) {}
+  try {
+    const v = localStorage.getItem('appVersion') || '';
+    localStorage.setItem('rankingCache_' + uid, JSON.stringify({ sessionData, ranking, _v: v }));
+  } catch (e) {}
 }
 
 async function fetchLatestRanking() {
