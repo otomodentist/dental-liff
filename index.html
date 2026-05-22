@@ -802,6 +802,8 @@ function buildRankRowHTML(item, highlightUserId) {
   const unanswered = item.answered === false;
   const numCls = rankNumClass(item.rank);
   const scoreColor = item.concentrationScore >= 70 ? '#2d5a3d' : item.concentrationScore >= 40 ? '#d97706' : '#c0392b';
+  const timeHTML = !unanswered && item.responseTimeSec != null
+    ? `<div style="font-size:10px;color:var(--ink3)">${item.responseTimeSec}秒</div>` : '';
   return `
     <div class="rank-row${isMe ? ' me' : ''}" style="${unanswered ? 'opacity:0.45' : ''}">
       <div class="rank-num ${numCls}">${unanswered ? '—' : item.rank}</div>
@@ -809,9 +811,20 @@ function buildRankRowHTML(item, highlightUserId) {
       <div class="rank-info">
         <div class="rank-name">${item.nickname || item.displayName}${isMe ? ' 👤' : ''}</div>
         <div class="rank-sub">${unanswered ? '未回答' : (item.answerText || '')}</div>
+        ${timeHTML}
       </div>
       <div class="rank-score" style="color:${unanswered ? 'var(--ink3)' : scoreColor}">${unanswered ? '—' : item.concentrationScore}</div>
     </div>`;
+}
+
+function toggleSessionRank(btn) {
+  const el = document.getElementById('sessionRankRest');
+  if (!el) return;
+  const isHidden = el.style.display === 'none';
+  el.style.display = isHidden ? '' : 'none';
+  const visible = latestSessionRanking.filter(item => !item.restricted && !item.hideAnswer);
+  const rest = visible.slice(3).filter(item => item.userId !== userId);
+  btn.textContent = isHidden ? '閉じる ▲' : `残り${rest.length}名を表示 ▼`;
 }
 
 function buildSessionRankRowHTML(item, highlightUserId) {
@@ -1030,9 +1043,18 @@ function renderApp() {
       </div>`
     : (() => {
         const visible = latestSessionRanking.filter(item => !item.restricted && !item.hideAnswer);
-        return visible.length > 0
-          ? visible.map(item => buildSessionRankRowHTML(item, userId)).join('')
-          : '<div class="rank-empty">ランキングデータなし</div>';
+        if (visible.length === 0) return '<div class="rank-empty">ランキングデータなし</div>';
+        const top3 = visible.slice(0, 3);
+        const rest = visible.slice(3);
+        const myItem = rest.find(item => item.userId === userId);
+        const restExcludeMe = rest.filter(item => item.userId !== userId);
+        const top3HTML = top3.map(item => buildSessionRankRowHTML(item, userId)).join('');
+        const myItemHTML = myItem ? buildSessionRankRowHTML(myItem, userId) : '';
+        const restHTML = restExcludeMe.map(item => buildSessionRankRowHTML(item, userId)).join('');
+        const expandBtn = restExcludeMe.length > 0
+          ? `<div onclick="toggleSessionRank(this)" style="text-align:center;padding:10px;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer;border-top:1px solid var(--border)">残り${restExcludeMe.length}名を表示 ▼</div>`
+          : '';
+        return `${top3HTML}${myItemHTML}<div id="sessionRankRest" style="display:none">${restHTML}</div>${expandBtn}`;
       })();
   const sessionRankingCardHTML = latestSessionData !== null ? `
     <div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
