@@ -716,11 +716,33 @@ function scheduleLiveRefreshes() {
 }
 
 async function refreshLiveCardSilent() {
+  const prevSession = activeSessionState?.session; // 終了前のsessionIdを保持
   await refreshActiveSession();
   if (!activeSessionState?.isActive) {
     liveSessionTimeline = [];
     questionRankingData = null;
-    await fetchLatestRanking();
+    // 直前まで持っていたsessionIdで直接ランキングを取得
+    if (prevSession?.sessionId) {
+      try {
+        const r = await fetch(`${GAS_URL}?action=getSessionRanking&sessionId=${encodeURIComponent(prevSession.sessionId)}`);
+        const d = await r.json();
+        const myEntry = (d.ranking || []).find(item => item.userId === userId);
+        latestSessionData = {
+          found: true,
+          sessionId: prevSession.sessionId,
+          subject: prevSession.subject,
+          sessionNumber: prevSession.sessionNumber,
+          sustainScore: myEntry?.sustainScore ?? 0,
+          answerCount: myEntry?.answerCount ?? 0,
+        };
+        latestSessionRanking = d.ranking || [];
+        currentRankingSessionId = prevSession.sessionId;
+        currentRankingData = latestSessionRanking;
+        saveRankingCache(userId, latestSessionData, latestSessionRanking);
+      } catch(e) {}
+    } else {
+      await fetchLatestRanking();
+    }
     try { dashboardData = await fetchDashboard(userId); } catch(e) {}
     renderApp();
     return;
