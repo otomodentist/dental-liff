@@ -843,6 +843,17 @@ function buildRankRowHTML(item, highlightUserId) {
     </div>`;
 }
 
+function toggleLiveRank(btn) {
+  const el = document.getElementById('liveRankRest');
+  if (!el) return;
+  const isHidden = el.style.display === 'none';
+  el.style.display = isHidden ? '' : 'none';
+  const rows = questionRankingData?.ranking || [];
+  const visible = rows.filter(item => !item.restricted && !item.hideAnswer);
+  const rest = visible.slice(3).filter(item => item.userId !== userId);
+  btn.textContent = isHidden ? '閉じる ▲' : `残り${rest.length}名を表示 ▼`;
+}
+
 function toggleSessionRank(btn) {
   const el = document.getElementById('sessionRankRest');
   if (!el) return;
@@ -908,9 +919,21 @@ function buildLiveRankingCardHTML() {
       </div>`;
   } else {
     const visibleRows = rows.filter(item => !item.restricted && !item.hideAnswer);
-    rowsHTML = visibleRows.length > 0
-      ? visibleRows.map(item => buildRankRowHTML(item, userId)).join('')
-      : '<div class="rank-empty">まだ誰も回答していません</div>';
+    if (visibleRows.length === 0) {
+      rowsHTML = '<div class="rank-empty">まだ誰も回答していません</div>';
+    } else {
+      const top3 = visibleRows.slice(0, 3);
+      const rest = visibleRows.slice(3);
+      const myItem = rest.find(item => item.userId === userId);
+      const restExcludeMe = rest.filter(item => item.userId !== userId);
+      const expandBtn = restExcludeMe.length > 0
+        ? `<div onclick="toggleLiveRank(this)" style="text-align:center;padding:10px;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer;border-top:1px solid var(--border)">残り${restExcludeMe.length}名を表示 ▼</div>`
+        : '';
+      rowsHTML = top3.map(item => buildRankRowHTML(item, userId)).join('')
+        + (myItem ? buildRankRowHTML(myItem, userId) : '')
+        + `<div id="liveRankRest" style="display:none">${restExcludeMe.map(item => buildRankRowHTML(item, userId)).join('')}</div>`
+        + expandBtn;
+    }
   }
   return `<div class="live-card" id="liveRankCard">
     <div class="live-card-header" style="flex-direction:column;align-items:flex-start;gap:6px">
