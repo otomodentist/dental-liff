@@ -803,7 +803,7 @@ function buildRankRowHTML(item, highlightUserId) {
   const numCls = rankNumClass(item.rank);
   const scoreColor = item.concentrationScore >= 70 ? '#2d5a3d' : item.concentrationScore >= 40 ? '#d97706' : '#c0392b';
   const timeHTML = !unanswered && item.responseTimeSec != null
-    ? `<div style="font-size:10px;color:var(--ink3)">${item.responseTimeSec}秒</div>` : '';
+    ? `<div style="font-size:10px;color:var(--ink3);text-align:right;margin-right:6px">${item.responseTimeSec}秒</div>` : '';
   return `
     <div class="rank-row${isMe ? ' me' : ''}" style="${unanswered ? 'opacity:0.45' : ''}">
       <div class="rank-num ${numCls}">${unanswered ? '—' : item.rank}</div>
@@ -811,8 +811,8 @@ function buildRankRowHTML(item, highlightUserId) {
       <div class="rank-info">
         <div class="rank-name">${item.nickname || item.displayName}${isMe ? ' 👤' : ''}</div>
         <div class="rank-sub">${unanswered ? '未回答' : (item.answerText || '')}</div>
-        ${timeHTML}
       </div>
+      ${timeHTML}
       <div class="rank-score" style="color:${unanswered ? 'var(--ink3)' : scoreColor}">${unanswered ? '—' : item.concentrationScore}</div>
     </div>`;
 }
