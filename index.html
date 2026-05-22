@@ -557,6 +557,11 @@ async function saveNickname() {
       alert('管理者によって変更できない状態になっています');
       return;
     }
+    if (data.duplicateNickname) {
+      alert('このユーザー名は他のユーザーが使用しています。別の名前を入力してください。');
+      input.focus();
+      return;
+    }
     myNickname = val;
     if (pendingAvatarDataUrl) myAvatarUrl = pendingAvatarDataUrl;
     pendingAvatarDataUrl = '';
