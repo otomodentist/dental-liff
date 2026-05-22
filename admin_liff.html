@@ -515,15 +515,15 @@
                     dashboardFilter = { grade: activeSemester.grade, semester: activeSemester.semester };
                     localStorage.setItem(FILTER_KEY, JSON.stringify(dashboardFilter));
                 }
-                // 最終終了セッションをlocalStorageから復元、なければGASから直近配信セッションを取得
+                // 直近配信セッションを常にGASから取得（localStorageはフォールバックのみ）
                 if (!isSessionActive) {
-                    lastEndedSessionId = localStorage.getItem('lastEndedSessionId') || null;
-                    if (!lastEndedSessionId) {
-                        try {
-                            const lr = await fetch(`${GAS_URL}?action=getLatestDeliveredSession`);
-                            const ld = await lr.json();
-                            if (ld.found) { lastEndedSessionId = ld.sessionId; localStorage.setItem('lastEndedSessionId', ld.sessionId); }
-                        } catch (e) {}
+                    try {
+                        const lr = await fetch(`${GAS_URL}?action=getLatestDeliveredSession`);
+                        const ld = await lr.json();
+                        if (ld.found) { lastEndedSessionId = ld.sessionId; localStorage.setItem('lastEndedSessionId', ld.sessionId); }
+                        else { lastEndedSessionId = localStorage.getItem('lastEndedSessionId') || null; }
+                    } catch (e) {
+                        lastEndedSessionId = localStorage.getItem('lastEndedSessionId') || null;
                     }
                     if (lastEndedSessionId && !adminCurrentSessionId) adminCurrentSessionId = lastEndedSessionId;
                 }

@@ -952,9 +952,14 @@ function renderApp() {
       <button class="tab-btn ${mainTab === 'plan' ? 'active' : ''}" onclick="switchMainTab('plan')">学習計画</button>
     </div>`;
 
-  // 直近授業（全科目の中で最新）
-  const topSubj = subjects[0];
-  const topSess = topSubj?.sessions[topSubj.sessions.length - 1];
+  // 直近授業：ランキングカードと同じ基準（最近終了したセッション）で表示
+  let topSubj = subjects[0];
+  let topSess = topSubj?.sessions[topSubj.sessions.length - 1];
+  if (latestSessionData?.found && latestSessionData.subject && latestSessionData.sessionNumber) {
+    const matchSubj = subjects.find(s => s.name === latestSessionData.subject);
+    const matchSess = matchSubj?.sessions.find(s => s.sessionNumber === latestSessionData.sessionNumber);
+    if (matchSubj && matchSess) { topSubj = matchSubj; topSess = matchSess; }
+  }
 
   // 科目アコーディオン
   const accordionHTML = subjects.map((subj, subjIdx) => {
