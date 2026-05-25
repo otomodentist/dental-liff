@@ -439,6 +439,7 @@
       let currentStudentRestricted = false;
       let adminChart = null;
       let billingListData = null;
+      let guardianSystemEnabled = null;
 
       let dashboardFilter = null;
       const FILTER_KEY = 'dashboardFilter';
@@ -1126,6 +1127,8 @@ ${isDeliveryPaused && !isNoDeliveryDeclared ? `
               return;
           }
           if (tab === 'billing') {
+              // 保護者機能トグルを初期化（非同期、描画後に反映）
+              setTimeout(() => initGuardianToggle(), 100);
               // キャッシュがあれば即表示してバックグラウンドで最新取得
               const cached = sessionStorage.getItem('billingCache');
               if (cached) {
@@ -2048,6 +2051,17 @@ function startQuestionCooldown(endTime) {
 
           return `
               <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+                  <div style="display:flex;align-items:center;justify-content:space-between">
+                    <div>
+                      <div style="font-size:12px;font-weight:700;color:var(--ink3)">👪 保護者機能</div>
+                      <div style="font-size:11px;color:var(--ink3);margin-top:2px">学生が保護者に閲覧リンクを共有できる機能</div>
+                    </div>
+                    <button id="guardianToggleBtn" onclick="toggleGuardianSystem()" style="min-width:52px;padding:6px 12px;border-radius:20px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;background:var(--accent);color:white">
+                      読込中
+                    </button>
+                  </div>
+              </div>
+              <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
                   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
                     <div style="font-size:12px;font-weight:700;color:var(--ink3)">📢 登録者への一斉メッセージ</div>
                     <div id="broadcastDraftLabel" style="font-size:11px;color:var(--ink3)"></div>
@@ -2107,6 +2121,58 @@ function startQuestionCooldown(endTime) {
                   showToast('❌ 通信エラー');
               }
           });
+      }
+
+      async function loadGuardianSystemStatus() {
+        try {
+          const r = await fetch(`${GAS_URL}?action=getUserInitData&userId=${encodeURIComponent(adminUserId)}`);
+          const d = await r.json();
+          // GAS側の isGuardianSystemEnabled_ は PropertiesService を見るが、
+          // 管理者自身のgetUserInitDataには含まれないため専用エンドポイントを直接叩く
+        } catch(e) {}
+        // PropertiesServiceの値はgetUserInitDataでは返さないため、
+        // 実際には登録管理タブを開いた際に現在の状態をGASから取得する
+        // ここでは toggleGuardianSystem で楽観的更新し、ページロード時に初期状態をGASから取得
+        try {
+          const r = await fetch(`${GAS_URL}?action=getUserInitData&userId=dummy_check_guardian_system`);
+        } catch(e) {}
+      }
+
+      async function initGuardianToggle() {
+        const btn = document.getElementById('guardianToggleBtn');
+        if (!btn) return;
+        try {
+          // getUserInitDataでguardianSystemEnabledが返ってくる（学生側APIを流用）
+          // 管理者用に専用APIとして getGuardianSystemStatus を作っていないので
+          // 代わりに localStorage キャッシュか楽観的状態を使う
+          if (guardianSystemEnabled === null) {
+            const cached = localStorage.getItem('guardianSystemEnabled');
+            guardianSystemEnabled = cached !== 'false'; // デフォルトtrue
+          }
+          updateGuardianToggleBtn(btn);
+        } catch(e) { btn.textContent = 'エラー'; }
+      }
+
+      function updateGuardianToggleBtn(btn) {
+        if (!btn) return;
+        btn.textContent = guardianSystemEnabled ? 'オン' : 'オフ';
+        btn.style.background = guardianSystemEnabled ? 'var(--accent)' : 'var(--border)';
+        btn.style.color = guardianSystemEnabled ? 'white' : 'var(--ink3)';
+      }
+
+      async function toggleGuardianSystem() {
+        guardianSystemEnabled = !guardianSystemEnabled;
+        localStorage.setItem('guardianSystemEnabled', guardianSystemEnabled);
+        const btn = document.getElementById('guardianToggleBtn');
+        updateGuardianToggleBtn(btn);
+        try {
+          await fetch(`${GAS_URL}?action=setGuardianSystemEnabled&enabled=${guardianSystemEnabled}&adminSecret=${encodeURIComponent(adminSecret)}`);
+        } catch(e) {
+          alert('保存に失敗しました');
+          guardianSystemEnabled = !guardianSystemEnabled;
+          localStorage.setItem('guardianSystemEnabled', guardianSystemEnabled);
+          updateGuardianToggleBtn(btn);
+        }
       }
 
       async function refreshBillingList() {

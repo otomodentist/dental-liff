@@ -368,6 +368,15 @@ let hideAnswerInRanking = localStorage.getItem('hideAnswerInRanking') === 'true'
 let dailyStudyHours = parseFloat(localStorage.getItem('dailyStudyHours') || '3');
 let myAdminRestricted = false;
 
+// 保護者機能
+let isGuardianMode = false;
+let guardianStudentId = null;
+let guardianStudentName = '';
+let guardianStudentAvatar = '';
+let guardianSystemEnabled = false;
+let myGuardianFeatureOn = true;
+let myGuardians = [];
+
 // 学習計画タブ
 let planTabData = null; // { exams, progressBlocks, quizzes }
 
@@ -479,6 +488,13 @@ async function init() {
     userId = profile.userId;
     profileData = profile;
 
+    // 保護者機能: URLパラメーター処理
+    const _urlParams = new URLSearchParams(location.search);
+    const _guardianToken = _urlParams.get('guardianToken');
+    const _confirmRemovalToken = _urlParams.get('confirmRemoval');
+    if (_guardianToken) { await handleGuardianRegistration(_guardianToken); return; }
+    if (_confirmRemovalToken) { await handleGuardianRemovalConfirmation(_confirmRemovalToken); return; }
+
     // キャッシュがあれば即座に表示してからバックグラウンドで最新データ取得
     const cache = loadInitCache(userId);
     if (cache) {
@@ -494,6 +510,20 @@ async function init() {
     const d = await res.json();
 
     setProgress(90, '画面を構築中...');
+
+    // 保護者モード判定
+    if (d.isGuardianMode) {
+      isGuardianMode = true;
+      guardianStudentId = d.viewingStudentId;
+      guardianStudentName = d.studentName || '';
+      guardianStudentAvatar = d.studentAvatar || '';
+      dashboardData = d.dashboard || null;
+      activeSessionState = d.activeSession || { isActive: false };
+      setProgress(100, '');
+      renderApp();
+      return;
+    }
+
     dashboardData      = d.dashboard      || null;
     activeSessionState = d.activeSession  || { isActive: false };
     myNickname         = d.nickname       || '';
@@ -502,6 +532,9 @@ async function init() {
     todayStudyItems    = d.todayItems     || [];
     tomorrowStudyItems = d.tomorrowItems  || [];
     pendingSelfReport  = d.pendingSelfReport || null;
+    guardianSystemEnabled = d.guardianSystemEnabled || false;
+    myGuardianFeatureOn   = d.guardianFeatureOn !== false;
+    myGuardians           = d.myGuardians || [];
 
     saveInitCache(userId, d);
     setProgress(100, '');
@@ -985,6 +1018,7 @@ function buildLiveRankingCardHTML() {
 
 // ===== レンダリング =====
 function renderApp() {
+  if (isGuardianMode) { renderGuardianView(); return; }
   if (currentView === 'studyPlan') { renderStudyPlanView(); return; }
   if (currentView === 'settings') { renderSettingsView(); return; }
   const app = document.getElementById('app');
@@ -1402,6 +1436,41 @@ function renderSettingsView() {
       </div>
     </div>
 
+    ${guardianSystemEnabled ? `
+    <div style="margin:12px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">保護者機能</div>
+      </div>
+      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;color:var(--ink2)">保護者閲覧を許可</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.5">保護者があなたの学習状況を閲覧できます</div>
+        </div>
+        <button onclick="toggleGuardianFeature()" style="min-width:52px;padding:6px 12px;border-radius:20px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;${myGuardianFeatureOn ? 'background:var(--accent);color:white' : 'background:var(--border);color:var(--ink3)'}">
+          ${myGuardianFeatureOn ? 'オン' : 'オフ'}
+        </button>
+      </div>
+      ${myGuardianFeatureOn ? `
+      <div style="border-top:1px solid var(--border);padding:14px 16px">
+        <button onclick="shareGuardianLink()" style="width:100%;background:var(--accent);color:white;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+          📤 保護者に共有リンクを送る
+        </button>
+        <div style="font-size:11px;color:var(--ink3);margin-top:6px;text-align:center">登録リンクは48時間有効です（上限3名）</div>
+      </div>
+      ${myGuardians.length > 0 ? `
+      <div style="border-top:1px solid var(--border);padding:11px 16px 4px">
+        <div style="font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:8px">閲覧中の保護者</div>
+        ${myGuardians.map(g => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:14px;color:var(--ink2)">👤 ${g.guardianName}</div>
+          <button onclick="kickGuardianRequest('${g.guardianId}','${g.guardianName.replace(/'/g,"&#39;")}')" style="background:var(--border);color:var(--ink3);border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+            解除申請
+          </button>
+        </div>`).join('')}
+        <div style="height:8px"></div>
+      </div>` : ''}` : ''}
+    </div>` : ''}
+
     <div style="margin:12px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
       <div style="padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
         <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">登録状況</div>
@@ -1419,6 +1488,197 @@ function renderSettingsView() {
 function saveDailyStudyHours(val) {
   dailyStudyHours = parseFloat(val);
   localStorage.setItem('dailyStudyHours', dailyStudyHours);
+}
+
+// ===== 保護者機能 =====
+
+async function toggleGuardianFeature() {
+  myGuardianFeatureOn = !myGuardianFeatureOn;
+  renderSettingsView();
+  await fetch(`${GAS_URL}?action=toggleGuardianFeatureStudent&userId=${encodeURIComponent(userId)}&enabled=${myGuardianFeatureOn}`).catch(() => {});
+}
+
+let _sharingGuardianLink = false;
+async function shareGuardianLink() {
+  if (_sharingGuardianLink) return;
+  _sharingGuardianLink = true;
+  try {
+    const r = await fetch(`${GAS_URL}?action=generateGuardianToken&userId=${encodeURIComponent(userId)}`);
+    const d = await r.json();
+    if (!d.success) { alert('エラー: ' + (d.error || '失敗しました')); return; }
+
+    const shareUrl = d.shareUrl;
+    const studentName = myNickname || profileData?.displayName || '';
+    const msg = `授業のオトモ - 保護者閲覧登録\n\n${studentName}の学習状況を確認できます。\n\n①LINEで「授業のオトモ」を検索して友達追加\n②以下のURLを開いて登録\n\n${shareUrl}\n\n※このリンクは48時間有効です`;
+
+    if (liff.isApiAvailable('shareTargetPicker')) {
+      await liff.shareTargetPicker([{ type: 'text', text: msg }]);
+    } else {
+      // フォールバック: コピーモーダル
+      showGuardianShareModal(shareUrl, msg);
+    }
+  } catch(e) {
+    alert('共有に失敗しました。もう一度お試しください。');
+  } finally {
+    _sharingGuardianLink = false;
+  }
+}
+
+function showGuardianShareModal(url, msg) {
+  const modal = document.createElement('div');
+  modal.id = 'guardianShareModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;justify-content:center';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:480px;box-sizing:border-box">
+      <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:8px">保護者に送るリンク</div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:12px">以下のURLをLINEでコピーして保護者に送ってください</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--ink2);word-break:break-all;margin-bottom:12px">${url}</div>
+      <button onclick="navigator.clipboard.writeText('${url.replace(/'/g,"\\'")}').then(()=>alert('コピーしました'))" style="width:100%;background:var(--accent);color:white;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px">URLをコピー</button>
+      <button onclick="document.getElementById('guardianShareModal').remove()" style="width:100%;background:var(--border);color:var(--ink2);border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">閉じる</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+let _kickSending = false;
+async function kickGuardianRequest(guardianId, guardianName) {
+  if (_kickSending) return;
+  if (!confirm(`${guardianName}さんへ解除申請を送りますか？\n相手が承認すると保護者リンクが解除されます。`)) return;
+  _kickSending = true;
+  try {
+    const r = await fetch(`${GAS_URL}?action=requestGuardianRemoval&studentId=${encodeURIComponent(userId)}&guardianId=${encodeURIComponent(guardianId)}`);
+    const d = await r.json();
+    if (d.success) {
+      alert(`${guardianName}さんに解除申請を送りました。\n相手が承認すると解除されます。`);
+    } else {
+      alert('エラー: ' + (d.error || '失敗しました'));
+    }
+  } catch(e) {
+    alert('通信エラーが発生しました');
+  } finally {
+    _kickSending = false;
+  }
+}
+
+async function handleGuardianRegistration(token) {
+  const app = document.getElementById('app');
+  app.innerHTML = `<div style="padding:60px 20px;text-align:center">
+    <div style="font-size:48px;margin-bottom:20px">👪</div>
+    <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:8px">保護者として登録中...</div>
+  </div>`;
+  try {
+    const r = await fetch(`${GAS_URL}?action=linkGuardian&userId=${encodeURIComponent(userId)}&token=${encodeURIComponent(token)}`);
+    const d = await r.json();
+    if (d.success) {
+      app.innerHTML = `<div style="padding:60px 20px;text-align:center">
+        <div style="font-size:48px;margin-bottom:20px">✅</div>
+        <div style="font-size:18px;font-weight:700;color:var(--ink);margin-bottom:12px">登録完了！</div>
+        <div style="font-size:14px;color:var(--ink3);line-height:1.8">${d.studentName}さんの学習状況が<br>確認できるようになりました。<br><br>チャット下部の「マイページ」ボタンから<br>いつでも確認できます。</div>
+      </div>`;
+    } else {
+      app.innerHTML = `<div style="padding:60px 20px;text-align:center">
+        <div style="font-size:48px;margin-bottom:20px">❌</div>
+        <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:8px">登録できませんでした</div>
+        <div style="font-size:14px;color:var(--ink3)">${d.error || 'エラーが発生しました'}</div>
+      </div>`;
+    }
+  } catch(e) {
+    app.innerHTML = `<div style="padding:60px 20px;text-align:center">
+      <div style="font-size:16px;font-weight:700;color:var(--ink)">通信エラーが発生しました</div>
+    </div>`;
+  }
+}
+
+async function handleGuardianRemovalConfirmation(token) {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div style="padding:60px 20px;text-align:center">
+      <div style="font-size:48px;margin-bottom:20px">🔗</div>
+      <div style="font-size:17px;font-weight:700;color:var(--ink);margin-bottom:12px">保護者リンクの解除確認</div>
+      <div style="font-size:14px;color:var(--ink3);margin-bottom:28px;line-height:1.7">解除すると、お子様の学習状況が<br>閲覧できなくなります。</div>
+      <button onclick="execGuardianRemoval('${token}')" style="background:#e53935;color:white;border:none;border-radius:12px;padding:14px 32px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">解除する</button>
+    </div>`;
+}
+
+async function execGuardianRemoval(token) {
+  const app = document.getElementById('app');
+  app.innerHTML = `<div style="padding:60px 20px;text-align:center"><div style="font-size:14px;color:var(--ink3)">処理中...</div></div>`;
+  try {
+    const r = await fetch(`${GAS_URL}?action=confirmGuardianRemoval&userId=${encodeURIComponent(userId)}&token=${encodeURIComponent(token)}`);
+    const d = await r.json();
+    if (d.success) {
+      app.innerHTML = `<div style="padding:60px 20px;text-align:center">
+        <div style="font-size:48px;margin-bottom:20px">✅</div>
+        <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:8px">解除完了</div>
+        <div style="font-size:14px;color:var(--ink3)">${d.studentName}さんの保護者リンクを解除しました。</div>
+      </div>`;
+    } else {
+      app.innerHTML = `<div style="padding:60px 20px;text-align:center">
+        <div style="font-size:48px;margin-bottom:20px">❌</div>
+        <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:8px">エラー</div>
+        <div style="font-size:14px;color:var(--ink3)">${d.error || 'エラーが発生しました'}</div>
+      </div>`;
+    }
+  } catch(e) {
+    app.innerHTML = `<div style="padding:60px 20px;text-align:center"><div style="font-size:16px;color:var(--ink)">通信エラーが発生しました</div></div>`;
+  }
+}
+
+function renderGuardianView() {
+  const app = document.getElementById('app');
+  const subjects = dashboardData?.subjects || [];
+
+  const header = `
+    <div style="background:var(--accent);color:white;padding:16px 20px 12px">
+      <div style="display:flex;align-items:center;gap:7px">
+        <div style="width:44px;height:44px;overflow:hidden;flex-shrink:0">
+          <img src="otomo_logo_litegreen.png" style="width:125%;height:125%;margin:-12.5% 0 0 -12.5%;display:block" />
+        </div>
+        <span style="font-family:'Kaisei Tokumin',serif;font-size:17px;font-weight:700;color:white;letter-spacing:0.02em">授業のOtomo</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);overflow:hidden;flex-shrink:0">
+          <img src="${guardianStudentAvatar || DEFAULT_AVATAR}" style="width:100%;height:100%;object-fit:cover" onerror="this.src=DEFAULT_AVATAR" />
+        </div>
+        <div class="header-title">${guardianStudentName}</div>
+        <div style="font-size:11px;background:rgba(255,255,255,0.22);padding:3px 9px;border-radius:10px;font-weight:700;border:1px solid rgba(255,255,255,0.3)">👁 保護者閲覧</div>
+      </div>
+    </div>`;
+
+  if (subjects.length === 0) {
+    app.innerHTML = header + `<div class="error-state"><div class="icon">📚</div><div>まだ回答データがありません</div></div>`;
+    return;
+  }
+
+  const subjectsHtml = subjects.map((subj, si) => {
+    const sessions = (subj.sessions || []).filter(s => s.noDelivery || (s.timeline || []).some(t => t.answerText !== ''));
+    if (sessions.length === 0) return '';
+    const score = subj.sustainScore != null ? subj.sustainScore : null;
+    const scoreHtml = score != null
+      ? `<span style="font-size:13px;font-weight:700;color:var(--accent)">${score}点</span>`
+      : `<span style="font-size:12px;color:var(--ink3)">—</span>`;
+
+    const sessHtml = sessions.slice(0, 5).map(sess => {
+      const sc = sess.sustainScore != null ? `${sess.sustainScore}点` : (sess.noDelivery ? (sess.selfReportScore != null ? `自己申告 ${sess.selfReportScore}%` : '—') : '—');
+      const nd = sess.noDelivery ? ' 📵' : '';
+      return `<div style="display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;color:var(--ink2)">第${sess.sessionNumber}回${nd}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--ink)">${sc}</div>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin:12px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:14px;font-weight:700;color:var(--ink)">${subj.subjectName}</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <span style="font-size:11px;color:var(--ink3)">維持スコア</span>
+          ${scoreHtml}
+        </div>
+      </div>
+      ${sessHtml}
+    </div>`;
+  }).join('');
+
+  app.innerHTML = header + subjectsHtml + '<div class="footer-pad"></div>';
 }
 
 let _hideAnswerSaving = false;
