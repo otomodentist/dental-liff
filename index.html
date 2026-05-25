@@ -1043,7 +1043,7 @@ function renderApp() {
   // 科目アコーディオン
   const accordionHTML = subjects.map((subj, subjIdx) => {
     // 実回答が1つでもあるコマのみ表示（未回答0点コマは非表示）
-    const displaySessions = subj.sessions.filter(s => s.timeline.some(t => t.answerText !== ''));
+    const displaySessions = subj.sessions.filter(s => s.noDelivery || s.timeline.some(t => t.answerText !== ''));
     if (displaySessions.length === 0) return '';
 
     const isOpen = historySubjectOpen === subjIdx;
