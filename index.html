@@ -705,6 +705,17 @@ let _liveLastAnswerTs = '0';
 function scheduleLiveRefreshes() {
   clearLiveRefreshTimers();
   if (!activeSessionState?.isActive || !activeSessionState.session?.currentQuestionId) return;
+  // 90分自動終了を学生側で検知するタイマー
+  const startEpoch = activeSessionState.session.sessionStartTimeEpoch;
+  if (startEpoch) {
+    const remaining = (startEpoch + 90 * 60 * 1000) - Date.now();
+    if (remaining > 0) {
+      liveRefreshTimers.push(setTimeout(() => refreshLiveCardSilent(), remaining));
+    } else {
+      refreshLiveCardSilent();
+      return;
+    }
+  }
   const id = setInterval(async () => {
     if (!activeSessionState?.isActive) { clearLiveRefreshTimers(); return; }
     try {
