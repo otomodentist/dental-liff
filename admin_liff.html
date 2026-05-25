@@ -396,6 +396,7 @@
       let isSessionActive  = false;
       let activeSessionInfo = null;
       let isDeliveryPaused = false;
+      let isNoDeliveryDeclared = false;
       let questionCooldownEnd = null;
       let questionCooldownInterval = null;
 
@@ -750,7 +751,9 @@
   </div>
 </div>
 
-${isDeliveryPaused ? `
+${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery()" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e87040;background:#fff5f0;color:#c04000;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:6px">📵 この授業は問題配信なし</button>` : ''}
+${isNoDeliveryDeclared ? `<div style="background:#fff5f0;border:1.5px solid #e87040;border-radius:10px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px"><span style="font-size:16px">📵</span><span style="font-size:13px;color:#c04000;font-weight:700;flex:1">配信なし宣言済み</span></div>` : ''}
+${isDeliveryPaused && !isNoDeliveryDeclared ? `
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         <div style="background:var(--warning-light);border:1.5px solid #e8c840;border-radius:10px;padding:10px 14px;margin:10px 0;display:flex;align-items:center;gap:10px">
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           <span style="font-size:16px">⚠️</span>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           <span style="font-size:13px;color:var(--warning);font-weight:700;flex:1">配信停止中</span>
@@ -1968,6 +1971,26 @@ function startQuestionCooldown(endTime) {
               }
           });
       }
+      async function declareNoDelivery() {
+          await guardedAction('declareNoDelivery', async () => {
+              if (!confirm('配信なし宣言を行いますか？\n学生に「問題配信は行いません」というメッセージが送信されます。')) return;
+              try {
+                  const res = await fetch(`${GAS_URL}?action=declareNoDelivery&adminSecret=${encodeURIComponent(adminSecret)}`);
+                  const result = await res.json();
+                  if (result.success) {
+                      isNoDeliveryDeclared = true;
+                      isDeliveryPaused = true;
+                      showToast('📵 配信なし宣言を送信しました');
+                      renderApp();
+                  } else {
+                      showToast('❌ ' + (result.error || 'エラー'));
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
+              }
+          });
+      }
+
       async function resumeDelivery() {
           await guardedAction('resumeDelivery', async () => {
               try {
