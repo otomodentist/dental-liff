@@ -1521,12 +1521,16 @@ async function shareGuardianLink() {
     const studentName = myNickname || profileData?.displayName || '';
     const msg = `授業のオトモ - 保護者閲覧登録\n\n${studentName}の学習状況を確認できます。\n\n①LINEで「授業のオトモ」を検索して友達追加\n②以下のURLを開いて登録\n\n${shareUrl}\n\n※このリンクは48時間有効です`;
 
+    let shared = false;
     if (liff.isApiAvailable('shareTargetPicker')) {
-      await liff.shareTargetPicker([{ type: 'text', text: msg }]);
-    } else {
-      // フォールバック: コピーモーダル
-      showGuardianShareModal(shareUrl, msg);
+      try {
+        await liff.shareTargetPicker([{ type: 'text', text: msg }]);
+        shared = true;
+      } catch(shareErr) {
+        // shareTargetPicker 非対応 or キャンセル → フォールバック
+      }
     }
+    if (!shared) showGuardianShareModal(shareUrl, msg);
   } catch(e) {
     alert('共有に失敗しました。もう一度お試しください。');
   } finally {
