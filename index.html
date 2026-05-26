@@ -1519,7 +1519,7 @@ async function shareGuardianLink() {
 
     const shareUrl = d.shareUrl;
     const studentName = profileData?.displayName || '';
-    const msg = `授業のオトモ - 保護者閲覧登録\n\n${studentName}の学習状況を確認できます。\n\n①LINEで「授業のオトモ」を検索して友達追加\n②以下のURLを開いて登録\n\n${shareUrl}\n\n※このリンクは24時間有効です`;
+    const msg = `授業のオトモ - 保護者登録\n\n${studentName}の学習状況を確認できます。\n\n①LINEで「授業のオトモ」を検索して友達追加\n②以下のURLを開いて登録\n\n${shareUrl}\n\n※このリンクは24時間有効です`;
 
     let shared = false;
     if (liff.isApiAvailable('shareTargetPicker')) {
@@ -1655,7 +1655,7 @@ function renderGuardianView() {
           <img src="${guardianStudentAvatar || DEFAULT_AVATAR}" style="width:100%;height:100%;object-fit:cover" onerror="this.src=DEFAULT_AVATAR" />
         </div>
         <div class="header-title" style="flex:1">${guardianStudentName}</div>
-        <div style="font-size:11px;background:rgba(255,255,255,0.22);padding:3px 9px;border-radius:10px;font-weight:700;border:1px solid rgba(255,255,255,0.3)">👁 保護者閲覧</div>
+        <div style="font-size:11px;background:rgba(255,255,255,0.22);padding:3px 9px;border-radius:10px;font-weight:700;border:1px solid rgba(255,255,255,0.3)">保護者モード</div>
         <button onclick="guardianCurrentView='settings';renderGuardianView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:17px;cursor:pointer;padding:2px 9px;color:white;line-height:1.4">⚙</button>
       </div>
     </div>`;
