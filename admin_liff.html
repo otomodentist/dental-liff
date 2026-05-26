@@ -1276,21 +1276,26 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
           const registered   = students.filter(s => s.billingStatus === '契約中' || s.billingStatus === '管理者承認');
           const unregistered = students.filter(s => s.billingStatus !== '契約中' && s.billingStatus !== '管理者承認');
 
+          const summaryStyle = 'list-style:none;display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:13px;font-weight:700;color:var(--ink2);background:var(--surface);border-bottom:1px solid var(--border);cursor:pointer;user-select:none';
           const listHTML = students.length === 0
               ? '<div class="empty-state">学生データがありません</div>'
               : `
-              <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">登録済み（${registered.length}名）</div>
-              <div class="student-list" style="padding-bottom:4px">
-                  ${registered.length === 0
-                    ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
-                    : registered.map(studentRowHTML).join('')}
-              </div>
-              <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">未登録（${unregistered.length}名）</div>
-              <div class="student-list">
-                  ${unregistered.length === 0
-                    ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
-                    : unregistered.map(studentRowHTML).join('')}
-              </div>`;
+              <details>
+                <summary style="${summaryStyle}"><span class="chev">▶</span>登録済み（${registered.length}名）</summary>
+                <div class="student-list" style="padding-bottom:4px">
+                    ${registered.length === 0
+                      ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
+                      : registered.map(studentRowHTML).join('')}
+                </div>
+              </details>
+              <details>
+                <summary style="${summaryStyle}"><span class="chev">▶</span>未登録（${unregistered.length}名）</summary>
+                <div class="student-list">
+                    ${unregistered.length === 0
+                      ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
+                      : unregistered.map(studentRowHTML).join('')}
+                </div>
+              </details>`;
 
           return `
               <div style="background:var(--warning-light);border-bottom:1px solid #e8d89a;padding:10px 16px;display:flex;align-items:center;gap:10px">
@@ -2074,7 +2079,7 @@ function startQuestionCooldown(endTime) {
                       <button onclick="sendBroadcastMessage()" style="margin-top:6px;width:100%;padding:9px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer">登録者全員に送信（${registered.length}名）</button>
                   </div>
               </details>
-              <details open style="${sectionStyle}">
+              <details style="${sectionStyle}">
                   <summary style="${summaryStyle}">
                       <span>登録済み（${registered.length}名）</span>
                       <div style="display:flex;align-items:center;gap:8px">
@@ -2088,7 +2093,7 @@ function startQuestionCooldown(endTime) {
                         : registered.map(renderRegistered).join('')}
                   </div>
               </details>
-              <details open style="${sectionStyle}">
+              <details style="${sectionStyle}">
                   <summary style="${summaryStyle}">
                       <span>未登録（${unregistered.length}名）</span>
                       <span style="font-size:10px" class="chev">▶</span>
