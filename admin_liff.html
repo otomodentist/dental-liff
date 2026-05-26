@@ -1280,7 +1280,7 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
           const listHTML = students.length === 0
               ? '<div class="empty-state">学生データがありません</div>'
               : `
-              <details>
+              <details open>
                 <summary style="${summaryStyle}"><span class="chev">▶</span>登録済み（${registered.length}名）</summary>
                 <div class="student-list" style="padding-bottom:4px">
                     ${registered.length === 0
@@ -2079,7 +2079,7 @@ function startQuestionCooldown(endTime) {
                       <button onclick="sendBroadcastMessage()" style="margin-top:6px;width:100%;padding:9px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer">登録者全員に送信（${registered.length}名）</button>
                   </div>
               </details>
-              <details style="${sectionStyle}">
+              <details open style="${sectionStyle}">
                   <summary style="${summaryStyle}">
                       <span>登録済み（${registered.length}名）</span>
                       <div style="display:flex;align-items:center;gap:8px">
