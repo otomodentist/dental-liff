@@ -886,6 +886,11 @@ async function fetchLatestRanking() {
 // ===== ランキング描画 =====
 function rankNumClass(r) { return r === 1 ? 'gold' : r === 2 ? 'silver' : r === 3 ? 'bronze' : ''; }
 
+function rerankVisible(rows) {
+  let n = 1;
+  return rows.map(item => item.answered === false ? item : { ...item, rank: n++ });
+}
+
 function buildRankRowHTML(item, highlightUserId) {
   const isMe = item.userId === highlightUserId;
   const unanswered = item.answered === false;
@@ -981,7 +986,7 @@ function buildLiveRankingCardHTML() {
         <div style="font-size:12px;color:var(--ink3)">回答後にランキングが表示されます</div>
       </div>`;
   } else {
-    const visibleRows = rows.filter(item => !item.restricted && !item.hideAnswer);
+    const visibleRows = rerankVisible(rows.filter(item => !item.restricted && !item.hideAnswer));
     if (visibleRows.length === 0) {
       rowsHTML = '<div class="rank-empty">まだ誰も回答していません</div>';
     } else {
@@ -1162,7 +1167,7 @@ function renderApp() {
         <button onclick="openSettingsView()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--ink2);font-size:12px;font-weight:700;padding:7px 16px;cursor:pointer;font-family:inherit">設定を開く</button>
       </div>`
     : (() => {
-        const visible = latestSessionRanking.filter(item => !item.restricted && !item.hideAnswer);
+        const visible = rerankVisible(latestSessionRanking.filter(item => !item.restricted && !item.hideAnswer));
         if (visible.length === 0) return '<div class="rank-empty">ランキングデータなし</div>';
         const top3 = visible.slice(0, 3);
         const rest = visible.slice(3);
@@ -1192,8 +1197,9 @@ function renderApp() {
 
   const dashboardHTML = `
     ${buildLiveRankingCardHTML()}
+    ${isLive ? topCardHTML : ''}
     ${sessionRankingCardHTML}
-    ${topCardHTML}
+    ${isLive ? '' : topCardHTML}
     <div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">授業履歴</div>
     ${accordionHTML}
     <div class="footer-pad"></div>`;
