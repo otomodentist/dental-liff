@@ -80,9 +80,21 @@
 
 | 項目 | 値 |
 |---|---|
-| リッチメニュー画像フォルダID | `1PEBapWgq6JwpSMElYjqoxn2PTnRp189_` |
-| 管理者用リッチメニュー画像 File ID | `1UOmAB9M4slNxrjTRWWIn1ZsqEhVEAOeM` |
-| 学生用リッチメニュー画像 File ID | `1WEpVdG21Ss4Pp9zQQRpLb2PHA1rjlS8b`（mypage_full_blue_final.png） |
+| ルートフォルダ（授業のOtomo） | `1PEBapWgq6JwpSMElYjqoxn2PTnRp189_` |
+| 4年生フォルダ | `1bnc5GnMVNuscnbuGI-W3NuFfJsKuvX4X` |
+| 3年生フォルダ | `1JMv7VD2kVkn3Symdsths_7KgGmrqLhs3` |
+| 2年生フォルダ | `1PRJXyN5bLvxsWyugjotuEz11eXu4wxJ_` |
+| prototypeフォルダ（アーカイブ） | `1KPvrYlWBvmiAxfblAwtIBpqK8D2h7kBH` |
+| 管理者用リッチメニュー画像 File ID（4年生） | `1UOmAB9M4slNxrjTRWWIn1ZsqEhVEAOeM`（richmenu_admin.png） |
+| 学生用リッチメニュー画像 File ID（4年生） | `1WEpVdG21Ss4Pp9zQQRpLb2PHA1rjlS8b`（mypage_full_blue_final.png） |
+
+### Google Sheets（学年別）
+
+| 学年 | Spreadsheet ID | 状態 |
+|---|---|---|
+| 4年生 | `15UpJAol2SayyiEQDyOdKYX02eQQ4pMH4gq4SssJrYT4` | 稼働中 |
+| 3年生 | `13UPbC8CeT2Chwzf_9-dxviVImkm-EDxKto4saeOHm9o` | 準備中（空） |
+| 2年生 | `1_TD4l9nrfSNo1AVHnjvM-GtoTIZzS_Vm2mZW3Jn0528` | 準備中（空・学習計画実装後に使用） |
 
 ### GitHub / LIFF
 
@@ -90,7 +102,9 @@
 |---|---|
 | Repository | `otomodentist/dental-liff` |
 | GitHub Pages URL | `https://otomodentist.github.io/dental-liff/` |
-| Admin LIFF URL | `https://liff.line.me/2009739219-9qVGb0Xm` |
+| 4年生 Admin LIFF URL | `https://liff.line.me/2009739219-9qVGb0Xm` |
+| 3年生 Admin LIFF URL | 未作成（LIFF endpoint: `admin_liff.html?grade=3`） |
+| 2年生 Admin LIFF URL | 未作成（LIFF endpoint: `admin_liff.html?grade=2`） |
 
 ---
 
