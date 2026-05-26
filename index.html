@@ -1465,7 +1465,7 @@ function renderSettingsView() {
         <button onclick="shareGuardianLink()" style="width:100%;background:var(--accent);color:white;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
           📤 保護者に共有リンクを送る
         </button>
-        <div style="font-size:11px;color:var(--ink3);margin-top:6px;text-align:center">登録リンクは48時間有効です（上限3名）</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:6px;text-align:center">登録リンクは24時間有効です（上限3名）</div>
       </div>
       ${myGuardians.length > 0 ? `
       <div style="border-top:1px solid var(--border);padding:11px 16px 4px">
@@ -1519,7 +1519,7 @@ async function shareGuardianLink() {
 
     const shareUrl = d.shareUrl;
     const studentName = profileData?.displayName || '';
-    const msg = `授業のオトモ - 保護者閲覧登録\n\n${studentName}の学習状況を確認できます。\n\n①LINEで「授業のオトモ」を検索して友達追加\n②以下のURLを開いて登録\n\n${shareUrl}\n\n※このリンクは48時間有効です`;
+    const msg = `授業のオトモ - 保護者閲覧登録\n\n${studentName}の学習状況を確認できます。\n\n①LINEで「授業のオトモ」を検索して友達追加\n②以下のURLを開いて登録\n\n${shareUrl}\n\n※このリンクは24時間有効です`;
 
     let shared = false;
     if (liff.isApiAvailable('shareTargetPicker')) {
