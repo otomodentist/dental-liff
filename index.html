@@ -376,6 +376,8 @@ let guardianStudentAvatar = '';
 let guardianSystemEnabled = true; // デフォルトオン（GASから上書き）
 let myGuardianFeatureOn = true;
 let myGuardians = [];
+let guardianNotifPref = 'session_end'; // 'each' | 'session_end' | 'none'
+let guardianCurrentView = 'main'; // 'main' | 'settings'
 
 // 学習計画タブ
 let planTabData = null; // { exams, progressBlocks, quizzes }
@@ -517,6 +519,8 @@ async function init() {
       guardianStudentId = d.viewingStudentId;
       guardianStudentName = d.studentName || '';
       guardianStudentAvatar = d.studentAvatar || '';
+      guardianNotifPref = d.guardianNotifPref || 'session_end';
+      guardianCurrentView = 'main';
       dashboardData = d.dashboard || null;
       activeSessionState = d.activeSession || { isActive: false };
       setProgress(100, '');
@@ -1630,6 +1634,7 @@ async function execGuardianRemoval(token) {
 }
 
 function renderGuardianView() {
+  if (guardianCurrentView === 'settings') { renderGuardianSettingsView(); return; }
   const app = document.getElementById('app');
   const subjects = dashboardData?.subjects || [];
 
@@ -1645,8 +1650,9 @@ function renderGuardianView() {
         <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);overflow:hidden;flex-shrink:0">
           <img src="${guardianStudentAvatar || DEFAULT_AVATAR}" style="width:100%;height:100%;object-fit:cover" onerror="this.src=DEFAULT_AVATAR" />
         </div>
-        <div class="header-title">${guardianStudentName}</div>
+        <div class="header-title" style="flex:1">${guardianStudentName}</div>
         <div style="font-size:11px;background:rgba(255,255,255,0.22);padding:3px 9px;border-radius:10px;font-weight:700;border:1px solid rgba(255,255,255,0.3)">👁 保護者閲覧</div>
+        <button onclick="guardianCurrentView='settings';renderGuardianView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:17px;cursor:pointer;padding:2px 9px;color:white;line-height:1.4">⚙</button>
       </div>
     </div>`;
 
@@ -1685,6 +1691,52 @@ function renderGuardianView() {
   }).join('');
 
   app.innerHTML = header + subjectsHtml + '<div class="footer-pad"></div>';
+}
+
+function renderGuardianSettingsView() {
+  const app = document.getElementById('app');
+  const opts = [
+    { val: 'each',        label: '毎回の採点結果を通知',       desc: '問題に回答するたびに採点結果がLINEで届きます' },
+    { val: 'session_end', label: '授業終了時にまとめて通知',   desc: '授業が終わったタイミングで維持スコアとランキングが届きます' },
+    { val: 'none',        label: '通知なし',                    desc: 'LINEへのメッセージ通知は届きません' },
+  ];
+  const optHtml = opts.map(o => {
+    const sel = guardianNotifPref === o.val;
+    return `
+      <div onclick="saveGuardianNotifPref('${o.val}')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;background:${sel ? 'var(--accent-light)' : 'var(--surface)'}">
+        <div style="width:22px;height:22px;border-radius:50%;border:2px solid ${sel ? 'var(--accent)' : 'var(--border)'};background:${sel ? 'var(--accent)' : 'white'};flex-shrink:0;display:flex;align-items:center;justify-content:center">
+          ${sel ? '<div style="width:8px;height:8px;border-radius:50%;background:white"></div>' : ''}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700;color:${sel ? 'var(--accent)' : 'var(--ink)'}">${o.label}</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:3px">${o.desc}</div>
+        </div>
+      </div>`;
+  }).join('');
+  app.innerHTML = `
+    <div style="background:var(--accent);color:white;padding:16px 20px 12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="guardianCurrentView='main';renderGuardianView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:white;font-size:13px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:inherit">← 戻る</button>
+        <div style="font-size:16px;font-weight:700">通知設定</div>
+      </div>
+    </div>
+    <div style="padding:16px 16px 8px;font-size:12px;color:var(--ink3);font-weight:700">LINEメッセージ通知</div>
+    <div style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+      ${optHtml}
+    </div>
+    <div class="footer-pad"></div>`;
+}
+
+let _guardianNotifSaving = false;
+async function saveGuardianNotifPref(pref) {
+  if (_guardianNotifSaving) return;
+  _guardianNotifSaving = true;
+  guardianNotifPref = pref;
+  renderGuardianSettingsView();
+  try {
+    await fetch(`${GAS_URL}?action=setGuardianNotifPref&userId=${encodeURIComponent(userId)}&pref=${encodeURIComponent(pref)}`);
+  } catch(e) {}
+  _guardianNotifSaving = false;
 }
 
 let _hideAnswerSaving = false;
