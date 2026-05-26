@@ -1518,7 +1518,7 @@ async function shareGuardianLink() {
     if (!d.success) { alert('エラー: ' + (d.error || '失敗しました')); return; }
 
     const shareUrl = d.shareUrl;
-    const studentName = myNickname || profileData?.displayName || '';
+    const studentName = profileData?.displayName || '';
     const msg = `授業のオトモ - 保護者閲覧登録\n\n${studentName}の学習状況を確認できます。\n\n①LINEで「授業のオトモ」を検索して友達追加\n②以下のURLを開いて登録\n\n${shareUrl}\n\n※このリンクは48時間有効です`;
 
     let shared = false;
