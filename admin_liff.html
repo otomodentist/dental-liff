@@ -10,6 +10,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Kaisei+Tokumin:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   
   <style>
+    summary::-webkit-details-marker { display:none; }
+    details[open] summary .chev { transform:rotate(90deg); }
+    summary .chev { display:inline-block; transition:transform .2s; }
     :root {
         --bg: #f5f0e8;
         --surface: #ffffff;
@@ -1127,8 +1130,6 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
               return;
           }
           if (tab === 'billing') {
-              // 保護者機能トグルを初期化（非同期、描画後に反映）
-              setTimeout(() => initGuardianToggle(), 100);
               // キャッシュがあれば即表示してバックグラウンドで最新取得
               const cached = sessionStorage.getItem('billingCache');
               if (cached) {
@@ -2028,10 +2029,17 @@ function startQuestionCooldown(endTime) {
                       <div class="student-name">${s.displayName || '名前なし'}${s.nickname ? `<span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:5px">(${s.nickname})</span>` : ''}</div>
                       <div class="student-meta">${s.billingStatus}</div>
                   </div>
-                  <button onclick="revokeAccess('${s.userId}')"
-                      style="padding:6px 12px;background:var(--danger);color:white;border:none;border-radius:8px;font-size:12px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;flex-shrink:0">
-                      登録手動解除
-                  </button>
+                  <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+                      <button onclick="toggleStudentGuardian('${s.userId}',${s.guardianFeatureOn})"
+                          title="保護者機能"
+                          style="padding:4px 9px;border-radius:20px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;${s.guardianFeatureOn ? 'background:var(--accent);color:white' : 'background:var(--border);color:var(--ink3)'}">
+                          👪${s.guardianFeatureOn ? 'オン' : 'オフ'}
+                      </button>
+                      <button onclick="revokeAccess('${s.userId}')"
+                          style="padding:5px 10px;background:var(--danger);color:white;border:none;border-radius:8px;font-size:12px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer">
+                          解除
+                      </button>
+                  </div>
               </div>`;
 
           const renderUnregistered = (s) => `
@@ -2049,43 +2057,48 @@ function startQuestionCooldown(endTime) {
                   </button>
               </div>`;
 
+          const sectionStyle = 'border-bottom:1px solid var(--border)';
+          const summaryStyle = 'padding:11px 16px;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;-webkit-tap-highlight-color:transparent';
+
           return `
-              <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-                  <div style="display:flex;align-items:center;justify-content:space-between">
-                    <div>
-                      <div style="font-size:12px;font-weight:700;color:var(--ink3)">👪 保護者機能</div>
-                      <div style="font-size:11px;color:var(--ink3);margin-top:2px">学生が保護者に閲覧リンクを共有できる機能</div>
-                    </div>
-                    <button id="guardianToggleBtn" onclick="toggleGuardianSystem()" style="min-width:52px;padding:6px 12px;border-radius:20px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;background:var(--accent);color:white">
-                      読込中
-                    </button>
+              <details style="${sectionStyle}">
+                  <summary style="${summaryStyle}">
+                      <span>📢 登録者への一斉メッセージ</span>
+                      <span style="font-size:10px;transition:transform .2s" class="chev">▶</span>
+                  </summary>
+                  <div style="padding:0 16px 12px">
+                      <div style="display:flex;justify-content:flex-end;margin-bottom:4px">
+                          <span id="broadcastDraftLabel" style="font-size:11px;color:var(--ink3)"></span>
+                      </div>
+                      <textarea id="broadcastMsgInput" oninput="saveBroadcastDraft()" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Noto Sans JP',sans-serif;resize:vertical;min-height:64px" placeholder="メッセージを入力...">${localStorage.getItem('broadcastDraft') || ''}</textarea>
+                      <button onclick="sendBroadcastMessage()" style="margin-top:6px;width:100%;padding:9px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer">登録者全員に送信（${registered.length}名）</button>
                   </div>
-              </div>
-              <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-                    <div style="font-size:12px;font-weight:700;color:var(--ink3)">📢 登録者への一斉メッセージ</div>
-                    <div id="broadcastDraftLabel" style="font-size:11px;color:var(--ink3)"></div>
+              </details>
+              <details open style="${sectionStyle}">
+                  <summary style="${summaryStyle}">
+                      <span>登録済み（${registered.length}名）</span>
+                      <div style="display:flex;align-items:center;gap:8px">
+                          <button onclick="event.preventDefault();refreshBillingList()" style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--ink3);cursor:pointer;font-family:'Noto Sans JP',sans-serif">🔄</button>
+                          <span style="font-size:10px" class="chev">▶</span>
+                      </div>
+                  </summary>
+                  <div class="student-list" style="padding-bottom:4px">
+                      ${registered.length === 0
+                        ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
+                        : registered.map(renderRegistered).join('')}
                   </div>
-                  <textarea id="broadcastMsgInput" oninput="saveBroadcastDraft()" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Noto Sans JP',sans-serif;resize:vertical;min-height:64px" placeholder="メッセージを入力...">${localStorage.getItem('broadcastDraft') || ''}</textarea>
-                  <button onclick="sendBroadcastMessage()" style="margin-top:6px;width:100%;padding:9px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer">登録者全員に送信（${registered.length}名）</button>
-              </div>
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px 4px">
-                  <span style="font-size:12px;font-weight:700;color:var(--ink3)">登録済み（${registered.length}名）</span>
-                  <button onclick="refreshBillingList()" style="font-size:11px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--ink3);cursor:pointer;font-family:'Noto Sans JP',sans-serif">🔄 更新</button>
-              </div>
-              <div class="student-list" style="padding-bottom:4px">
-                  ${registered.length === 0
-                    ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
-                    : registered.map(renderRegistered).join('')}
-              </div>
-              <div style="padding:8px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">
-                  未登録（${unregistered.length}名）
-              </div>
-              <div class="student-list">
-                  ${unregistered.length === 0
-                    ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
-                    : unregistered.map(renderUnregistered).join('')}
-              </div>`;
+              </details>
+              <details open style="${sectionStyle}">
+                  <summary style="${summaryStyle}">
+                      <span>未登録（${unregistered.length}名）</span>
+                      <span style="font-size:10px" class="chev">▶</span>
+                  </summary>
+                  <div class="student-list">
+                      ${unregistered.length === 0
+                        ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
+                        : unregistered.map(renderUnregistered).join('')}
+                  </div>
+              </details>`;
       }
 
       function saveBroadcastDraft() {
@@ -2123,55 +2136,22 @@ function startQuestionCooldown(endTime) {
           });
       }
 
-      async function loadGuardianSystemStatus() {
+      async function toggleStudentGuardian(userId, currentState) {
+        const newState = !currentState;
+        if (billingListData) {
+          const s = billingListData.students.find(s => s.userId === userId);
+          if (s) s.guardianFeatureOn = newState;
+        }
+        renderApp();
         try {
-          const r = await fetch(`${GAS_URL}?action=getUserInitData&userId=${encodeURIComponent(adminUserId)}`);
-          const d = await r.json();
-          // GAS側の isGuardianSystemEnabled_ は PropertiesService を見るが、
-          // 管理者自身のgetUserInitDataには含まれないため専用エンドポイントを直接叩く
-        } catch(e) {}
-        // PropertiesServiceの値はgetUserInitDataでは返さないため、
-        // 実際には登録管理タブを開いた際に現在の状態をGASから取得する
-        // ここでは toggleGuardianSystem で楽観的更新し、ページロード時に初期状態をGASから取得
-        try {
-          const r = await fetch(`${GAS_URL}?action=getUserInitData&userId=dummy_check_guardian_system`);
-        } catch(e) {}
-      }
-
-      async function initGuardianToggle() {
-        const btn = document.getElementById('guardianToggleBtn');
-        if (!btn) return;
-        try {
-          // getUserInitDataでguardianSystemEnabledが返ってくる（学生側APIを流用）
-          // 管理者用に専用APIとして getGuardianSystemStatus を作っていないので
-          // 代わりに localStorage キャッシュか楽観的状態を使う
-          if (guardianSystemEnabled === null) {
-            const cached = localStorage.getItem('guardianSystemEnabled');
-            guardianSystemEnabled = cached !== 'false'; // デフォルトtrue
-          }
-          updateGuardianToggleBtn(btn);
-        } catch(e) { btn.textContent = 'エラー'; }
-      }
-
-      function updateGuardianToggleBtn(btn) {
-        if (!btn) return;
-        btn.textContent = guardianSystemEnabled ? 'オン' : 'オフ';
-        btn.style.background = guardianSystemEnabled ? 'var(--accent)' : 'var(--border)';
-        btn.style.color = guardianSystemEnabled ? 'white' : 'var(--ink3)';
-      }
-
-      async function toggleGuardianSystem() {
-        guardianSystemEnabled = !guardianSystemEnabled;
-        localStorage.setItem('guardianSystemEnabled', guardianSystemEnabled);
-        const btn = document.getElementById('guardianToggleBtn');
-        updateGuardianToggleBtn(btn);
-        try {
-          await fetch(`${GAS_URL}?action=setGuardianSystemEnabled&enabled=${guardianSystemEnabled}&adminSecret=${encodeURIComponent(adminSecret)}`);
+          await fetch(`${GAS_URL}?action=setUserPref&userId=${encodeURIComponent(userId)}&key=GUARDIAN_FEATURE_ON&value=${newState}`);
         } catch(e) {
-          alert('保存に失敗しました');
-          guardianSystemEnabled = !guardianSystemEnabled;
-          localStorage.setItem('guardianSystemEnabled', guardianSystemEnabled);
-          updateGuardianToggleBtn(btn);
+          showToast('❌ 保存に失敗しました');
+          if (billingListData) {
+            const s = billingListData.students.find(s => s.userId === userId);
+            if (s) s.guardianFeatureOn = currentState;
+          }
+          renderApp();
         }
       }
 
