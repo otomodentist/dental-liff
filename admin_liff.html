@@ -383,9 +383,17 @@
     </div>
 
     <script>
-      const GAS_URL = 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec';
+      // ===== 学年設定 =====
+      const GRADE_CONFIG = {
+        '4': { gasUrl: 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec', liffId: '2009739219-9qVGb0Xm' },
+        '3': { gasUrl: '', liffId: '' }, // TODO: 3年生
+        '2': { gasUrl: '', liffId: '' }, // TODO: 2年生
+      };
+      const ACTIVE_GRADE = new URLSearchParams(location.search).get('grade') || '4';
+      const _gc = GRADE_CONFIG[ACTIVE_GRADE] || GRADE_CONFIG['4'];
+      const GAS_URL = _gc.gasUrl;
+      const LIFF_ID  = _gc.liffId;
       const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c0c8d0'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M20 21a8 8 0 1 0-16 0'/%3E%3C/svg%3E";
-      const LIFF_ID = '2009739219-9qVGb0Xm';
 
       let SUBJECTS = [];
       function addOneHour(t) {
