@@ -1451,25 +1451,15 @@ function renderSettingsView() {
       <div style="padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">保護者機能</div>
       </div>
-      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div style="font-size:14px;color:var(--ink2)">保護者リンクを許可</div>
-          <div style="font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.5">保護者があなたの学習状況を閲覧できます</div>
-        </div>
-        <button onclick="toggleGuardianFeature()" style="min-width:52px;padding:6px 12px;border-radius:20px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;${myGuardianFeatureOn ? 'background:var(--accent);color:white' : 'background:var(--border);color:var(--ink3)'}">
-          ${myGuardianFeatureOn ? 'オン' : 'オフ'}
-        </button>
-      </div>
-      ${myGuardianFeatureOn ? `
-      <div style="border-top:1px solid var(--border);padding:14px 16px">
+      <div style="border-bottom:1px solid var(--border);padding:14px 16px">
         <button onclick="shareGuardianLink()" style="width:100%;background:var(--accent);color:white;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
           📤 保護者に共有リンクを送る
         </button>
         <div style="font-size:11px;color:var(--ink3);margin-top:6px;text-align:center">登録リンクは24時間有効です（上限3名）</div>
       </div>
       ${myGuardians.length > 0 ? `
-      <div style="border-top:1px solid var(--border);padding:11px 16px 4px">
-        <div style="font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:8px">閲覧中の保護者</div>
+      <div style="padding:11px 16px 4px">
+        <div style="font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:8px">リンク中の保護者</div>
         ${myGuardians.map(g => `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
           <div style="font-size:14px;color:var(--ink2)">👤 ${g.guardianName}</div>
@@ -1478,7 +1468,7 @@ function renderSettingsView() {
           </button>
         </div>`).join('')}
         <div style="height:8px"></div>
-      </div>` : ''}` : ''}
+      </div>` : ''}
     </div>` : ''}
 
     <div style="margin:12px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
