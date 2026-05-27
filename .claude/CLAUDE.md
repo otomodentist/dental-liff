@@ -36,7 +36,6 @@
 [LIFF（GitHub Pages）]
   admin_liff.html … 管理者ダッシュボード（授業管理・学生ダッシュボード・登録管理）
   index.html      … 学生マイページ（集中度・直近授業確認）← リッチメニューの行き先
-  demo.html       … デモ画面（現在は未使用・デフォルト動線なし）
 ```
 
 ---
@@ -52,7 +51,6 @@
 | Admin User ID | `Ubf96bf52b57d4e329a5bcf4ce509c6be` |
 | Admin LIFF ID | `2009739219-9qVGb0Xm` |
 | 学生マイページ LIFF ID | `2009739219-dSnPUVFj`（index.html） |
-| デモ LIFF ID | `2009739219-N7Pi2ywn`（demo.html、現在は未使用） |
 
 ### Google Apps Script
 
@@ -61,7 +59,7 @@
 | Project ID | `1dfHpjEjSigxTJbSnuER99IKDBROzZ-ZXJ2XPiNJMfDsUZ9idejL35Cq8` |
 | Web App URL（Webhook & API） | `https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec` |
 | Deploy ID（`clasp deploy -i` に指定） | `AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug` |
-| 現在のバージョン | v288（2026/05/22） |
+| 現在のバージョン | v347（2026/05/28） |
 
 ### Google Sheets（Spreadsheet ID: `15UpJAol2SayyiEQDyOdKYX02eQQ4pMH4gq4SssJrYT4`）
 
@@ -69,7 +67,7 @@
 |---|---|
 | 学生マスタ | userID, 表示名, アイコンURL, 登録日時 |
 | 授業セッション | セッションID, 科目名, 授業回数, 開始時刻, 終了時刻, ステータス, [pause状態, pause時刻] |
-| 問題マスタ | 問題ID, セッションID, 科目名, 授業回数, 経過分, 問題文, 模範解答, 出題時刻 |
+| 問題マスタ | 問題ID, セッションID, 科目名, 授業回数, 経過分, 問題文, 模範解答, 出題時刻, 画像URL |
 | 回答データ | 回答ID, 学生ID, セッションID, 問題ID, 科目名, 授業回数, 経過分, 回答テキスト, 正確性スコア, 回答時間(秒), 集中度スコア, 回答時刻 |
 | 科目マスタ | 科目名, 曜日, 学年, 学期（16科目, 学年4, spring） |
 | 試験日程 | 試験ID, 科目名, 試験日, 復習標準時間（分）, 作成日時, 開始時間（HH:mm文字列）, 復習必要コマ数 |
@@ -125,7 +123,7 @@
 **セッション管理**
 - `adminStartSession(subjectName, sessionNumber)` — 授業開始（セッション作成 + 全員LINE通知）
 - `adminEndSession()` — 授業終了（セッション終了 + 全員LINE通知）
-- `adminBroadcast(question, modelAnswer)` — 出題・全員配信
+- `adminBroadcast(question, modelAnswer, imageUrl)` — 出題・全員配信（画像URLがあればLINEにimage+textで送信）
 - `pauseQuestionDelivery(sessionId)` — 出題一時停止（全員にLINE通知）
 - `resumeQuestionDelivery(sessionId)` — 出題再開
 
@@ -135,7 +133,6 @@
 - `getActiveSession()` — アクティブセッション情報取得
 - `getSubjectMaster()` — アクティブ学年・学期の科目一覧
 - `getActiveSemester()` / `setActiveSemester(grade, semester)` — アクティブクール取得・設定
-- `getAdminStudentList()` — 学生一覧
 - `getAdminStudentListWithBilling()` — 課金ステータス込み学生一覧（登録管理タブ用）
 - `getStudentsByGradeAndSemester(grade, semester)` — 学年・学期フィルタ学生一覧（billingStatus付き、ダッシュボードタブ用）
 - `getStudentSessions(userId)` — 学生が参加したセッション一覧（sustainScore・latestAnswerAt付き、直近活動順）
@@ -161,7 +158,9 @@
 - `deleteQuiz(quizId)` — 小テスト削除
 - `getQuestionRanking(questionId)` — 出題中問題のランキング（回答済み降順 + 未回答者をグレーアウト用フィールドで付加）
 - `getSessionRanking(sessionId)` — セッション通算ランキング（同上）
-- `getUserSessionGraph(sessionId, targetUserId)` — セッション内回答タイムライン（questionText・modelAnswer・answerText含む、問題マスタをjoin）
+- `getUserSessionGraph(sessionId, targetUserId)` — セッション内回答タイムライン（questionText・modelAnswer・answerText・imageUrl含む、問題マスタをjoin）
+- `uploadQuestionImage(body)` — doPostで受け取ったbase64画像をDriveの「問題画像」フォルダに保存し Drive thumbnail URLを返す（`COHORT_FOLDER_ID` PropertiesKeyで保存先フォルダを指定）
+- `multicastMessages(userIds, messages)` — LINE message objectの配列をMulticast送信（画像+テキスト等）
 - `setUserPref(userId, key, value)` / `getUserPref_(userId, key, default)` — PropertiesServiceでユーザー設定を保存（`PREF_{key}_{userId}`）
 - `deleteStudentData(studentName)` — 学生データ完全削除（回答データ・学習計画・学生マスタ行を削除。試験日程・小テストはクラス共通のため削除しない）
 - `getScheduledSessionStart_()` — コマ定刻に基づく授業開始時刻を返す（内部関数）
@@ -192,7 +191,7 @@
 
 ### `gas_richmenu.js.gs`（手動実行用）
 
-- `createAndSetRichMenu()` — 学生用リッチメニュー作成・画像アップ・デフォルト設定（index.html行き。デモ廃止済み）
+- `createAndSetRichMenu()` — 学生用リッチメニュー作成・画像アップ・デフォルト設定（index.html行き）
 - `createAndSetAdminRichMenu()` — 管理者用リッチメニュー作成・設定
 - `getAdminRichMenuIdFromList()` — LINE APIから `name:'admin_richmenu'` のIDを検索（followイベントから呼び出し）
 - `setRichMenuForAdmin(adminRichMenuId)` — 管理者ユーザーにリッチメニューをリンク
@@ -272,7 +271,6 @@ const CONFIG = {
 
 // gas_richmenu.js.gs の定数
 const LIFF_DASHBOARD_URL = 'https://liff.line.me/2009739219-dSnPUVFj'; // index.html
-const LIFF_DEMO_URL      = 'https://liff.line.me/2009739219-N7Pi2ywn'; // demo.html（未使用）
 const LIFF_ADMIN_URL     = 'https://liff.line.me/2009739219-9qVGb0Xm';
 const ADMIN_RICHMENU_FOLDER_ID = '1PEBapWgq6JwpSMElYjqoxn2PTnRp189_';
 
@@ -288,6 +286,8 @@ QUESTION_SENT_TIME     // 出題時刻エポックms
 DELIVERY_PAUSED        // 配信停止フラグ ('true' or なし)
 ACTIVE_GRADE           // アクティブ学年 (例: '4')
 ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
+COHORT_FOLDER_ID       // 問題画像の保存先DriveフォルダID（例: 4年生フォルダ 1bnc5GnMVNuscnbuGI-W3NuFfJsKuvX4X）未設定時はルートフォルダにフォールバック
+SUB_ADMINS             // 学年管理者のLINE IDリスト（JSON配列）
 ```
 
 ---
@@ -295,7 +295,7 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 ## 開発時の注意点
 
 1. **GASデプロイはDeploy IDを固定** — `clasp deploy -i <Deploy ID>` を使うこと。`-i` を省略すると新しいDeploy IDが生成され、LINE Webhook URLが変わる
-2. **HTML変更は clasp push + git push の両方が必要** — `admin_liff.html` / `index.html` / `demo.html` はGitHub Pagesから配信される。clasp pushだけでは反映されない。`gas_main.js.js` / `gas_richmenu.js.js` はclaspのみでOK（.gitignore対象）
+2. **HTML変更は clasp push + git push の両方が必要** — `admin_liff.html` / `index.html` はGitHub Pagesから配信される。clasp pushだけでは反映されない。`gas_main.js.js` / `gas_richmenu.js.js` はclaspのみでOK（.gitignore対象）
 3. **GASコールドスタート対策** — 初期化は必ず `getInitData()` 1回で行う。並列fetchは直列実行になりタイムアウトの原因になる
 4. **followイベントはhandleEventの先頭で処理** — `event.type !== 'message'` の前に書くこと
 5. **管理者コマンドはLINE User IDで判定** — `userId === CONFIG.ADMIN_USER_ID`
@@ -397,3 +397,8 @@ ACTIVE_SEMESTER        // アクティブ学期 ('spring' or 'fall')
 | 2026/05/22 | GAS: `broadcastToRegistered` doGetアクション追加（登録済み学生全員へ一斉メッセージ送信） |
 | 2026/05/22 | GAS: 各メッセージ文言からデモ画面動線を削除（`sendCompletionMessage` / `sendCancellationMessage` / `sendDecisionMessage` / 未登録ユーザー返信） |
 | 2026/05/22 | admin_liff.html: 登録管理タブに「登録者への一斉メッセージ」送信UIを追加（`sendBroadcastMessage()`） |
+| 2026/05/28 | 画像出題機能を実装（問題フォームに画像アップロード欄・1600px/JPEG85%圧縮・Drive保存・LINE image+text配信）|
+| 2026/05/28 | GAS: `uploadQuestionImage()` / `multicastMessages()` 追加。`adminBroadcast` に imageUrl 引数追加。問題マスタに画像URL列(col9)追加 |
+| 2026/05/28 | GAS: 画像保存先を PropertiesService `COHORT_FOLDER_ID` で指定（未設定時ルートフォルダにフォールバック） |
+| 2026/05/28 | 不要コード削除: `demo.html` 廃止・`recordDemoAccess()` / `sendDecisionMessage()` / `getAdminStudentList()` / `LIFF_DEMO_URL` 定数を削除 |
+| 2026/05/28 | admin_liff.html: 学年管理者（submode=1）機能を実装（限定権限・リッチメニュー切り替え・付与/解除UI）|
