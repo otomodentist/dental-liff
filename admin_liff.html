@@ -434,6 +434,8 @@
       let activeSessionInfo = null;
       let isDeliveryPaused = false;
       let isNoDeliveryDeclared = false;
+      let isPastQuestion = false;
+      function togglePastQuestion() { isPastQuestion = !isPastQuestion; renderApp(); }
       let questionCooldownEnd = null;
       let questionCooldownInterval = null;
 
@@ -787,7 +789,10 @@
   <div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <span style="font-size:12px;color:var(--ink3)">問題文</span>
-      <button onclick="document.getElementById('questionText').value=''" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink3);font-size:11px;padding:2px 8px;cursor:pointer;line-height:1.4">クリア</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="togglePastQuestion()" style="border-radius:20px;border:none;font-size:11px;font-weight:700;cursor:pointer;padding:2px 10px;line-height:1.6;font-family:'Noto Sans JP',sans-serif;${isPastQuestion ? 'background:var(--accent);color:white' : 'background:var(--border);color:var(--ink3)'}">📚 過去問</button>
+        <button onclick="document.getElementById('questionText').value=''" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink3);font-size:11px;padding:2px 8px;cursor:pointer;line-height:1.4">クリア</button>
+      </div>
     </div>
     <textarea class="form-textarea" id="questionText" rows="3" placeholder="問題文を入力..."></textarea>
   </div>
@@ -1966,9 +1971,10 @@ function startQuestionCooldown(endTime) {
       }
 
       async function broadcastQuestion() {
-          const question    = document.getElementById('questionText').value.trim();
+          const rawQuestion = document.getElementById('questionText').value.trim();
+          const question    = isPastQuestion ? `【過去問】${rawQuestion}` : rawQuestion;
           const modelAnswer = document.getElementById('modelAnswer').value.trim();
-          if (!question || !modelAnswer) { showToast('⚠️ 問題文と模範解答を入力してください'); return; }
+          if (!rawQuestion || !modelAnswer) { showToast('⚠️ 問題文と模範解答を入力してください'); return; }
           await guardedAction('broadcastQuestion', async () => {
               const btn = document.querySelector('.btn-question');
               if (btn) { btn.disabled = true; btn.textContent = '配信中...'; }
@@ -1983,6 +1989,7 @@ function startQuestionCooldown(endTime) {
                   if (result.success) {
                       document.getElementById('questionText').value  = '';
                       document.getElementById('modelAnswer').value   = '';
+                      isPastQuestion = false;
                       adminCurrentQuestionId = result.questionId || null;
                       adminCurrentQuestionText = question;
                       adminCurrentModelAnswer  = modelAnswer;
