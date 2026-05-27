@@ -383,6 +383,17 @@
       </div>
     </div>
 
+<div id="subAdminPickerOverlay" class="mypage-selector-overlay" onclick="closeSubAdminPicker(event)">
+      <div class="mypage-selector-sheet" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="mypage-selector-title">サブ管理者を追加</div>
+          <button onclick="closeSubAdminPicker()" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer">✕</button>
+        </div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">タップで権限を付与します</div>
+        <div id="subAdminPickerList"><div class="empty-state">読み込み中...</div></div>
+      </div>
+    </div>
+
 <div id="myPageSelectorOverlay" class="mypage-selector-overlay" onclick="closeMyPageSelector(event)">
       <div class="mypage-selector-sheet" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -465,6 +476,7 @@
       let currentStudentRestricted = false;
       let adminChart = null;
       let billingListData = null;
+      let subAdminData = null;
       let activeBillingCohort = ACTIVE_COHORT;
       let guardianSystemEnabled = null;
 
@@ -517,6 +529,22 @@
           try {
                 await liff.init({ liffId: LIFF_ID });
                 if (!liff.isLoggedIn()) { liff.login(); return; }
+
+                // サブ管理者モード: LINE IDがサブ管理者リストに含まれているか確認
+                if (IS_SUB_ADMIN) {
+                    const profile = await liff.getProfile();
+                    const authRes = await fetch(`${GAS_URL}?action=checkSubAdminAccess&userId=${encodeURIComponent(profile.userId)}`);
+                    const auth = await authRes.json();
+                    if (!auth.authorized) {
+                        document.getElementById('app').innerHTML = `
+                            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:16px;padding:24px;text-align:center">
+                                <div style="font-size:40px">🔒</div>
+                                <div style="font-size:16px;font-weight:700;color:var(--ink)">アクセス権限がありません</div>
+                                <div style="font-size:13px;color:var(--ink3)">このアカウントにはサブ管理者権限が付与されていません。管理者にお問い合わせください。</div>
+                            </div>`;
+                        return;
+                    }
+                }
 
                 // localStorageからフィルタ復元（アプリを閉じても保持）
                 const saved = localStorage.getItem(FILTER_KEY);
@@ -1161,30 +1189,32 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
           if (tab === 'billing') {
               const billingUrl = getBillingGasUrl(activeBillingCohort);
               if (!billingUrl) { renderApp(); return; }
-              // キャッシュがあれば即表示してバックグラウンドで最新取得
               const cached = sessionStorage.getItem('billingCache');
               if (cached) {
                   try { billingListData = JSON.parse(cached); } catch(e) {}
               }
-              if (billingListData) {
+              if (billingListData && subAdminData) {
                   renderApp();
                   // バックグラウンドで更新
-                  fetch(`${billingUrl}?action=getAdminStudentListWithBilling`)
-                      .then(r => r.json()).then(data => {
-                          if (data.students) {
-                              billingListData = data;
-                              sessionStorage.setItem('billingCache', JSON.stringify(data));
-                              renderApp();
-                          }
-                      }).catch(() => {});
+                  Promise.all([
+                      fetch(`${billingUrl}?action=getAdminStudentListWithBilling`).then(r => r.json()),
+                      fetch(`${billingUrl}?action=getSubAdmins`).then(r => r.json()),
+                  ]).then(([billing, sub]) => {
+                      if (billing.students) { billingListData = billing; sessionStorage.setItem('billingCache', JSON.stringify(billing)); }
+                      if (sub.subAdmins) subAdminData = sub.subAdmins;
+                      renderApp();
+                  }).catch(() => {});
               } else {
                   renderLoadingScreen('billing');
                   try {
-                      const res = await fetch(`${billingUrl}?action=getAdminStudentListWithBilling`);
-                      const data = await res.json();
-                      if (!data.students) throw new Error(data.error || 'students undefined');
-                      billingListData = data;
-                      sessionStorage.setItem('billingCache', JSON.stringify(data));
+                      const [billing, sub] = await Promise.all([
+                          fetch(`${billingUrl}?action=getAdminStudentListWithBilling`).then(r => r.json()),
+                          fetch(`${billingUrl}?action=getSubAdmins`).then(r => r.json()),
+                      ]);
+                      if (!billing.students) throw new Error(billing.error || 'students undefined');
+                      billingListData = billing;
+                      sessionStorage.setItem('billingCache', JSON.stringify(billing));
+                      subAdminData = sub.subAdmins || [];
                   } catch (err) {
                       showToast('❌ データ取得失敗: ' + err.message);
                       activeTab = 'session';
@@ -2105,6 +2135,22 @@ function startQuestionCooldown(endTime) {
                   </button>
               </div>`;
 
+          const subs = subAdminData || [];
+          const renderSubAdmin = (s) => `
+              <div class="student-item" style="cursor:default">
+                  <div class="student-avatar">
+                      ${s.avatarUrl ? `<img src="${s.avatarUrl}" alt="">` : '👤'}
+                  </div>
+                  <div class="student-info">
+                      <div class="student-name">${s.displayName || '名前なし'}${s.nickname ? `<span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:5px">(${s.nickname})</span>` : ''}</div>
+                      <div class="student-meta" style="color:var(--accent)">サブ管理者</div>
+                  </div>
+                  <button onclick="revokeSubAdminAccess('${s.userId}')"
+                      style="padding:5px 10px;background:var(--danger);color:white;border:none;border-radius:8px;font-size:12px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;flex-shrink:0">
+                      解除
+                  </button>
+              </div>`;
+
           const sectionStyle = 'border-bottom:1px solid var(--border)';
           const summaryStyle = 'padding:11px 16px;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;-webkit-tap-highlight-color:transparent';
 
@@ -2142,6 +2188,20 @@ function startQuestionCooldown(endTime) {
                       ${unregistered.length === 0
                         ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
                         : unregistered.map(renderUnregistered).join('')}
+                  </div>
+              </details>
+              <details style="${sectionStyle}">
+                  <summary style="${summaryStyle}">
+                      <span>管理者（${subs.length}名）</span>
+                      <span style="font-size:10px" class="chev">▶</span>
+                  </summary>
+                  <div class="student-list">
+                      ${subs.length === 0
+                        ? '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">なし</div>'
+                        : subs.map(renderSubAdmin).join('')}
+                  </div>
+                  <div style="padding:8px 16px 14px">
+                      <button onclick="openSubAdminPicker()" style="width:100%;padding:9px;background:var(--surface2);border:1.5px dashed var(--border);border-radius:8px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:700;color:var(--ink2);cursor:pointer">＋ 追加</button>
                   </div>
               </details>`;
       }
@@ -2208,6 +2268,7 @@ function startQuestionCooldown(endTime) {
           if (cohort === activeBillingCohort) return;
           activeBillingCohort = cohort;
           billingListData = null;
+          subAdminData = null;
           sessionStorage.removeItem('billingCache');
           await switchTab('billing');
       }
@@ -2215,6 +2276,7 @@ function startQuestionCooldown(endTime) {
       async function refreshBillingList() {
           sessionStorage.removeItem('billingCache');
           billingListData = null;
+          subAdminData = null;
           await switchTab('billing');
       }
 
@@ -2248,6 +2310,78 @@ function startQuestionCooldown(endTime) {
                       showToast('✅ 登録を解除しました');
                   } else {
                       showToast('❌ エラー: ' + result.error);
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
+              }
+          });
+      }
+
+      // ===== サブ管理者管理 =====
+      function openSubAdminPicker() {
+          const overlay = document.getElementById('subAdminPickerOverlay');
+          if (!overlay) return;
+          const subIds = new Set((subAdminData || []).map(s => s.userId));
+          const students = (billingListData && billingListData.students) || [];
+          const candidates = students.filter(s => !subIds.has(s.userId));
+          const listEl = document.getElementById('subAdminPickerList');
+          if (listEl) {
+              listEl.innerHTML = candidates.length === 0
+                  ? '<div style="text-align:center;padding:24px;color:var(--ink3);font-size:13px">追加できるアカウントがありません</div>'
+                  : candidates.map(s => `
+                      <div onclick="grantSubAdminAccess('${s.userId}')" style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:rgba(0,0,0,0.05)">
+                          <div style="width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--border);display:flex;align-items:center;justify-content:center">
+                              ${s.avatarUrl ? `<img src="${s.avatarUrl}" style="width:100%;height:100%;object-fit:cover" alt="">` : '<span style="font-size:18px">👤</span>'}
+                          </div>
+                          <div style="flex:1;min-width:0">
+                              <div style="font-size:13px;font-weight:600;color:var(--ink)">${s.displayName || '名前なし'}${s.nickname ? `<span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:5px">(${s.nickname})</span>` : ''}</div>
+                              <div style="font-size:11px;color:var(--ink3);margin-top:1px">${s.billingStatus || '未登録'}</div>
+                          </div>
+                      </div>`).join('');
+          }
+          overlay.classList.add('open');
+      }
+
+      function closeSubAdminPicker(e) {
+          if (e && e.target !== document.getElementById('subAdminPickerOverlay')) return;
+          document.getElementById('subAdminPickerOverlay').classList.remove('open');
+      }
+
+      async function grantSubAdminAccess(userId) {
+          document.getElementById('subAdminPickerOverlay').classList.remove('open');
+          const billingUrl = getBillingGasUrl(activeBillingCohort);
+          await guardedAction('grantSubAdmin_' + userId, async () => {
+              try {
+                  const res = await fetch(`${billingUrl}?action=grantSubAdmin&targetUserId=${encodeURIComponent(userId)}&adminSecret=${encodeURIComponent(adminSecret)}`);
+                  const result = await res.json();
+                  if (result.success) {
+                      billingListData = null;
+                      subAdminData = null;
+                      await switchTab('billing');
+                      showToast('✅ サブ管理者権限を付与しました');
+                  } else {
+                      showToast('❌ エラー: ' + (result.error || '不明'));
+                  }
+              } catch (err) {
+                  showToast('❌ 通信エラー');
+              }
+          });
+      }
+
+      async function revokeSubAdminAccess(userId) {
+          if (!confirm('サブ管理者権限を解除しますか？')) return;
+          const billingUrl = getBillingGasUrl(activeBillingCohort);
+          await guardedAction('revokeSubAdmin_' + userId, async () => {
+              try {
+                  const res = await fetch(`${billingUrl}?action=revokeSubAdmin&targetUserId=${encodeURIComponent(userId)}&adminSecret=${encodeURIComponent(adminSecret)}`);
+                  const result = await res.json();
+                  if (result.success) {
+                      billingListData = null;
+                      subAdminData = null;
+                      await switchTab('billing');
+                      showToast('✅ 権限を解除しました');
+                  } else {
+                      showToast('❌ エラー: ' + (result.error || '不明'));
                   }
               } catch (err) {
                   showToast('❌ 通信エラー');
