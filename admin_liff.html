@@ -386,7 +386,7 @@
 <div id="subAdminPickerOverlay" class="mypage-selector-overlay" onclick="closeSubAdminPicker(event)">
       <div class="mypage-selector-sheet" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div class="mypage-selector-title">管理者を追加</div>
+          <div class="mypage-selector-title">学年管理者を追加</div>
           <button onclick="closeSubAdminPicker()" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer">✕</button>
         </div>
         <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">タップで権限を付与します</div>
@@ -540,7 +540,7 @@
                             <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:16px;padding:24px;text-align:center">
                                 <div style="font-size:40px">🔒</div>
                                 <div style="font-size:16px;font-weight:700;color:var(--ink)">アクセス権限がありません</div>
-                                <div style="font-size:13px;color:var(--ink3)">このアカウントには管理者権限が付与されていません。総合管理者にお問い合わせください。</div>
+                                <div style="font-size:13px;color:var(--ink3)">このアカウントには学年管理者権限が付与されていません。総合管理者にお問い合わせください。</div>
                             </div>`;
                         return;
                     }
@@ -2143,7 +2143,7 @@ function startQuestionCooldown(endTime) {
                   </div>
                   <div class="student-info">
                       <div class="student-name">${s.displayName || '名前なし'}${s.nickname ? `<span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:5px">(${s.nickname})</span>` : ''}</div>
-                      <div class="student-meta" style="color:var(--accent)">管理者</div>
+                      <div class="student-meta" style="color:var(--accent)">学年管理者</div>
                   </div>
                   <button onclick="revokeSubAdminAccess('${s.userId}')"
                       style="padding:5px 10px;background:var(--danger);color:white;border:none;border-radius:8px;font-size:12px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;flex-shrink:0">
@@ -2192,7 +2192,7 @@ function startQuestionCooldown(endTime) {
               </details>
               <details style="${sectionStyle}">
                   <summary style="${summaryStyle}">
-                      <span>管理者（${subs.length}名）</span>
+                      <span>学年管理者（${subs.length}名）</span>
                       <span style="font-size:10px" class="chev">▶</span>
                   </summary>
                   <div class="student-list">
@@ -2358,7 +2358,7 @@ function startQuestionCooldown(endTime) {
                       billingListData = null;
                       subAdminData = null;
                       await switchTab('billing');
-                      showToast('✅ 管理者権限を付与しました');
+                      showToast('✅ 学年管理者権限を付与しました');
                   } else {
                       showToast('❌ エラー: ' + (result.error || '不明'));
                   }
@@ -2369,7 +2369,7 @@ function startQuestionCooldown(endTime) {
       }
 
       async function revokeSubAdminAccess(userId) {
-          if (!confirm('管理者権限を解除しますか？')) return;
+          if (!confirm('学年管理者権限を解除しますか？')) return;
           const billingUrl = getBillingGasUrl(activeBillingCohort);
           await guardedAction('revokeSubAdmin_' + userId, async () => {
               try {
@@ -2379,7 +2379,7 @@ function startQuestionCooldown(endTime) {
                       billingListData = null;
                       subAdminData = null;
                       await switchTab('billing');
-                      showToast('✅ 管理者権限を解除しました');
+                      showToast('✅ 学年管理者権限を解除しました');
                   } else {
                       showToast('❌ エラー: ' + (result.error || '不明'));
                   }
