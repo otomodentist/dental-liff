@@ -451,6 +451,7 @@
       let currentStudentRestricted = false;
       let adminChart = null;
       let billingListData = null;
+      let activeBillingCohort = ACTIVE_COHORT;
       let guardianSystemEnabled = null;
 
       let dashboardFilter = null;
@@ -1139,6 +1140,8 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
               return;
           }
           if (tab === 'billing') {
+              const billingUrl = getBillingGasUrl(activeBillingCohort);
+              if (!billingUrl) { renderApp(); return; }
               // キャッシュがあれば即表示してバックグラウンドで最新取得
               const cached = sessionStorage.getItem('billingCache');
               if (cached) {
@@ -1147,7 +1150,7 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
               if (billingListData) {
                   renderApp();
                   // バックグラウンドで更新
-                  fetch(`${GAS_URL}?action=getAdminStudentListWithBilling`)
+                  fetch(`${billingUrl}?action=getAdminStudentListWithBilling`)
                       .then(r => r.json()).then(data => {
                           if (data.students) {
                               billingListData = data;
@@ -1158,7 +1161,7 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
               } else {
                   renderLoadingScreen('billing');
                   try {
-                      const res = await fetch(`${GAS_URL}?action=getAdminStudentListWithBilling`);
+                      const res = await fetch(`${billingUrl}?action=getAdminStudentListWithBilling`);
                       const data = await res.json();
                       if (!data.students) throw new Error(data.error || 'students undefined');
                       billingListData = data;
@@ -2029,7 +2032,19 @@ function startQuestionCooldown(endTime) {
       }
 
       function renderBillingHTML() {
-          if (!billingListData) return '<div class="empty-state">読み込み中...</div>';
+          const cohortBar = `
+              <div style="padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <span style="font-size:11px;color:var(--ink3);font-weight:700;white-space:nowrap">入学年度</span>
+                  ${Object.keys(COHORT_CONFIG).map(c => {
+                      const isActive = c === activeBillingCohort;
+                      const hasGas = !!COHORT_CONFIG[c].gasUrl;
+                      return `<button onclick="switchBillingCohort('${c}')" style="padding:4px 12px;border-radius:20px;border:none;font-size:12px;font-weight:700;cursor:${hasGas ? 'pointer' : 'default'};font-family:'Noto Sans JP',sans-serif;${isActive ? 'background:var(--accent);color:white' : 'background:var(--border);color:' + (hasGas ? 'var(--ink2)' : 'var(--ink3)')}">${c}年度${!hasGas ? ' 🔒' : ''}</button>`;
+                  }).join('')}
+              </div>`;
+
+          const billingUrl = getBillingGasUrl(activeBillingCohort);
+          if (!billingUrl) return cohortBar + '<div style="padding:32px 16px;text-align:center;color:var(--ink3);font-size:13px">このコホートのGASはまだ設定されていません</div>';
+          if (!billingListData) return cohortBar + '<div class="empty-state">読み込み中...</div>';
           const students = billingListData.students || [];
           const registered = students.filter(s => s.billingStatus === '契約中' || s.billingStatus === '管理者承認');
           const unregistered = students.filter(s => s.billingStatus !== '契約中' && s.billingStatus !== '管理者承認');
@@ -2074,7 +2089,7 @@ function startQuestionCooldown(endTime) {
           const sectionStyle = 'border-bottom:1px solid var(--border)';
           const summaryStyle = 'padding:11px 16px;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;-webkit-tap-highlight-color:transparent';
 
-          return `
+          return cohortBar + `
               <details style="${sectionStyle}">
                   <summary style="${summaryStyle}">
                       <span>📢 登録者への一斉メッセージ</span>
@@ -2167,6 +2182,18 @@ function startQuestionCooldown(endTime) {
           }
           renderApp();
         }
+      }
+
+      function getBillingGasUrl(cohort) {
+          return (COHORT_CONFIG[cohort] || {}).gasUrl || '';
+      }
+
+      async function switchBillingCohort(cohort) {
+          if (cohort === activeBillingCohort) return;
+          activeBillingCohort = cohort;
+          billingListData = null;
+          sessionStorage.removeItem('billingCache');
+          await switchTab('billing');
       }
 
       async function refreshBillingList() {
