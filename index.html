@@ -1521,18 +1521,17 @@ async function shareGuardianLink() {
 
     const shareUrl = d.shareUrl;
     const studentName = profileData?.displayName || '';
-    const msg = `授業のオトモ - 保護者登録\n\n${studentName}の学習状況を確認できます。\n\n①LINEで「授業のオトモ」を検索して友達追加\n②以下のURLを開いて登録\n\n${shareUrl}\n\n※このリンクは24時間有効です`;
+    const shareText = `${studentName}の学習履歴が共有されました！以下のリンクからアクセスしてください！\n\n※このリンクは24時間有効です`;
 
-    let shared = false;
-    try {
-      if (liff.isApiAvailable('shareTargetPicker')) {
-        await liff.shareTargetPicker([{ type: 'text', text: msg }]);
-        shared = true;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: '授業のオトモ - 学習履歴共有', text: shareText, url: shareUrl });
+        return;
+      } catch(e) {
+        if (e.name === 'AbortError') return;
       }
-    } catch(shareErr) {
-      // shareTargetPicker 非対応 / 未初期化 / キャンセル → フォールバック
     }
-    if (!shared) showGuardianShareModal(shareUrl, msg);
+    showGuardianShareModal(shareUrl, shareText + '\n\n' + shareUrl);
   } catch(e) {
     alert('共有に失敗しました。もう一度お試しください。');
   } finally {
