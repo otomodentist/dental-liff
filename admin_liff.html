@@ -404,6 +404,7 @@
         '26': { gasUrl: '', liffId: '' }, // TODO: 26年度入学
       };
       const ACTIVE_COHORT = new URLSearchParams(location.search).get('cohort') || '23';
+      const IS_SUB_ADMIN = new URLSearchParams(location.search).get('submode') === '1';
       const _gc = COHORT_CONFIG[ACTIVE_COHORT] || COHORT_CONFIG['23'];
       const GAS_URL = _gc.gasUrl;
       const LIFF_ID  = _gc.liffId;
@@ -556,7 +557,7 @@
                     if (lastEndedSessionId && !adminCurrentSessionId) adminCurrentSessionId = lastEndedSessionId;
                 }
                 renderApp();
-                if (!adminSecret) openAdminSecretModal();
+                if (!adminSecret && !IS_SUB_ADMIN) openAdminSecretModal();
                 if (!isSessionActive && lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
                 if (isSessionActive) {
                     if (adminCurrentQuestionId) pollAdminRanking();
@@ -632,14 +633,14 @@
                 </div>
                 <div style="display:flex;gap:8px;align-items:center">
                   <button onclick="softRefresh()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:16px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">↻</button>
-                  <button onclick="openAdminSecretModal()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:14px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">🔑</button>
+                  ${!IS_SUB_ADMIN ? `<button onclick="openAdminSecretModal()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:14px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">🔑</button>` : ''}
                   <button onclick="openMyPageSelector()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:10px;color:#fff;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer">マイページ</button>
                 </div>
               </div>
               <div class="tab-nav">
                 <button class="tab-btn ${activeTab === 'session' ? 'active' : ''}" onclick="switchTab('session')">問題配信</button>
-                <button class="tab-btn ${activeTab === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">ダッシュボード</button>
-                <button class="tab-btn ${activeTab === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">登録管理</button>
+                ${!IS_SUB_ADMIN ? `<button class="tab-btn ${activeTab === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">ダッシュボード</button>` : ''}
+                ${!IS_SUB_ADMIN ? `<button class="tab-btn ${activeTab === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">登録管理</button>` : ''}
                 <button class="tab-btn ${activeTab === 'exam' ? 'active' : ''}" onclick="switchTab('exam')">学習計画</button>
               </div>
             </div>
@@ -820,14 +821,14 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
                 </div>
                 <div style="display:flex;gap:8px;align-items:center">
                   <button onclick="softRefresh()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:16px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">↻</button>
-                  <button onclick="openAdminSecretModal()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:14px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">🔑</button>
+                  ${!IS_SUB_ADMIN ? `<button onclick="openAdminSecretModal()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-size:14px;font-weight:700;padding:5px 10px;cursor:pointer;line-height:1">🔑</button>` : ''}
                   <button onclick="openMyPageSelector()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:10px;color:#fff;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer">マイページ</button>
                 </div>
               </div>
               <div class="tab-nav">
                 <button class="tab-btn ${activeTabName === 'session' ? 'active' : ''}" onclick="switchTab('session')">問題配信</button>
-                <button class="tab-btn ${activeTabName === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">ダッシュボード</button>
-                <button class="tab-btn ${activeTabName === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">登録管理</button>
+                ${!IS_SUB_ADMIN ? `<button class="tab-btn ${activeTabName === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">ダッシュボード</button>` : ''}
+                ${!IS_SUB_ADMIN ? `<button class="tab-btn ${activeTabName === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">登録管理</button>` : ''}
                 <button class="tab-btn ${activeTabName === 'exam' ? 'active' : ''}" onclick="switchTab('exam')">学習計画</button>
               </div>
             </div>
@@ -1133,6 +1134,7 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
       }
 
       async function switchTab(tab) {
+          if (IS_SUB_ADMIN && (tab === 'dashboard' || tab === 'billing')) return;
           activeTab = tab;
           document.getElementById('pointDetailPopup').classList.remove('open');
           if (tab === 'session' && isSessionActive) {
@@ -2440,7 +2442,7 @@ function startQuestionCooldown(endTime) {
               }).join('');
 
           const subTabBtn = (id, label) => `<button onclick="examSubTab='${id}';renderApp()" style="flex:1;padding:8px 0;font-size:13px;font-weight:600;border:none;cursor:pointer;border-radius:8px;font-family:inherit;transition:background 0.15s;background:${examSubTab===id?'var(--accent)':'transparent'};color:${examSubTab===id?'white':'var(--ink3)'}">${label}</button>`;
-          const subTabsHTML = `<div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:16px">${subTabBtn('regular','定期試験')}${subTabBtn('quiz','小テスト')}</div>`;
+          const subTabsHTML = IS_SUB_ADMIN ? '' : `<div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:16px">${subTabBtn('regular','定期試験')}${subTabBtn('quiz','小テスト')}</div>`;
 
           const regularHTML = `
               <div style="background:var(--bg-sub);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:18px">
@@ -2483,7 +2485,7 @@ function startQuestionCooldown(endTime) {
           return `
               <div style="padding:16px">
                   ${subTabsHTML}
-                  ${examSubTab === 'quiz' ? quizHTML : regularHTML}
+                  ${IS_SUB_ADMIN ? quizHTML : (examSubTab === 'quiz' ? quizHTML : regularHTML)}
               </div>
           `;
       }
