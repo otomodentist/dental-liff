@@ -436,6 +436,9 @@
       let isNoDeliveryDeclared = false;
       let isPastQuestion = false;
       function togglePastQuestion() { isPastQuestion = !isPastQuestion; renderApp(); }
+      let pendingImageUrl = '';
+      let pendingImagePreviewUrl = '';
+      let pendingImageUploading = false;
       let questionCooldownEnd = null;
       let questionCooldownInterval = null;
 
@@ -809,6 +812,23 @@
       <b>どれか一つでOK</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A/B</code><br>
       <b>括弧内だけでも正解</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">好中球（マクロファージ）</code>
     </div>
+  </div>
+  <div style="height:1px;background:var(--border);margin:12px 0"></div>
+  <div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:12px;color:var(--ink3)">画像（任意）</span>
+      ${pendingImageUrl
+        ? `<button onclick="clearPendingImage()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--danger);font-size:11px;padding:2px 8px;cursor:pointer;line-height:1.4">削除</button>`
+        : ''}
+    </div>
+    ${pendingImageUploading
+      ? `<div style="text-align:center;padding:12px;color:var(--ink3);font-size:12px">アップロード中...</div>`
+      : pendingImagePreviewUrl
+        ? `<div style="position:relative;display:inline-block;width:100%"><img src="${pendingImagePreviewUrl}" style="width:100%;border-radius:8px;border:1px solid var(--border);display:block" /></div>`
+        : `<label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;color:var(--ink3);font-size:12px">
+            <span>🖼️ 画像を追加</span>
+            <input type="file" accept="image/*" onchange="onQuestionImageChange(event)" style="display:none" />
+          </label>`}
   </div>
 </div>
 
@@ -1670,6 +1690,7 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
           document.getElementById('pointDetailContent').innerHTML = `
               <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">問題文</div>
               <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${a.questionText || '（データなし）'}</div>
+              ${a.imageUrl ? `<img src="${a.imageUrl}" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:12px;display:block" />` : ''}
               <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">模範解答</div>
               <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${a.modelAnswer || '（データなし）'}</div>
               <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">学生の回答</div>
@@ -1970,6 +1991,77 @@ function startQuestionCooldown(endTime) {
           }, 1000);
       }
 
+      async function compressImageToBase64(file) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          const reader = new FileReader();
+          reader.onload = e => { img.src = e.target.result; };
+          img.onload = () => {
+            const MAX = 1600;
+            let w = img.width, h = img.height;
+            if (w > MAX || h > MAX) {
+              if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+              else       { w = Math.round(w * MAX / h); h = MAX; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          };
+          img.onerror = reject;
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function onQuestionImageChange(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        pendingImageUploading = true;
+        pendingImagePreviewUrl = '';
+        pendingImageUrl = '';
+        renderApp();
+        try {
+          const base64 = await compressImageToBase64(file);
+          pendingImagePreviewUrl = base64;
+          renderApp();
+          await doUploadQuestionImage(base64);
+        } catch (e) {
+          pendingImageUploading = false;
+          pendingImagePreviewUrl = '';
+          renderApp();
+          showToast('❌ 画像の処理に失敗しました');
+        }
+      }
+
+      async function doUploadQuestionImage(base64DataUrl) {
+        try {
+          const body = JSON.stringify({ action: 'uploadImage', adminSecret, imageData: base64DataUrl });
+          const res = await fetch(GAS_URL, { method: 'POST', body, headers: { 'Content-Type': 'text/plain' } });
+          const result = await res.json();
+          if (result.imageUrl) {
+            pendingImageUrl = result.imageUrl;
+            pendingImageUploading = false;
+            renderApp();
+            showToast('✅ 画像をアップロードしました');
+          } else {
+            throw new Error(result.error || 'upload failed');
+          }
+        } catch (e) {
+          pendingImageUploading = false;
+          pendingImageUrl = '';
+          renderApp();
+          showToast('❌ アップロードエラー: ' + e.message);
+        }
+      }
+
+      function clearPendingImage() {
+        pendingImageUrl = '';
+        pendingImagePreviewUrl = '';
+        pendingImageUploading = false;
+        renderApp();
+      }
+
       async function broadcastQuestion() {
           const rawQuestion = document.getElementById('questionText').value.trim();
           const question    = isPastQuestion ? `【過去問】${rawQuestion}` : rawQuestion;
@@ -1983,21 +2075,28 @@ function startQuestionCooldown(endTime) {
                       `${GAS_URL}?action=adminBroadcast` +
                       `&question=${encodeURIComponent(question)}` +
                       `&modelAnswer=${encodeURIComponent(modelAnswer)}` +
-                      `&adminSecret=${encodeURIComponent(adminSecret)}`
+                      `&adminSecret=${encodeURIComponent(adminSecret)}` +
+                      (pendingImageUrl ? `&imageUrl=${encodeURIComponent(pendingImageUrl)}` : '')
                   );
                   const result = await res.json();
                   if (result.success) {
                       document.getElementById('questionText').value  = '';
                       document.getElementById('modelAnswer').value   = '';
                       isPastQuestion = false;
+                      pendingImageUrl = '';
+                      pendingImagePreviewUrl = '';
                       adminCurrentQuestionId = result.questionId || null;
                       adminCurrentQuestionText = question;
                       adminCurrentModelAnswer  = modelAnswer;
+                      const _imgUrl = pendingImagePreviewUrl;
+                      pendingImagePreviewUrl = '';
+                      renderApp();
                       const rankEl = document.getElementById('adminRankingSection');
                       if (rankEl) rankEl.innerHTML =
                         `<div style="padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
                           <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">出題中の問題</div>
                           <div style="font-size:13px;line-height:1.5;margin-bottom:6px">${question}</div>
+                          ${_imgUrl ? `<img src="${_imgUrl}" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:6px;display:block" />` : ''}
                           <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">模範解答</div>
                           <div style="font-size:12px;color:var(--ink2);line-height:1.4">${modelAnswer}</div>
                         </div>
