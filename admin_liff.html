@@ -2119,10 +2119,7 @@ function startQuestionCooldown(endTime) {
               <details open style="${sectionStyle}">
                   <summary style="${summaryStyle}">
                       <span>登録済み（${registered.length}名）</span>
-                      <div style="display:flex;align-items:center;gap:8px">
-                          <button onclick="event.preventDefault();refreshBillingList()" style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--ink3);cursor:pointer;font-family:'Noto Sans JP',sans-serif">🔄</button>
-                          <span style="font-size:10px" class="chev">▶</span>
-                      </div>
+                      <span style="font-size:10px" class="chev">▶</span>
                   </summary>
                   <div class="student-list" style="padding-bottom:4px">
                       ${registered.length === 0
