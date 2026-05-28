@@ -1505,16 +1505,19 @@ function saveDailyStudyHours(val) {
 }
 
 // ===== 紹介機能 =====
+const REFERRAL_LIFF_URL = 'https://liff.line.me/2009739219-dSnPUVFj?action=refer';
+
 function renderReferralScreen() {
   const name = profileData?.displayName || myNickname || '';
-  const shareText = `${name ? name + 'さんからのご紹介です！\n\n' : ''}歯学部の授業に特化した学習アプリ「授業のOtomo」を使ってみませんか？\n\n授業中の問題に答えるだけで集中度を自動で記録します。\n\n友達追加はこちら👇\n${LINE_BOT_ADD_FRIEND_URL}`;
+  const shareText = `${name ? name + 'さんからのご紹介です！\n\n' : ''}歯学部の授業に特化した学習アプリ「授業のOtomo」を使ってみませんか？\n\n授業中の問題に答えるだけで集中度を自動で記録します。\n\n詳しくはこちら👇\n${REFERRAL_LIFF_URL}`;
   document.getElementById('app').innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 24px;background:var(--bg)">
       <div style="font-size:32px;margin-bottom:16px">🎉</div>
       <div style="font-family:'Kaisei Tokumin',serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:8px;text-align:center">友達に紹介する</div>
       <div style="font-size:13px;color:var(--ink3);margin-bottom:24px;text-align:center">以下のメッセージでLINEの友達に紹介できます</div>
-      <div style="width:100%;max-width:360px;background:white;border:1px solid var(--border);border-radius:14px;padding:16px;font-size:13px;color:var(--ink2);line-height:1.7;white-space:pre-wrap;word-break:break-word;margin-bottom:24px">${shareText}</div>
-      <button onclick="shareReferral()" style="width:100%;max-width:360px;background:#06C755;color:white;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">📤 LINEで友達に紹介する</button>
+      <div style="width:100%;max-width:360px;background:white;border:1px solid var(--border);border-radius:14px;padding:16px;font-size:13px;color:var(--ink2);line-height:1.7;white-space:pre-wrap;word-break:break-word;margin-bottom:16px">${shareText}</div>
+      <button onclick="shareReferral()" style="width:100%;max-width:360px;background:#06C755;color:white;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px">📤 LINEで友達に紹介する</button>
+      <a href="${LINE_BOT_ADD_FRIEND_URL}" style="width:100%;max-width:360px;display:block;text-align:center;padding:13px;border:1.5px solid var(--accent);border-radius:12px;color:var(--accent);font-size:14px;font-weight:700;text-decoration:none">➕ 自分で友達追加する</a>
     </div>`;
   window._referralShareText = shareText;
 }
@@ -1529,7 +1532,6 @@ async function shareReferral() {
       if (e.name === 'AbortError') return;
     }
   }
-  // フォールバック: テキストをコピー
   try {
     await navigator.clipboard.writeText(text);
     alert('メッセージをコピーしました！LINEで友達に送ってください。');
