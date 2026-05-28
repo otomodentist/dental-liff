@@ -275,7 +275,7 @@
   </head>
   <body>
     <div id="app">
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px">
+      <div style="position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
         <img src="otomo_logo.png" style="width:260px;margin-bottom:-64px" alt="授業のOtomo" />
         <div style="width:180px;height:8px;background:var(--border);border-radius:8px;overflow:hidden">
           <div class="admin-loading-bar" style="height:100%;background:var(--accent);border-radius:2px"></div>
@@ -1309,6 +1309,13 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
           renderApp();
       }
 
+      function geoMean(scores) {
+          const valid = scores.filter(s => s != null && s >= 0);
+          if (!valid.length) return null;
+          const logSum = valid.reduce((s, sc) => s + Math.log(Math.max(sc, 5)), 0);
+          return Math.round(Math.exp(logSum / valid.length));
+      }
+
       function scoreClass(score) {
           if (score >= 70) return '';
           if (score >= 40) return 'mid';
@@ -1451,8 +1458,8 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
               ? '<div class="empty-state">授業データがありません</div>'
               : subjEntries.map(([subj, data], idx) => {
                   const isOpen = adminSubjectOpen === idx;
-                  const latestDelivered = data.sessions.find(s => !s.noDelivery);
-                  const latestScore = latestDelivered ? latestDelivered.sustainScore : null;
+                  const deliveredScores = data.sessions.filter(s => !s.noDelivery && s.sustainScore != null).map(s => s.sustainScore);
+                  const latestScore = geoMean(deliveredScores);
                   const sessionRows = isOpen ? data.sessions.map(s => `
                       <div style="border-top:1px solid var(--border);background:#f0f6f1">
                           <div class="student-item" onclick="${s.noDelivery ? '' : `showSessionDetail('${s.sessionId}')`}" style="margin:0;border-radius:0;border:none;background:transparent;padding-left:20px;${s.noDelivery ? 'cursor:default;opacity:0.6' : ''}">
@@ -1471,7 +1478,7 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
                                   <div style="font-size:11px;color:var(--ink3);margin-top:2px">${data.sessions.length}回授業</div>
                               </div>
                               <div style="text-align:right;margin-right:6px">
-                                  <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">直近集中度維持スコア</div>
+                                  <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">集中度維持スコア</div>
                                   <div style="font-size:20px;font-weight:700;color:${latestScore != null ? 'var(--accent)' : 'var(--ink3)'}">${latestScore != null ? latestScore : '—'}</div>
                               </div>
                               <div style="font-size:12px;color:var(--ink3);transform:${isOpen ? 'rotate(180deg)' : 'none'}">▼</div>
@@ -1816,21 +1823,43 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
           } catch (e) { showToast('❌ 通信エラー'); }
       }
 
-      async function deleteQuestion() {
+      function deleteQuestion() {
           if (currentPointDetailIndex < 0 || !sessionDetailData) return;
           const a = sessionDetailData.answers[currentPointDetailIndex];
           if (!a.questionId) return;
-          if (!confirm('この問題と全ユーザーの回答データを完全に削除します。\nこの操作は取り消せません。よろしいですか？')) return;
-          try {
-              const res = await fetch(`${GAS_URL}?action=deleteQuestion&questionId=${encodeURIComponent(a.questionId)}`);
-              const d = await res.json();
-              if (!d.success) { showToast('❌ 削除失敗: ' + (d.error || '')); return; }
-              // ローカルデータから該当問題を除去
-              sessionDetailData.answers = sessionDetailData.answers.filter(ans => ans.questionId !== a.questionId);
-              showToast('✅ 削除しました');
-              closePointDetail();
-              drawAdminChart();
-          } catch (e) { showToast('❌ 通信エラー'); }
+
+          const overlay = document.createElement('div');
+          overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+          overlay.innerHTML = `
+            <div style="background:white;border-radius:14px;padding:20px;width:100%;max-width:360px">
+              <div style="font-size:15px;font-weight:700;color:var(--danger);margin-bottom:8px">🗑️ 問題を削除</div>
+              <div style="font-size:13px;color:var(--ink2);margin-bottom:14px">この問題と全ユーザーの回答データを完全に削除します。この操作は取り消せません。</div>
+              <div style="font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:6px">一斉送信メッセージ（任意）</div>
+              <textarea id="deleteReasonInput" placeholder="例：問題文に誤りがあったため削除しました" style="width:100%;height:80px;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:13px;font-family:inherit;resize:none;box-sizing:border-box"></textarea>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <button id="deleteCancelBtn" style="flex:1;padding:10px;background:var(--border);color:var(--ink);border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">キャンセル</button>
+                <button id="deleteConfirmBtn" style="flex:1;padding:10px;background:var(--danger);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">削除する</button>
+              </div>
+            </div>`;
+          document.body.appendChild(overlay);
+
+          document.getElementById('deleteCancelBtn').onclick = () => overlay.remove();
+          document.getElementById('deleteConfirmBtn').onclick = async () => {
+              const msg = document.getElementById('deleteReasonInput').value.trim();
+              overlay.remove();
+              try {
+                  const res = await fetch(`${GAS_URL}?action=deleteQuestion&questionId=${encodeURIComponent(a.questionId)}`);
+                  const d = await res.json();
+                  if (!d.success) { showToast('❌ 削除失敗: ' + (d.error || '')); return; }
+                  if (msg) {
+                      await fetch(`${GAS_URL}?action=broadcastToRegistered&message=${encodeURIComponent(msg)}`);
+                  }
+                  sessionDetailData.answers = sessionDetailData.answers.filter(ans => ans.questionId !== a.questionId);
+                  showToast('✅ 削除しました' + (msg ? '・メッセージ送信済み' : ''));
+                  closePointDetail();
+                  drawAdminChart();
+              } catch (e) { showToast('❌ 通信エラー'); }
+          };
       }
 
       function closePointDetail() {

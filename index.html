@@ -49,7 +49,7 @@
   .tab-btn.active { color: white; border-bottom-color: white; font-weight: 700; }
 
   /* ローディング */
-  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; gap: 16px; }
+  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; right: 0; bottom: 0; gap: 16px; }
   .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -350,7 +350,6 @@ const _gc = COHORT_CONFIG[ACTIVE_COHORT] || COHORT_CONFIG['23'];
 const GAS_URL = _gc.gasUrl;
 const LIFF_ID  = _gc.liffId;
 const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c0c8d0'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M20 21a8 8 0 1 0-16 0'/%3E%3C/svg%3E";
-const LINE_BOT_ADD_FRIEND_URL = 'https://lin.ee/Osx0ygi';
 
 let userId = null;
 let isPreviewMode = false;
@@ -405,6 +404,8 @@ let mainTab = 'dashboard'; // 'dashboard' | 'plan'
 // 授業履歴アコーディオン
 let historySubjectOpen = null;
 let historySessionOpen = null;
+let guardianSubjectOpen = null;
+let guardianSessionOpen = null;
 
 // ランキング個人グラフ
 let currentRankingSessionId = null;
@@ -505,7 +506,7 @@ async function init() {
     const _confirmRemovalToken = _urlParams.get('confirmRemoval');
     if (_guardianToken) { await handleGuardianRegistration(_guardianToken); return; }
     if (_confirmRemovalToken) { await handleGuardianRemovalConfirmation(_confirmRemovalToken); return; }
-    if (_urlParams.get('action') === 'refer') { await shareReferral(); return; }
+
 
     // キャッシュがあれば即座に表示してからバックグラウンドで最新データ取得
     const cache = loadInitCache(userId);
@@ -1359,6 +1360,18 @@ function toggleHistorySession(subjIdx, sessNum) {
   renderApp();
 }
 
+function toggleGuardianSubject(subjIdx) {
+  if (guardianSubjectOpen === subjIdx) { guardianSubjectOpen = null; guardianSessionOpen = null; }
+  else { guardianSubjectOpen = subjIdx; guardianSessionOpen = null; }
+  renderGuardianView();
+}
+
+function toggleGuardianSession(subjIdx, sessNum) {
+  if (guardianSubjectOpen === subjIdx && guardianSessionOpen === sessNum) guardianSessionOpen = null;
+  else { guardianSubjectOpen = subjIdx; guardianSessionOpen = sessNum; }
+  renderGuardianView();
+}
+
 async function openSettingsView() {
   currentView = 'settings';
   renderSettingsView();
@@ -1466,14 +1479,14 @@ function renderSettingsView() {
         <button onclick="shareGuardianLink()" style="width:100%;background:var(--accent);color:white;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
           📤 保護者に共有リンクを送る
         </button>
-        <div style="font-size:11px;color:var(--ink3);margin-top:6px;text-align:center">登録リンクは24時間有効です（上限3名）</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:6px;text-align:center">登録リンクは12時間有効です（上限3名）</div>
       </div>
       ${myGuardians.length > 0 ? `
       <div style="padding:11px 16px 4px">
         <div style="font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:8px">リンク中の保護者</div>
         ${myGuardians.map(g => `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-          <div style="font-size:14px;color:var(--ink2)">👤 ${g.guardianName}</div>
+          <div style="font-size:14px;color:var(--ink2)">${g.guardianName}</div>
           <button onclick="kickGuardianRequest('${g.guardianId}','${g.guardianName.replace(/'/g,"&#39;")}')" style="background:var(--border);color:var(--ink3);border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
             解除申請
           </button>
@@ -1504,32 +1517,6 @@ function saveDailyStudyHours(val) {
   localStorage.setItem('dailyStudyHours', dailyStudyHours);
 }
 
-// ===== 紹介機能 =====
-const REFERRAL_LIFF_URL = 'https://liff.line.me/2009739219-dSnPUVFj?action=refer';
-
-async function shareReferral() {
-  const name = profileData?.displayName || myNickname || '';
-  const text = `${name ? name + 'さんからのご紹介です！\n\n' : ''}歯学部の授業に特化した学習アプリ「授業のOtomo」を使ってみませんか？\n\n授業中の問題に答えるだけで集中度を自動で記録します。\n\n詳しくはこちら👇\n${REFERRAL_LIFF_URL}`;
-  // liff.shareTargetPicker が使える場合はLINE友達ピッカーを直接開く
-  if (liff.isApiAvailable('shareTargetPicker')) {
-    try {
-      const result = await liff.shareTargetPicker([{ type: 'text', text }]);
-      if (result?.status === 'success' || !result) return;
-    } catch(e) { /* fallthrough */ }
-  }
-  // フォールバック: OSネイティブシェート
-  if (navigator.share) {
-    try { await navigator.share({ title: '授業のOtomo', text }); return; } catch(e) {
-      if (e.name === 'AbortError') return;
-    }
-  }
-  try {
-    await navigator.clipboard.writeText(text);
-    alert('メッセージをコピーしました！LINEで友達に送ってください。');
-  } catch(e) {
-    alert('以下のメッセージをコピーしてLINEで送ってください：\n\n' + text);
-  }
-}
 
 // ===== 保護者機能 =====
 
@@ -1549,8 +1536,7 @@ async function shareGuardianLink() {
     if (!d.success) { alert('エラー: ' + (d.error || '失敗しました')); return; }
 
     const shareUrl = d.shareUrl;
-    const studentName = profileData?.displayName || myNickname || '';
-    const shareText = `${studentName ? studentName + 'の' : ''}学習履歴が共有されました！以下のリンクからアクセスしてください！\n\n※このリンクは24時間有効です`;
+    const shareText = `学習履歴が共有されました！以下のリンクからアクセスしてください！\n\n※このリンクは12時間有効です`;
 
     if (navigator.share) {
       try {
@@ -1681,9 +1667,6 @@ function renderGuardianView() {
         <span style="font-family:'Kaisei Tokumin',serif;font-size:17px;font-weight:700;color:white;letter-spacing:0.02em">授業のOtomo</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
-        <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);overflow:hidden;flex-shrink:0">
-          <img src="${guardianStudentAvatar || DEFAULT_AVATAR}" style="width:100%;height:100%;object-fit:cover" onerror="this.src=DEFAULT_AVATAR" />
-        </div>
         <div class="header-title" style="flex:1">${guardianStudentName}</div>
         <div style="font-size:11px;background:rgba(255,255,255,0.22);padding:3px 9px;border-radius:10px;font-weight:700;border:1px solid rgba(255,255,255,0.3)">保護者モード</div>
         <button onclick="guardianCurrentView='settings';renderGuardianView()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);border-radius:6px;font-size:17px;cursor:pointer;padding:2px 9px;color:white;line-height:1.4">⚙</button>
@@ -1695,36 +1678,143 @@ function renderGuardianView() {
     return;
   }
 
-  const subjectsHtml = subjects.map((subj, si) => {
-    const sessions = (subj.sessions || []).filter(s => s.noDelivery || (s.timeline || []).some(t => t.answerText !== ''));
-    if (sessions.length === 0) return '';
-    const score = subj.sustainScore != null ? subj.sustainScore : null;
-    const scoreHtml = score != null
-      ? `<span style="font-size:13px;font-weight:700;color:var(--accent)">${score}点</span>`
-      : `<span style="font-size:12px;color:var(--ink3)">—</span>`;
+  // 直近授業を探す（全科目横断で最新のセッション）
+  let topSubj = null, topSess = null;
+  for (const s of subjects) {
+    for (const sess of (s.sessions || []).slice().reverse()) {
+      if (!sess.noDelivery && (sess.timeline || []).some(t => t.answerText !== '')) {
+        if (!topSess || (sess.latestAnswerAt || 0) > (topSess.latestAnswerAt || 0)) {
+          topSubj = s; topSess = sess;
+        }
+        break;
+      }
+    }
+  }
 
-    const sessHtml = sessions.slice(0, 5).map(sess => {
-      const sc = sess.sustainScore != null ? `${sess.sustainScore}点` : (sess.noDelivery ? (sess.selfReportScore != null ? `自己申告 ${sess.selfReportScore}%` : '—') : '—');
-      const nd = sess.noDelivery ? ' 📵' : '';
-      return `<div style="display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--border)">
-        <div style="font-size:13px;color:var(--ink2)">第${sess.sessionNumber}回${nd}</div>
-        <div style="font-size:13px;font-weight:700;color:var(--ink)">${sc}</div>
-      </div>`;
-    }).join('');
+  const isLive = activeSessionState?.isActive;
+  const liveSess = activeSessionState?.session;
 
-    return `<div style="margin:12px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
-      <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-        <div style="font-size:14px;font-weight:700;color:var(--ink)">${subj.subjectName}</div>
-        <div style="display:flex;align-items:center;gap:4px">
-          <span style="font-size:11px;color:var(--ink3)">維持スコア</span>
-          ${scoreHtml}
+  const liveCardHTML = isLive ? `
+    <div style="margin:8px 16px 0;background:var(--surface);border:1.5px solid var(--accent);border-radius:12px;overflow:hidden">
+      <div style="padding:10px 14px;background:var(--accent-light);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:0.05em">授業中</div>
+          <div style="font-size:14px;font-weight:700;color:var(--ink);margin-top:2px">${liveSess.subject}　第${liveSess.sessionNumber}回</div>
         </div>
+        <div style="font-size:11px;color:var(--ink3)">現在回答受付中</div>
       </div>
-      ${sessHtml}
-    </div>`;
+    </div>` : '';
+
+  const topCardHTML = !isLive && topSess ? `
+    <div style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:0.05em">直近授業</div>
+          <div style="font-size:14px;font-weight:700;color:var(--ink);margin-top:2px">${topSubj.name}　第${topSess.sessionNumber}回</div>
+        </div>
+        <div style="font-size:11px;color:var(--ink3)">${topSess.timeline.length}問回答</div>
+      </div>
+      <div style="height:190px;position:relative;padding:8px 8px 4px"><canvas id="guardianTopChart"></canvas></div>
+      <div id="guardianTopChart-info" class="chart-point-info" style="margin:0 12px 10px"></div>
+    </div>` : '';
+
+  const rankCardHTML = topSess ? `
+    <div id="guardianRankCard" style="margin:8px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--ink3)">直近授業ランキング（集中度維持スコア）</div>
+        <div style="font-size:14px;font-weight:700;color:var(--ink);margin-top:2px">${topSubj.name}　第${topSess.sessionNumber}回</div>
+      </div>
+      <div id="guardianRankBody" style="padding:16px;text-align:center;color:var(--ink3);font-size:13px">読み込み中...</div>
+    </div>` : '';
+
+  // アコーディオン（マイページと同じ構造）
+  const accordionHTML = subjects.map((subj, subjIdx) => {
+    const displaySessions = subj.sessions.filter(s => s.noDelivery || (s.timeline || []).some(t => t.answerText !== ''));
+    if (displaySessions.length === 0) return '';
+    const isOpen = guardianSubjectOpen === subjIdx;
+    const latestDelivered = displaySessions.slice().reverse().find(s => !s.noDelivery);
+    const latestScore = latestDelivered ? latestDelivered.sustainScore : null;
+    const sessionRows = isOpen ? displaySessions.slice().reverse().map(sess => {
+      const isSessOpen = guardianSubjectOpen === subjIdx && guardianSessionOpen === sess.sessionNumber;
+      const sc = sess.sustainScore;
+      return `
+        <div style="border-top:1px solid var(--border);background:#f0f6f1">
+          <div onclick="${sess.noDelivery ? '' : `toggleGuardianSession(${subjIdx},${sess.sessionNumber})`}" style="display:flex;align-items:center;gap:12px;padding:11px 14px 11px 20px;${sess.noDelivery ? 'cursor:default;opacity:0.55' : 'cursor:pointer'}">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600;color:var(--ink)">第${sess.sessionNumber}回授業</div>
+              <div style="font-size:11px;color:var(--ink3);margin-top:1px">${sess.noDelivery ? '配信なし' : sess.timeline.length + '問回答'}</div>
+            </div>
+            ${sess.noDelivery
+              ? (sess.selfReportScore != null
+                  ? `<div style="text-align:right;margin-right:4px"><div style="font-size:10px;color:var(--ink3)">自己申告</div><div class="score-badge ${sess.selfReportScore>=70?'high':sess.selfReportScore>=40?'mid':'low'}" style="font-size:16px">${sess.selfReportScore}%</div></div>`
+                  : `<div style="font-size:11px;color:var(--accent3);margin-right:4px">未申告</div>`)
+              : `<div class="score-badge ${sc>=70?'high':sc>=40?'mid':'low'}" style="font-size:18px;margin-right:4px">${sc}</div>`}
+            ${sess.noDelivery ? '' : `<div style="font-size:12px;color:var(--ink3);transition:transform 0.2s;transform:${isSessOpen?'rotate(180deg)':'none'}">▼</div>`}
+          </div>
+          ${isSessOpen && !sess.noDelivery ? `
+          <div style="background:var(--surface2);padding:0 0 10px">
+            <div style="height:180px;position:relative;padding:8px 10px 0"><canvas id="gc-${subjIdx}-${sess.sessionNumber}"></canvas></div>
+            <div id="gc-${subjIdx}-${sess.sessionNumber}-info" class="chart-point-info" style="margin:6px 12px 0"></div>
+          </div>` : ''}
+        </div>`;
+    }).join('') : '';
+    return `
+      <div style="margin:0 16px 8px;border-radius:12px;overflow:hidden;border:1px solid var(--border)">
+        <div onclick="toggleGuardianSubject(${subjIdx})" style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;background:#b8d9bd">
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:700;color:var(--accent)">${subj.name}</div>
+            <div style="font-size:11px;color:var(--ink3);margin-top:2px">${displaySessions.length}回授業</div>
+          </div>
+          <div style="text-align:right;margin-right:6px">
+            <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">集中度維持スコア</div>
+            <div style="font-size:20px;font-weight:700;color:${latestScore != null ? 'var(--accent)' : 'var(--ink3)'}">${latestScore != null ? latestScore : '—'}</div>
+          </div>
+          <div style="font-size:12px;color:var(--ink3);transition:transform 0.2s;transform:${isOpen?'rotate(180deg)':'none'}">▼</div>
+        </div>
+        ${sessionRows}
+      </div>`;
   }).join('');
 
-  app.innerHTML = header + subjectsHtml + '<div class="footer-pad"></div>';
+  app.innerHTML = header + liveCardHTML + topCardHTML + rankCardHTML +
+    `<div style="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--ink3)">授業履歴</div>` +
+    accordionHTML + '<div class="footer-pad"></div>';
+
+  requestAnimationFrame(() => {
+    if (!isLive && topSess?.timeline?.length) drawTimelineChart('guardianTopChart', topSess.timeline, 'guardianTopChart');
+    if (guardianSubjectOpen !== null && guardianSessionOpen !== null) {
+      const subj = subjects[guardianSubjectOpen];
+      const sess = subj?.sessions.find(s => s.sessionNumber === guardianSessionOpen);
+      const cid = `gc-${guardianSubjectOpen}-${guardianSessionOpen}`;
+      if (sess?.timeline?.length) drawTimelineChart(cid, sess.timeline, cid);
+    }
+  });
+
+  if (topSess) {
+    fetch(`${GAS_URL}?action=getSessionRanking&sessionId=${encodeURIComponent(topSess.sessionId)}`)
+      .then(r => r.json()).then(d => {
+        const body = document.getElementById('guardianRankBody');
+        if (!body) return;
+        const items = (d.ranking || []).filter(i => !i.restricted);
+        if (items.length === 0) { body.textContent = 'ランキングデータなし'; return; }
+        const studentItem = items.find(i => i.userId === guardianStudentId);
+        const top3 = items.slice(0, 3);
+        const makeRow = (item) => {
+          const isStudent = item.userId === guardianStudentId;
+          const medal = item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : `${item.rank}位`;
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);${isStudent ? 'background:var(--accent-light)' : ''}">
+            <div style="font-size:14px;min-width:28px">${medal}</div>
+            <div style="flex:1;font-size:13px;font-weight:${isStudent ? '700' : '400'};color:${isStudent ? 'var(--accent)' : 'var(--ink)'}">${item.displayName}${item.nickname ? ` (${item.nickname})` : ''}</div>
+            <div style="font-size:13px;font-weight:700">${item.sustainScore}</div>
+          </div>`;
+        };
+        const top3HTML = top3.map(makeRow).join('');
+        const myHTML = studentItem && !top3.find(i => i.userId === guardianStudentId) ? makeRow(studentItem) : '';
+        body.innerHTML = `<div style="padding:0">${top3HTML}${myHTML}</div>`;
+      }).catch(() => {
+        const body = document.getElementById('guardianRankBody');
+        if (body) body.textContent = 'ランキングを取得できませんでした';
+      });
+  }
 }
 
 function renderGuardianSettingsView() {
