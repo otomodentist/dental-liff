@@ -1520,8 +1520,8 @@ async function shareGuardianLink() {
     if (!d.success) { alert('エラー: ' + (d.error || '失敗しました')); return; }
 
     const shareUrl = d.shareUrl;
-    const studentName = profileData?.displayName || '';
-    const shareText = `${studentName}の学習履歴が共有されました！以下のリンクからアクセスしてください！\n\n※このリンクは24時間有効です`;
+    const studentName = profileData?.displayName || myNickname || '';
+    const shareText = `${studentName ? studentName + 'の' : ''}学習履歴が共有されました！以下のリンクからアクセスしてください！\n\n※このリンクは24時間有効です`;
 
     if (navigator.share) {
       try {
