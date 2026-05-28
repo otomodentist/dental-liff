@@ -505,7 +505,7 @@ async function init() {
     const _confirmRemovalToken = _urlParams.get('confirmRemoval');
     if (_guardianToken) { await handleGuardianRegistration(_guardianToken); return; }
     if (_confirmRemovalToken) { await handleGuardianRemovalConfirmation(_confirmRemovalToken); return; }
-    if (_urlParams.get('action') === 'refer') { renderReferralScreen(); return; }
+    if (_urlParams.get('action') === 'refer') { await shareReferral(); return; }
 
     // キャッシュがあれば即座に表示してからバックグラウンドで最新データ取得
     const cache = loadInitCache(userId);
@@ -1507,19 +1507,9 @@ function saveDailyStudyHours(val) {
 // ===== 紹介機能 =====
 const REFERRAL_LIFF_URL = 'https://liff.line.me/2009739219-dSnPUVFj?action=refer';
 
-function renderReferralScreen() {
-  const name = profileData?.displayName || myNickname || '';
-  window._referralShareText = `${name ? name + 'さんからのご紹介です！\n\n' : ''}歯学部の授業に特化した学習アプリ「授業のOtomo」を使ってみませんか？\n\n授業中の問題に答えるだけで集中度を自動で記録します。\n\n詳しくはこちら👇\n${REFERRAL_LIFF_URL}`;
-  document.getElementById('app').innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 24px;background:var(--bg)">
-      <button id="referralShareBtn" onclick="shareReferral()" style="width:100%;max-width:360px;background:#06C755;color:white;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit">📤 友達に紹介する</button>
-    </div>`;
-  // ユーザージェスチャー不要な環境では自動起動を試みる
-  setTimeout(() => { document.getElementById('referralShareBtn')?.click(); }, 300);
-}
-
 async function shareReferral() {
-  const text = window._referralShareText || '';
+  const name = profileData?.displayName || myNickname || '';
+  const text = `${name ? name + 'さんからのご紹介です！\n\n' : ''}歯学部の授業に特化した学習アプリ「授業のOtomo」を使ってみませんか？\n\n授業中の問題に答えるだけで集中度を自動で記録します。\n\n詳しくはこちら👇\n${REFERRAL_LIFF_URL}`;
   // liff.shareTargetPicker が使える場合はLINE友達ピッカーを直接開く
   if (liff.isApiAvailable('shareTargetPicker')) {
     try {
