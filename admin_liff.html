@@ -451,6 +451,7 @@
       let adminCurrentQuestionId = null;
       let adminCurrentQuestionText = null;
       let adminCurrentModelAnswer = null;
+      let adminCurrentImageUrl = null;
       let _rankingRescoreMode = false;
       let questionRefreshTimers = [];
       let lastEndedSessionId = null;
@@ -997,6 +998,7 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
           if (fetchQId !== adminCurrentQuestionId) return; // 問題が切り替わっていたら結果を捨てる
           adminCurrentQuestionText = d.currentQuestionText || adminCurrentQuestionText;
           adminCurrentModelAnswer  = d.currentModelAnswer  || adminCurrentModelAnswer;
+          adminCurrentImageUrl     = d.currentImageUrl     !== undefined ? d.currentImageUrl : adminCurrentImageUrl;
           const el = document.getElementById('adminRankingSection');
           if (!el) return;
           const rows = (d.ranking || []);
@@ -1004,6 +1006,7 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
             <div style="padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
               <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">出題中の問題</div>
               <div style="font-size:13px;line-height:1.5;margin-bottom:6px">${adminCurrentQuestionText}</div>
+              ${adminCurrentImageUrl ? `<img src="${adminCurrentImageUrl}" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:8px;display:block" />` : ''}
               ${adminCurrentModelAnswer ? `<div style="font-size:10px;color:var(--ink3);margin-bottom:2px">模範解答</div><div style="display:flex;align-items:flex-start;gap:8px"><div style="font-size:12px;color:var(--ink2);line-height:1.4;flex:1">${adminCurrentModelAnswer}</div><button onclick="openRankingRescoreModal()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink2);font-size:10px;padding:2px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0">修正</button></div>` : ''}
             </div>` : '';
           el.innerHTML = qHtml + (rows.length > 0
