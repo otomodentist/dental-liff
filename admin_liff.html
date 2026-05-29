@@ -799,6 +799,7 @@
       <span style="font-size:12px;color:var(--ink3)">問題文</span>
       <div style="display:flex;gap:6px;align-items:center">
         <button id="pastQuestionBtn" onclick="togglePastQuestion()" style="border-radius:20px;border:none;font-size:11px;font-weight:700;cursor:pointer;padding:2px 10px;line-height:1.6;font-family:'Noto Sans JP',sans-serif;${isPastQuestion ? 'background:var(--accent);color:white' : 'background:var(--border);color:var(--ink3)'}">📚 過去問</button>
+        <button onclick="document.getElementById('questionText').value='画像の問題に回答せよ'" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink3);font-size:11px;padding:2px 8px;cursor:pointer;line-height:1.4">🖼️ 画像</button>
         <button onclick="document.getElementById('questionText').value=''" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink3);font-size:11px;padding:2px 8px;cursor:pointer;line-height:1.4">クリア</button>
       </div>
     </div>

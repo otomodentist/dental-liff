@@ -1101,8 +1101,7 @@ function renderApp() {
     if (displaySessions.length === 0) return '';
 
     const isOpen = historySubjectOpen === subjIdx;
-    const latestDelivered = displaySessions.slice().reverse().find(s => !s.noDelivery);
-    const latestScore = latestDelivered ? latestDelivered.sustainScore : null;
+    const latestScore = subj.sustainScore != null ? subj.sustainScore : null;
     const sessionRows = isOpen ? displaySessions.slice().reverse().map(sess => {
       const isSessOpen = historySubjectOpen === subjIdx && historySessionOpen === sess.sessionNumber;
       const sc = sess.sustainScore;
@@ -1732,8 +1731,7 @@ function renderGuardianView() {
     const displaySessions = subj.sessions.filter(s => s.noDelivery || (s.timeline || []).some(t => t.answerText !== ''));
     if (displaySessions.length === 0) return '';
     const isOpen = guardianSubjectOpen === subjIdx;
-    const latestDelivered = displaySessions.slice().reverse().find(s => !s.noDelivery);
-    const latestScore = latestDelivered ? latestDelivered.sustainScore : null;
+    const latestScore = subj.sustainScore != null ? subj.sustainScore : null;
     const sessionRows = isOpen ? displaySessions.slice().reverse().map(sess => {
       const isSessOpen = guardianSubjectOpen === subjIdx && guardianSessionOpen === sess.sessionNumber;
       const sc = sess.sustainScore;
