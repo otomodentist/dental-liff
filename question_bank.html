@@ -3,172 +3,259 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>問題バンク管理 | 授業のOtomo</title>
+<title>教員ポータル | 授業のOtomo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kaisei+Tokumin:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --accent: #4a7c59; --accent-light: #e8f2eb; --surface: #ffffff; --surface2: #f5f7f5;
-    --border: #dde5de; --ink: #2c3e2d; --ink2: #4a5e4b; --ink3: #8a9e8b;
-    --danger: #c0392b; --danger-light: #fdf0ef;
-    font-family: 'Noto Sans JP', sans-serif;
+    --accent:#4a7c59;--accent-light:#e8f2eb;--surface:#fff;--surface2:#f5f7f5;
+    --border:#dde5de;--ink:#2c3e2d;--ink2:#4a5e4b;--ink3:#8a9e8b;
+    --danger:#c0392b;--danger-light:#fdf0ef;--warning:#b8860b;--warning-light:#fffbea;
+    font-family:'Noto Sans JP',sans-serif;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--surface2); color: var(--ink); min-height: 100vh; }
-
-  /* ===== VIEWS ===== */
-  .view { display: none; min-height: 100vh; }
-  .view.active { display: block; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--surface2);color:var(--ink);min-height:100vh}
+  .view{display:none;min-height:100vh}
+  .view.active{display:block}
 
   /* ===== LOGIN ===== */
-  .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
-  .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px 24px; width: 100%; max-width: 360px; }
-  .login-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
-  .login-logo span { font-family: 'Kaisei Tokumin', serif; font-size: 18px; font-weight: 700; color: var(--ink); }
-  .login-title { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 18px; }
-  .form-label { font-size: 11px; color: var(--ink3); font-weight: 700; margin-bottom: 5px; display: block; }
-  .form-select, .form-input { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; font-size: 14px; font-family: inherit; background: var(--surface2); color: var(--ink); outline: none; margin-bottom: 14px; }
-  .form-select:focus, .form-input:focus { border-color: var(--accent); }
-  .form-textarea { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; font-size: 13px; font-family: inherit; background: var(--surface2); color: var(--ink); outline: none; resize: vertical; line-height: 1.5; }
-  .form-textarea:focus { border-color: var(--accent); }
-  .btn-primary { width: 100%; background: var(--accent); color: white; border: none; border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-secondary { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 13px; color: var(--ink2); cursor: pointer; font-family: inherit; }
-  .error-msg { font-size: 12px; color: var(--danger); background: var(--danger-light); border: 1px solid rgba(192,57,43,0.2); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; display: none; }
+  .login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+  .login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 24px;width:100%;max-width:360px}
+  .form-label{font-size:11px;color:var(--ink3);font-weight:700;margin-bottom:5px;display:block}
+  .form-select,.form-input{width:100%;border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:14px;font-family:inherit;background:var(--surface2);color:var(--ink);outline:none;margin-bottom:14px}
+  .form-select:focus,.form-input:focus{border-color:var(--accent)}
+  .form-textarea{width:100%;border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:13px;font-family:inherit;background:var(--surface2);color:var(--ink);outline:none;resize:vertical;line-height:1.5}
+  .form-textarea:focus{border-color:var(--accent)}
+  .btn-primary{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+  .btn-ghost{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:13px;color:var(--ink2);cursor:pointer;font-family:inherit}
+  .err-msg{font-size:12px;color:var(--danger);background:var(--danger-light);border:1px solid rgba(192,57,43,.2);border-radius:8px;padding:8px 12px;margin-bottom:12px;display:none}
 
-  /* ===== MAIN VIEW ===== */
-  .main-header { background: var(--accent); color: white; padding: 14px 16px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 10; }
-  .main-header-title { font-family: 'Kaisei Tokumin', serif; font-size: 16px; font-weight: 700; flex: 1; }
-  .header-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; color: white; font-size: 12px; font-weight: 700; padding: 4px 10px; cursor: pointer; font-family: inherit; }
+  /* ===== MAIN ===== */
+  .header{background:var(--accent);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:20}
+  .header-title{font-family:'Kaisei Tokumin',serif;font-size:16px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .header-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:8px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .tab-bar{display:flex;background:var(--surface);border-bottom:2px solid var(--border);position:sticky;top:52px;z-index:19}
+  .tab-btn{flex:1;padding:11px 4px;font-size:13px;font-weight:700;border:none;background:none;cursor:pointer;color:var(--ink3);font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-2px}
+  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .tab-content{display:none;padding-bottom:40px}
+  .tab-content.active{display:block}
 
-  .filter-bar { padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .filter-chip { border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; cursor: pointer; background: var(--surface2); color: var(--ink3); font-family: inherit; }
-  .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: 700; }
+  /* ===== SESSION CARD ===== */
+  .session-card{margin:12px 14px 0;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+  .session-card-header{padding:10px 14px;display:flex;align-items:center;gap:8px}
+  .live-badge{background:#e53935;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.05em}
+  .no-session{margin:24px 14px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-align:center;color:var(--ink3);font-size:13px;line-height:1.7}
 
-  .questions-list { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 80px; }
-  .q-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-  .q-card-header { padding: 10px 14px 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
-  .q-sess-badge { background: var(--accent-light); color: var(--accent); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
-  .q-card-body { padding: 10px 14px; }
-  .q-text { font-size: 13px; font-weight: 600; line-height: 1.5; margin-bottom: 6px; }
-  .q-answer { font-size: 12px; color: var(--ink3); line-height: 1.4; }
-  .q-img-tag { font-size: 11px; color: var(--accent); margin-top: 4px; }
-  .q-actions { display: flex; gap: 8px; padding: 0 14px 12px; }
-  .q-btn-edit { flex: 1; border: 1px solid var(--border); background: none; border-radius: 8px; padding: 7px; font-size: 12px; color: var(--ink2); cursor: pointer; font-family: inherit; }
-  .q-btn-delete { border: 1px solid rgba(192,57,43,0.3); background: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; color: var(--danger); cursor: pointer; font-family: inherit; }
+  /* ===== QUESTION FORM ===== */
+  .form-card{margin:10px 14px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .form-row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .form-row-btns{display:flex;gap:6px;flex-wrap:wrap}
+  .chip-btn{border:1px solid var(--border);border-radius:20px;background:var(--surface2);color:var(--ink3);font-size:11px;font-weight:700;padding:2px 10px;cursor:pointer;font-family:inherit;line-height:1.6}
+  .chip-btn.accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .divider{height:1px;background:var(--border);margin:12px 0}
+  .img-preview{width:100%;border-radius:8px;border:1px solid var(--border);display:block;margin-bottom:6px}
+  .img-upload-label{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;color:var(--ink3);font-size:12px}
+  .broadcast-btn{width:100%;margin-top:10px;padding:13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+  .broadcast-btn:disabled{background:var(--border);color:var(--ink3);cursor:not-allowed}
 
-  .empty-state { text-align: center; padding: 48px 24px; color: var(--ink3); font-size: 14px; }
+  /* ===== RANKING ===== */
+  .rank-card{margin:10px 14px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .rank-header{padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--ink3)}
+  .rank-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);font-size:13px}
+  .rank-num{width:22px;text-align:right;font-weight:700;color:var(--ink3);font-size:12px;flex-shrink:0}
+  .rank-name{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rank-score{font-weight:700;color:var(--accent);font-size:13px;flex-shrink:0}
 
-  .fab { position: fixed; bottom: 24px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: white; font-size: 26px; line-height: 52px; text-align: center; cursor: pointer; box-shadow: 0 4px 12px rgba(74,124,89,0.4); border: none; z-index: 20; }
+  /* ===== QUESTION BANK ===== */
+  .section-wrap{margin:12px 14px 0}
+  .section-title{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.05em;margin-bottom:8px}
+  .filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .q-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:8px}
+  .q-body{padding:10px 14px}
+  .q-sess{font-size:10px;color:var(--accent);font-weight:700;margin-bottom:3px}
+  .q-text{font-size:13px;font-weight:600;line-height:1.4;margin-bottom:3px}
+  .q-ans{font-size:11px;color:var(--ink3);line-height:1.4}
+  .q-actions{display:flex;gap:8px;padding:0 14px 10px}
+  .q-edit-btn{flex:1;border:1px solid var(--border);background:none;border-radius:7px;padding:6px;font-size:12px;color:var(--ink2);cursor:pointer;font-family:inherit}
+  .q-del-btn{border:1px solid rgba(192,57,43,.3);background:none;border-radius:7px;padding:6px 12px;font-size:12px;color:var(--danger);cursor:pointer;font-family:inherit}
+  .add-btn{width:100%;padding:10px;background:var(--surface2);border:1.5px dashed var(--border);border-radius:10px;font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer;font-family:inherit;margin-top:4px}
 
-  /* ===== BOTTOM SHEET MODAL ===== */
-  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: flex-end; }
-  .overlay.open { display: flex; }
-  .sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 24px; width: 100%; max-height: 90vh; overflow-y: auto; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
-  .sheet-title { font-size: 16px; font-weight: 700; margin-bottom: 18px; }
-  .sheet-hint { font-size: 10px; color: var(--ink3); line-height: 1.8; margin-top: 6px; margin-bottom: 14px; }
+  /* ===== QUIZ ===== */
+  .quiz-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px}
+  .quiz-info{flex:1;min-width:0}
+  .quiz-name{font-size:13px;font-weight:700;color:var(--ink)}
+  .quiz-meta{font-size:11px;color:var(--ink3);margin-top:2px}
+  .quiz-btns{display:flex;gap:6px;flex-shrink:0}
 
   /* ===== SETTINGS ===== */
-  .settings-section { margin: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-  .settings-header { padding: 10px 14px; background: var(--surface2); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 700; color: var(--ink3); letter-spacing: 0.05em; }
-  .settings-row { padding: 14px; }
-  .toast { position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%); background: rgba(44,62,45,0.9); color: white; border-radius: 20px; padding: 8px 18px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
-  .toast.show { opacity: 1; }
+  .settings-card{margin:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .settings-hdr{padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.05em}
+  .settings-body{padding:14px}
+
+  /* ===== OVERLAY / MODAL ===== */
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end}
+  .overlay.open{display:flex}
+  .sheet{background:var(--surface);border-radius:20px 20px 0 0;padding:24px;width:100%;max-height:90vh;overflow-y:auto;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+  .sheet-title{font-size:16px;font-weight:700;margin-bottom:18px}
+  .hint-text{font-size:10px;color:var(--ink3);line-height:1.8;margin-top:5px;margin-bottom:14px}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(44,62,45,.9);color:#fff;border-radius:20px;padding:8px 18px;font-size:13px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+  .toast.show{opacity:1}
 </style>
 </head>
 <body>
 
-<!-- ===== LOGIN VIEW ===== -->
+<!-- ===== LOGIN ===== -->
 <div id="loginView" class="view active">
   <div class="login-wrap">
     <div class="login-card">
-      <div class="login-logo">
-        <img src="otomo_logo_litegreen.png" style="width:36px;height:36px;object-fit:contain" onerror="this.style.display='none'" />
-        <span>授業のOtomo</span>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px">
+        <img src="otomo_logo_litegreen.png" style="width:36px;height:36px;object-fit:contain" onerror="this.style.display='none'">
+        <span style="font-family:'Kaisei Tokumin',serif;font-size:18px;font-weight:700">授業のOtomo</span>
       </div>
-      <div class="login-title">問題バンク管理</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:18px">教員ポータル</div>
       <label class="form-label">担当講義</label>
-      <select id="subjectSelect" class="form-select">
-        <option value="">読み込み中...</option>
-      </select>
+      <select id="subjectSelect" class="form-select"></select>
       <label class="form-label">パスワード</label>
-      <input id="passwordInput" class="form-input" type="password" placeholder="パスワードを入力" style="margin-bottom:6px" onkeydown="if(event.key==='Enter')doLogin()" />
-      <div id="loginError" class="error-msg"></div>
+      <input id="passwordInput" class="form-input" type="password" placeholder="パスワードを入力" style="margin-bottom:6px" onkeydown="if(event.key==='Enter')doLogin()">
+      <div id="loginError" class="err-msg"></div>
       <button class="btn-primary" onclick="doLogin()">ログイン</button>
     </div>
   </div>
 </div>
 
-<!-- ===== FIRST LOGIN: CHANGE PASSWORD VIEW ===== -->
+<!-- ===== FIRST LOGIN: CHANGE PW ===== -->
 <div id="changePwView" class="view">
   <div class="login-wrap">
     <div class="login-card">
-      <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:6px">🔑 初回ログイン</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:6px">🔑 初回ログイン</div>
       <div style="font-size:12px;color:var(--ink3);margin-bottom:18px;line-height:1.6">初期パスワードから新しいパスワードに変更してください（4文字以上）</div>
       <label class="form-label">新しいパスワード</label>
-      <input id="newPw1" class="form-input" type="password" placeholder="新しいパスワード" />
+      <input id="newPw1" class="form-input" type="password" placeholder="新しいパスワード">
       <label class="form-label">確認</label>
-      <input id="newPw2" class="form-input" type="password" placeholder="もう一度入力" style="margin-bottom:6px" onkeydown="if(event.key==='Enter')doFirstChangePw()" />
-      <div id="changePwError" class="error-msg"></div>
+      <input id="newPw2" class="form-input" type="password" placeholder="もう一度入力" style="margin-bottom:6px" onkeydown="if(event.key==='Enter')doFirstChangePw()">
+      <div id="changePwError" class="err-msg"></div>
       <button class="btn-primary" onclick="doFirstChangePw()">設定して始める</button>
     </div>
   </div>
 </div>
 
-<!-- ===== MAIN VIEW ===== -->
+<!-- ===== MAIN ===== -->
 <div id="mainView" class="view">
-  <div class="main-header">
-    <div class="main-header-title" id="mainSubjectLabel"></div>
-    <button class="header-btn" onclick="showView('settingsView')">⚙️ 設定</button>
+  <div class="header">
+    <div class="header-title" id="headerSubject"></div>
+    <button class="header-btn" onclick="showView('settingsView')">⚙️</button>
     <button class="header-btn" onclick="doLogout()">ログアウト</button>
   </div>
-  <div class="filter-bar" id="filterBar"></div>
-  <div id="questionsList" class="questions-list"></div>
-  <button class="fab" onclick="openEditModal(null)" title="問題を追加">＋</button>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-broadcast" onclick="switchTab('broadcast')">問題配信</button>
+    <button class="tab-btn" id="tab-prepare" onclick="switchTab('prepare')">問題準備</button>
+  </div>
+
+  <!-- 問題配信 -->
+  <div id="tabBroadcast" class="tab-content active">
+    <div id="sessionArea"></div>
+    <div id="formArea"></div>
+    <div id="rankingArea"></div>
+  </div>
+
+  <!-- 問題準備 -->
+  <div id="tabPrepare" class="tab-content">
+    <!-- 問題バンク -->
+    <div class="section-wrap" style="margin-top:16px">
+      <div class="section-title">問題バンク</div>
+      <div id="qbFilterBar" class="filter-bar"></div>
+      <div id="qbList"></div>
+      <button class="add-btn" onclick="openEditQuestion(null)">＋ 問題を追加</button>
+    </div>
+    <!-- 小テスト -->
+    <div class="section-wrap" style="margin-top:20px">
+      <div class="section-title">小テスト</div>
+      <div id="quizList"></div>
+      <button class="add-btn" onclick="openEditQuiz(null)">＋ 小テストを追加</button>
+    </div>
+  </div>
 </div>
 
-<!-- ===== SETTINGS VIEW ===== -->
+<!-- ===== SETTINGS ===== -->
 <div id="settingsView" class="view">
-  <div class="main-header">
-    <div class="main-header-title">設定</div>
+  <div class="header">
+    <div class="header-title">設定</div>
     <button class="header-btn" onclick="showView('mainView')">← 戻る</button>
   </div>
-  <div class="settings-section">
-    <div class="settings-header">パスワード変更</div>
-    <div class="settings-row">
+  <div class="settings-card">
+    <div class="settings-hdr">パスワード変更</div>
+    <div class="settings-body">
       <label class="form-label">現在のパスワード</label>
-      <input id="curPw" class="form-input" type="password" placeholder="現在のパスワード" />
+      <input id="curPw" class="form-input" type="password" placeholder="現在のパスワード">
       <label class="form-label">新しいパスワード（4文字以上）</label>
-      <input id="setPw1" class="form-input" type="password" placeholder="新しいパスワード" />
+      <input id="setPw1" class="form-input" type="password" placeholder="新しいパスワード">
       <label class="form-label">確認</label>
-      <input id="setPw2" class="form-input" type="password" placeholder="もう一度入力" style="margin-bottom:6px" />
-      <div id="settingsPwError" class="error-msg"></div>
+      <input id="setPw2" class="form-input" type="password" placeholder="もう一度入力" style="margin-bottom:6px">
+      <div id="settingsPwError" class="err-msg"></div>
       <button class="btn-primary" onclick="doChangePw()">パスワードを変更</button>
     </div>
   </div>
 </div>
 
-<!-- ===== EDIT MODAL ===== -->
-<div id="editOverlay" class="overlay" onclick="closeEditModal(event)">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sheet-title" id="editModalTitle">問題を追加</div>
-    <input type="hidden" id="editRowIndex" value="0" />
+<!-- ===== EDIT QUESTION MODAL ===== -->
+<div id="editQuestionOverlay" class="overlay" onclick="if(event.target===this)closeEditQuestion()">
+  <div class="sheet">
+    <div class="sheet-title" id="editQTitle">問題を追加</div>
+    <input type="hidden" id="editQRowIndex" value="0">
     <label class="form-label">授業回数</label>
-    <input id="editSessionNum" class="form-input" type="number" min="1" max="30" placeholder="例: 3" />
+    <input id="editQSession" class="form-input" type="number" min="1" max="30" placeholder="例: 3">
     <label class="form-label">問題文</label>
-    <textarea id="editQuestionText" class="form-textarea" rows="3" placeholder="問題文を入力..." style="margin-bottom:14px"></textarea>
+    <textarea id="editQText" class="form-textarea" rows="3" placeholder="問題文を入力..." style="margin-bottom:14px"></textarea>
     <label class="form-label">模範解答</label>
-    <textarea id="editModelAnswer" class="form-textarea" rows="2" placeholder="模範解答を入力..." style="margin-bottom:4px"></textarea>
-    <div class="sheet-hint">
+    <textarea id="editQAnswer" class="form-textarea" rows="2" placeholder="模範解答を入力..." style="margin-bottom:4px"></textarea>
+    <div class="hint-text">
       <b>複数必須</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A,B,C</code>　すべて必要<br>
       <b>どれでもOK</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A/B/C</code>　いずれか一つ<br>
       <b>複数＋別解あり</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A,B/C/D,E</code>
     </div>
     <label class="form-label">画像URL（任意）</label>
-    <input id="editImageUrl" class="form-input" type="url" placeholder="https://..." />
-    <div id="editError" class="error-msg"></div>
+    <input id="editQImageUrl" class="form-input" type="url" placeholder="https://...">
+    <div id="editQError" class="err-msg"></div>
     <button class="btn-primary" onclick="saveQuestion()" style="margin-bottom:10px">保存</button>
-    <button class="btn-secondary" onclick="closeEditModal()" style="width:100%;text-align:center">キャンセル</button>
+    <button class="btn-ghost" onclick="closeEditQuestion()" style="width:100%;text-align:center">キャンセル</button>
+  </div>
+</div>
+
+<!-- ===== EDIT QUIZ MODAL ===== -->
+<div id="editQuizOverlay" class="overlay" onclick="if(event.target===this)closeEditQuiz()">
+  <div class="sheet">
+    <div class="sheet-title" id="editQuizTitle">小テストを追加</div>
+    <input type="hidden" id="editQuizId" value="">
+    <label class="form-label">テスト名</label>
+    <input id="editQuizName" class="form-input" type="text" placeholder="例：第3章テスト">
+    <label class="form-label">範囲</label>
+    <input id="editQuizScope" class="form-input" type="text" placeholder="例：第1章〜第3章">
+    <label class="form-label">日程</label>
+    <input id="editQuizDate" class="form-input" type="date">
+    <div id="editQuizError" class="err-msg"></div>
+    <button class="btn-primary" onclick="saveQuiz()" style="margin-bottom:10px">保存</button>
+    <button class="btn-ghost" onclick="closeEditQuiz()" style="width:100%;text-align:center">キャンセル</button>
+  </div>
+</div>
+
+<!-- ===== QUESTION BANK SELECT MODAL ===== -->
+<div id="qbSelectOverlay" class="overlay" onclick="if(event.target===this)document.getElementById('qbSelectOverlay').classList.remove('open')">
+  <div class="sheet" style="padding:0;max-height:85vh;display:flex;flex-direction:column">
+    <div style="padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:15px;font-weight:700">📋 バンクから選択</div>
+        <button onclick="document.getElementById('qbSelectOverlay').classList.remove('open')" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer">✕</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:12px;color:var(--ink3)">第</span>
+        <input id="qbSelFilter" type="number" min="1" max="30" style="width:52px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:13px;font-family:inherit;background:var(--surface2)">
+        <span style="font-size:12px;color:var(--ink3)">回のみ</span>
+        <button onclick="renderQbSelectList(null)" style="background:none;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--ink3);padding:3px 8px;cursor:pointer">全表示</button>
+      </div>
+    </div>
+    <div id="qbSelectList" style="overflow-y:auto;flex:1"></div>
   </div>
 </div>
 
@@ -177,36 +264,31 @@
 <script>
   const COHORT_CONFIG = {
     '23': { gasUrl: 'https://script.google.com/macros/s/AKfycbwx7XFQHALQSD7UMBsVXKdxqgH9yktleZOjV3HN-qStmlod8ifpNw6_FazO4-jI6mWiug/exec' },
-    '24': { gasUrl: '' },
-    '25': { gasUrl: '' },
-    '26': { gasUrl: '' },
+    '24': { gasUrl: '' }, '25': { gasUrl: '' }, '26': { gasUrl: '' },
   };
   const COHORT = new URLSearchParams(location.search).get('cohort') || '23';
   const GAS_URL = (COHORT_CONFIG[COHORT] || COHORT_CONFIG['23']).gasUrl;
 
-  let currentSubject = '';
-  let authToken = '';
-  let questions = [];
-  let sessionFilter = null;
+  let currentSubject = '', authToken = '';
+  let sessionInfo = null;
+  let questions = [], quizzes = [];
+  let qbFilter = null;
+  let rankingPollInterval = null, rankingPollCount = 0;
+  let cooldownTimer = null, questionCooldownEnd = 0;
+  let pendingImageUrl = '', pendingImagePreview = '', pendingImageUploading = false;
 
-  const STORAGE_KEY = 'qb_token_' + COHORT;
-  const SUBJECT_KEY = 'qb_subject_' + COHORT;
+  const SK_TOKEN   = 'qb_token_'   + COHORT;
+  const SK_SUBJECT = 'qb_subject_' + COHORT;
 
   // ===== 初期化 =====
   async function init() {
     await loadSubjectList();
-    // 既存トークンがあれば自動復元
-    const saved = sessionStorage.getItem(STORAGE_KEY);
-    const savedSubject = sessionStorage.getItem(SUBJECT_KEY);
-    if (saved && savedSubject) {
-      authToken = saved;
-      currentSubject = savedSubject;
-      const res = await fetch(`${GAS_URL}?action=qbGetQuestions&subjectName=${enc(currentSubject)}&token=${enc(authToken)}`).then(r => r.json()).catch(() => ({ error: 'network' }));
-      if (!res.error) {
-        questions = res;
-        showMain();
-        return;
-      }
+    const savedToken = sessionStorage.getItem(SK_TOKEN);
+    const savedSubject = sessionStorage.getItem(SK_SUBJECT);
+    if (savedToken && savedSubject) {
+      authToken = savedToken; currentSubject = savedSubject;
+      const r = await api('teacherGetSessionInfo');
+      if (!r.error) { sessionInfo = r; await loadPrepareData(); showMain(); return; }
     }
     showView('loginView');
   }
@@ -215,43 +297,35 @@
     try {
       const subjects = await fetch(`${GAS_URL}?action=qbGetSubjectList`).then(r => r.json());
       const sel = document.getElementById('subjectSelect');
-      if (!subjects || subjects.length === 0) {
-        sel.innerHTML = '<option value="">（設定済みの講義がありません）</option>';
-        return;
-      }
-      sel.innerHTML = subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+      sel.innerHTML = (subjects && subjects.length)
+        ? subjects.map(s => `<option value="${s}">${s}</option>`).join('')
+        : '<option value="">（設定済みの講義がありません）</option>';
     } catch(e) {
       document.getElementById('subjectSelect').innerHTML = '<option value="">（読み込み失敗）</option>';
     }
   }
 
-  // ===== ログイン =====
+  // ===== AUTH =====
   async function doLogin() {
-    const subjectName = document.getElementById('subjectSelect').value;
+    const subject = document.getElementById('subjectSelect').value;
     const password = document.getElementById('passwordInput').value;
     const errEl = document.getElementById('loginError');
     errEl.style.display = 'none';
-    if (!subjectName || !password) { showErr(errEl, '講義とパスワードを入力してください'); return; }
-
-    const res = await fetch(`${GAS_URL}?action=qbLogin&subjectName=${enc(subjectName)}&password=${enc(password)}`).then(r => r.json()).catch(() => ({ success: false, error: 'network' }));
-    if (!res.success) {
-      const msgs = { invalid: 'パスワードが違います', not_configured: 'この講義はまだ設定されていません', required: '入力してください', network: '通信エラー' };
-      showErr(errEl, msgs[res.error] || 'ログイン失敗');
+    if (!subject || !password) { showErr(errEl, '講義とパスワードを入力してください'); return; }
+    const r = await fetch(`${GAS_URL}?action=qbLogin&subjectName=${enc(subject)}&password=${enc(password)}`).then(r => r.json()).catch(() => ({ success: false, error: 'network' }));
+    if (!r.success) {
+      showErr(errEl, { invalid:'パスワードが違います', not_configured:'この講義はまだ設定されていません', network:'通信エラー' }[r.error] || 'ログイン失敗');
       return;
     }
-    currentSubject = subjectName;
-    authToken = res.token;
-    sessionStorage.setItem(STORAGE_KEY, authToken);
-    sessionStorage.setItem(SUBJECT_KEY, currentSubject);
-
-    if (res.isFirstLogin) {
-      showView('changePwView');
-    } else {
-      await loadQuestionsAndShow();
-    }
+    currentSubject = subject; authToken = r.token;
+    sessionStorage.setItem(SK_TOKEN, authToken);
+    sessionStorage.setItem(SK_SUBJECT, currentSubject);
+    if (r.isFirstLogin) { showView('changePwView'); return; }
+    sessionInfo = await api('teacherGetSessionInfo');
+    await loadPrepareData();
+    showMain();
   }
 
-  // ===== 初回パスワード変更 =====
   async function doFirstChangePw() {
     const p1 = document.getElementById('newPw1').value;
     const p2 = document.getElementById('newPw2').value;
@@ -259,114 +333,397 @@
     errEl.style.display = 'none';
     if (p1.length < 4) { showErr(errEl, '4文字以上で設定してください'); return; }
     if (p1 !== p2) { showErr(errEl, 'パスワードが一致しません'); return; }
-    const res = await fetch(`${GAS_URL}?action=qbChangePassword&subjectName=${enc(currentSubject)}&token=${enc(authToken)}&newPassword=${enc(p1)}`).then(r => r.json()).catch(() => ({ error: 'network' }));
-    if (res.error) { showErr(errEl, '変更に失敗しました'); return; }
+    const r = await fetch(`${GAS_URL}?action=qbChangePassword&subjectName=${enc(currentSubject)}&token=${enc(authToken)}&newPassword=${enc(p1)}`).then(r => r.json()).catch(() => ({ error: 'network' }));
+    if (r.error) { showErr(errEl, '変更に失敗しました'); return; }
     showToast('パスワードを設定しました');
-    await loadQuestionsAndShow();
+    sessionInfo = await api('teacherGetSessionInfo');
+    await loadPrepareData();
+    showMain();
   }
 
-  // ===== ログアウト =====
   function doLogout() {
     authToken = ''; currentSubject = '';
-    sessionStorage.removeItem(STORAGE_KEY);
-    sessionStorage.removeItem(SUBJECT_KEY);
+    sessionStorage.removeItem(SK_TOKEN); sessionStorage.removeItem(SK_SUBJECT);
+    stopRankingPoll(); stopCooldown();
     document.getElementById('passwordInput').value = '';
     showView('loginView');
   }
 
-  // ===== メイン =====
-  async function loadQuestionsAndShow() {
-    questions = await fetch(`${GAS_URL}?action=qbGetQuestions&subjectName=${enc(currentSubject)}&token=${enc(authToken)}`).then(r => r.json()).catch(() => []);
-    showMain();
-  }
-
+  // ===== MAIN =====
   function showMain() {
-    document.getElementById('mainSubjectLabel').textContent = currentSubject;
-    renderFilterBar();
-    renderQuestions();
+    document.getElementById('headerSubject').textContent = currentSubject;
+    renderBroadcastTab();
+    renderPrepareTab();
     showView('mainView');
   }
 
-  function renderFilterBar() {
-    const sessions = [...new Set(questions.map(q => q.sessionNumber))].sort((a, b) => a - b);
-    const bar = document.getElementById('filterBar');
-    bar.innerHTML = `<button class="filter-chip ${sessionFilter === null ? 'active' : ''}" onclick="setFilter(null)">全て</button>` +
-      sessions.map(s => `<button class="filter-chip ${sessionFilter === s ? 'active' : ''}" onclick="setFilter(${s})">第${s}回</button>`).join('');
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+    if (tab === 'broadcast') refreshSessionInfo();
   }
 
-  function setFilter(s) { sessionFilter = s; renderFilterBar(); renderQuestions(); }
+  // ===== 問題配信タブ =====
+  async function refreshSessionInfo() {
+    sessionInfo = await api('teacherGetSessionInfo');
+    renderBroadcastTab();
+  }
 
-  function renderQuestions() {
-    const list = document.getElementById('questionsList');
-    const filtered = sessionFilter === null ? questions : questions.filter(q => q.sessionNumber == sessionFilter);
-    if (filtered.length === 0) {
-      list.innerHTML = '<div class="empty-state">登録された問題がありません<br><span style="font-size:12px">＋ボタンで追加できます</span></div>';
+  function renderBroadcastTab() {
+    renderSessionArea();
+    renderFormArea();
+    renderRankingArea();
+  }
+
+  function renderSessionArea() {
+    const el = document.getElementById('sessionArea');
+    if (!sessionInfo || sessionInfo.error) {
+      el.innerHTML = `<div class="no-session">このページを開いた後に管理者が授業を開始すると表示されます<br><button onclick="refreshSessionInfo()" style="margin-top:10px;border:1px solid var(--border);background:none;border-radius:8px;padding:6px 16px;font-size:12px;color:var(--ink2);cursor:pointer;font-family:inherit">↻ 更新</button></div>`;
       return;
     }
-    list.innerHTML = filtered.map(q => `
-      <div class="q-card">
-        <div class="q-card-header">
-          <span class="q-sess-badge">第${q.sessionNumber}回</span>
+    if (!sessionInfo.isActive) {
+      el.innerHTML = `<div class="no-session">現在「${currentSubject}」の授業セッションはありません<br><button onclick="refreshSessionInfo()" style="margin-top:10px;border:1px solid var(--border);background:none;border-radius:8px;padding:6px 16px;font-size:12px;color:var(--ink2);cursor:pointer;font-family:inherit">↻ 更新</button></div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="session-card">
+        <div class="session-card-header" style="background:var(--accent);border-bottom:1px solid rgba(255,255,255,.2)">
+          <span class="live-badge">LIVE</span>
+          <span style="color:#fff;font-size:13px;font-weight:700;flex:1">${esc(sessionInfo.subject)} 第${sessionInfo.sessionNumber}回</span>
+          <button onclick="refreshSessionInfo()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;color:#fff;font-size:13px;padding:3px 8px;cursor:pointer">↻</button>
         </div>
-        <div class="q-card-body">
-          <div class="q-text">${escHtml(q.questionText)}</div>
-          <div class="q-answer">模範: ${escHtml(q.modelAnswer)}</div>
-          ${q.imageUrl ? '<div class="q-img-tag">🖼️ 画像あり</div>' : ''}
+        ${sessionInfo.questionText ? `<div style="padding:8px 14px;font-size:12px;color:var(--ink2);background:var(--surface2);border-bottom:1px solid var(--border)"><span style="font-size:10px;color:var(--ink3);font-weight:700">出題中　</span>${esc(sessionInfo.questionText)}</div>` : ''}
+        ${sessionInfo.deliveryPaused ? `<div style="padding:8px 14px;font-size:12px;color:var(--warning);font-weight:700;background:var(--warning-light)">⚠️ 配信停止中</div>` : ''}
+      </div>`;
+  }
+
+  function renderFormArea() {
+    const el = document.getElementById('formArea');
+    if (!sessionInfo || !sessionInfo.isActive) { el.innerHTML = ''; return; }
+    const cooldownRemaining = questionCooldownEnd ? Math.max(0, Math.ceil((questionCooldownEnd - Date.now()) / 1000)) : 0;
+    const disabled = sessionInfo.deliveryPaused || cooldownRemaining > 0;
+    const btnLabel = sessionInfo.deliveryPaused ? '📝 配信停止中' : cooldownRemaining > 0 ? `📝 学生が回答中です (${cooldownRemaining}秒後に配信可能)` : '📢 全学生に出題する';
+    el.innerHTML = `
+      <div class="form-card">
+        <div class="form-row-header">
+          <span style="font-size:12px;color:var(--ink3)">問題文</span>
+          <div class="form-row-btns">
+            <button class="chip-btn" onclick="openQbSelectModal()">📋 バンクから選ぶ</button>
+            <button class="chip-btn" onclick="document.getElementById('broadcastQ').value='画像の問題に回答せよ'">🖼️ 画像</button>
+            <button class="chip-btn" onclick="document.getElementById('broadcastQ').value=''">クリア</button>
+          </div>
+        </div>
+        <textarea class="form-textarea" id="broadcastQ" rows="3" placeholder="問題文を入力..."></textarea>
+        <div class="divider"></div>
+        <div class="form-row-header">
+          <span style="font-size:12px;color:var(--ink3)">模範解答</span>
+          <button class="chip-btn" onclick="document.getElementById('broadcastA').value=''">クリア</button>
+        </div>
+        <textarea class="form-textarea" id="broadcastA" rows="2" placeholder="模範解答を入力..." style="margin-bottom:4px"></textarea>
+        <div style="font-size:10px;color:var(--ink3);line-height:1.7;margin-bottom:12px">
+          <b>複数必須</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A,B,C</code>
+          <b>どれでもOK</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A/B/C</code>
+          <b>複数＋別解あり</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A,B/C/D,E</code>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:6px">画像（任意）</div>
+        ${pendingImageUploading
+          ? '<div style="text-align:center;padding:10px;color:var(--ink3);font-size:12px">アップロード中...</div>'
+          : pendingImagePreview
+            ? `<div style="position:relative"><img src="${pendingImagePreview}" class="img-preview"><button onclick="clearBroadcastImage()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);border:none;border-radius:6px;color:#fff;font-size:11px;padding:3px 8px;cursor:pointer">削除</button></div>`
+            : `<label class="img-upload-label"><span>🖼️ 画像を追加</span><input type="file" accept="image/*" onchange="onImageChange(event)" style="display:none"></label>`}
+        <button class="broadcast-btn" onclick="doBroadcast()" ${disabled ? 'disabled' : ''}>${btnLabel}</button>
+      </div>`;
+  }
+
+  function renderRankingArea() {
+    const el = document.getElementById('rankingArea');
+    if (!sessionInfo || !sessionInfo.isActive || !sessionInfo.questionId) { el.innerHTML = ''; return; }
+    if (!el.innerHTML.includes('rank-card')) {
+      el.innerHTML = '<div class="rank-card"><div class="rank-header">回答状況</div><div id="rankingRows" style="padding:14px;text-align:center;color:var(--ink3);font-size:13px">読み込み中...</div></div>';
+      loadRanking();
+    }
+  }
+
+  async function loadRanking() {
+    if (!sessionInfo || !sessionInfo.questionId) return;
+    const r = await api('teacherGetRanking', { questionId: sessionInfo.questionId });
+    const el = document.getElementById('rankingRows');
+    if (!el) return;
+    if (!r || r.error) { el.innerHTML = '<div style="padding:14px;text-align:center;color:var(--ink3);font-size:13px">読み込みに失敗しました</div>'; return; }
+    const answered = r.filter(i => i.answered !== false);
+    const unanswered = r.filter(i => i.answered === false);
+    if (r.length === 0) { el.innerHTML = '<div style="padding:14px;text-align:center;color:var(--ink3);font-size:13px">まだ誰も回答していません</div>'; return; }
+    el.innerHTML = answered.map((item, i) => `
+      <div class="rank-row">
+        <div class="rank-num">${i + 1}</div>
+        <div class="rank-name">${esc(item.nickname || item.displayName || '')}</div>
+        <div class="rank-score">${item.score}</div>
+      </div>`).join('') +
+      unanswered.map(item => `
+      <div class="rank-row" style="opacity:.4">
+        <div class="rank-num">—</div>
+        <div class="rank-name">${esc(item.nickname || item.displayName || '')}</div>
+        <div class="rank-score" style="color:var(--ink3)">未回答</div>
+      </div>`).join('');
+  }
+
+  function startRankingPoll() {
+    stopRankingPoll();
+    rankingPollCount = 0;
+    rankingPollInterval = setInterval(async () => {
+      if (++rankingPollCount > 9) { stopRankingPoll(); return; }
+      await loadRanking();
+    }, 20000);
+  }
+
+  function stopRankingPoll() {
+    if (rankingPollInterval) { clearInterval(rankingPollInterval); rankingPollInterval = null; }
+  }
+
+  // ===== 出題配信 =====
+  async function doBroadcast() {
+    const question = document.getElementById('broadcastQ').value.trim();
+    const modelAnswer = document.getElementById('broadcastA').value.trim();
+    if (!question || !modelAnswer) { showToast('⚠️ 問題文と模範解答を入力してください'); return; }
+    const btn = document.querySelector('.broadcast-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '配信中...'; }
+    const body = JSON.stringify({ action: 'teacherBroadcast', subjectName: currentSubject, token: authToken, question, modelAnswer, imageUrl: pendingImageUrl || '' });
+    const r = await fetch(GAS_URL, { method: 'POST', body }).then(r => r.json()).catch(() => ({ success: false, error: 'network' }));
+    if (!r.success) {
+      showToast('⚠️ ' + (r.error || '配信失敗'));
+      renderFormArea();
+      return;
+    }
+    showToast('配信しました！');
+    sessionInfo.questionId = r.questionId;
+    sessionInfo.questionText = question;
+    questionCooldownEnd = Date.now() + 180000;
+    startCooldownTimer();
+    clearBroadcastImage();
+    document.getElementById('broadcastQ').value = '';
+    document.getElementById('broadcastA').value = '';
+    document.getElementById('rankingArea').innerHTML = '';
+    renderSessionArea();
+    renderFormArea();
+    renderRankingArea();
+    startRankingPoll();
+  }
+
+  function startCooldownTimer() {
+    stopCooldown();
+    cooldownTimer = setInterval(() => {
+      const rem = Math.max(0, Math.ceil((questionCooldownEnd - Date.now()) / 1000));
+      const btn = document.querySelector('.broadcast-btn');
+      if (btn && rem > 0) { btn.textContent = `📝 学生が回答中です (${rem}秒後に配信可能)`; btn.disabled = true; }
+      if (rem <= 0) { stopCooldown(); renderFormArea(); }
+    }, 1000);
+  }
+
+  function stopCooldown() {
+    if (cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
+  }
+
+  // ===== 画像 =====
+  function onImageChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    pendingImageUploading = true; renderFormArea();
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      const img = new Image();
+      img.onload = async () => {
+        const MAX = 1600, quality = 0.85;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) { const r = MAX / Math.max(w, h); w = Math.round(w * r); h = Math.round(h * r); }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const base64 = canvas.toDataURL('image/jpeg', quality).split(',')[1];
+        const r = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'uploadImage', base64, mimeType: 'image/jpeg', cohortFolderId: '' }) }).then(r => r.json()).catch(() => ({}));
+        pendingImageUploading = false;
+        if (r.url) { pendingImageUrl = r.url; pendingImagePreview = canvas.toDataURL('image/jpeg', quality); }
+        else showToast('画像のアップロードに失敗しました');
+        renderFormArea();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearBroadcastImage() { pendingImageUrl = ''; pendingImagePreview = ''; pendingImageUploading = false; renderFormArea(); }
+
+  // ===== バンクから選択 =====
+  function openQbSelectModal() {
+    const sessionNum = sessionInfo ? sessionInfo.sessionNumber : '';
+    document.getElementById('qbSelFilter').value = sessionNum;
+    renderQbSelectList(sessionNum);
+    document.getElementById('qbSelectOverlay').classList.add('open');
+  }
+
+  function renderQbSelectList(sessionNum) {
+    const filtered = sessionNum ? questions.filter(q => String(q.sessionNumber) === String(sessionNum)) : questions;
+    const el = document.getElementById('qbSelectList');
+    if (!filtered.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">問題がありません</div>'; return; }
+    el.innerHTML = filtered.map((q, i) => `
+      <div onclick="selectBankQ(${questions.indexOf(q)})" style="padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer" ontouchstart="this.style.background='var(--surface2)'" ontouchend="this.style.background=''" onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background=''">
+        <div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:2px">第${q.sessionNumber}回</div>
+        <div style="font-size:13px;font-weight:600;color:var(--ink);line-height:1.4;margin-bottom:2px">${esc(q.questionText)}</div>
+        <div style="font-size:11px;color:var(--ink3)">模範: ${esc(q.modelAnswer)}</div>
+        ${q.imageUrl ? '<div style="font-size:10px;color:var(--accent);margin-top:2px">🖼️ 画像あり</div>' : ''}
+      </div>`).join('');
+  }
+
+  function selectBankQ(idx) {
+    const q = questions[idx];
+    if (!q) return;
+    document.getElementById('broadcastQ').value = q.questionText;
+    document.getElementById('broadcastA').value = q.modelAnswer;
+    if (q.imageUrl) { pendingImageUrl = q.imageUrl; pendingImagePreview = q.imageUrl; renderFormArea(); }
+    document.getElementById('qbSelectOverlay').classList.remove('open');
+  }
+
+  // ===== 問題準備タブ =====
+  async function loadPrepareData() {
+    const [qRes, quizRes] = await Promise.all([
+      api('qbGetQuestions'),
+      api('teacherGetQuizList'),
+    ]);
+    questions = Array.isArray(qRes) ? qRes : [];
+    quizzes = quizRes && quizRes.quizzes ? quizRes.quizzes : [];
+  }
+
+  function renderPrepareTab() {
+    renderQbFilterBar();
+    renderQbList();
+    renderQuizList();
+  }
+
+  function renderQbFilterBar() {
+    const sessions = [...new Set(questions.map(q => q.sessionNumber))].sort((a, b) => a - b);
+    document.getElementById('qbFilterBar').innerHTML =
+      `<button class="chip-btn ${qbFilter === null ? 'accent' : ''}" onclick="setQbFilter(null)">全て</button>` +
+      sessions.map(s => `<button class="chip-btn ${qbFilter == s ? 'accent' : ''}" onclick="setQbFilter(${s})">第${s}回</button>`).join('');
+  }
+
+  function setQbFilter(s) { qbFilter = s; renderQbFilterBar(); renderQbList(); }
+
+  function renderQbList() {
+    const filtered = qbFilter === null ? questions : questions.filter(q => q.sessionNumber == qbFilter);
+    const el = document.getElementById('qbList');
+    if (!filtered.length) { el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">登録された問題がありません</div>'; return; }
+    el.innerHTML = filtered.map(q => `
+      <div class="q-card">
+        <div class="q-body">
+          <div class="q-sess">第${q.sessionNumber}回</div>
+          <div class="q-text">${esc(q.questionText)}</div>
+          <div class="q-ans">模範: ${esc(q.modelAnswer)}</div>
+          ${q.imageUrl ? '<div style="font-size:10px;color:var(--accent);margin-top:3px">🖼️ 画像あり</div>' : ''}
         </div>
         <div class="q-actions">
-          <button class="q-btn-edit" onclick="openEditModal(${q.rowIndex})">✏️ 編集</button>
-          <button class="q-btn-delete" onclick="deleteQuestion(${q.rowIndex})">🗑️</button>
+          <button class="q-edit-btn" onclick="openEditQuestion(${q.rowIndex})">✏️ 編集</button>
+          <button class="q-del-btn" onclick="deleteQuestion(${q.rowIndex})">🗑️</button>
         </div>
       </div>`).join('');
   }
 
-  // ===== 追加・編集 =====
-  function openEditModal(rowIndex) {
+  // ===== 問題バンク CRUD =====
+  function openEditQuestion(rowIndex) {
     const q = rowIndex ? questions.find(q => q.rowIndex === rowIndex) : null;
-    document.getElementById('editModalTitle').textContent = q ? '問題を編集' : '問題を追加';
-    document.getElementById('editRowIndex').value = rowIndex || 0;
-    document.getElementById('editSessionNum').value = q ? q.sessionNumber : (sessionFilter || '');
-    document.getElementById('editQuestionText').value = q ? q.questionText : '';
-    document.getElementById('editModelAnswer').value = q ? q.modelAnswer : '';
-    document.getElementById('editImageUrl').value = q ? q.imageUrl : '';
-    document.getElementById('editError').style.display = 'none';
-    document.getElementById('editOverlay').classList.add('open');
+    document.getElementById('editQTitle').textContent = q ? '問題を編集' : '問題を追加';
+    document.getElementById('editQRowIndex').value = rowIndex || 0;
+    document.getElementById('editQSession').value = q ? q.sessionNumber : (qbFilter || '');
+    document.getElementById('editQText').value = q ? q.questionText : '';
+    document.getElementById('editQAnswer').value = q ? q.modelAnswer : '';
+    document.getElementById('editQImageUrl').value = q ? q.imageUrl : '';
+    document.getElementById('editQError').style.display = 'none';
+    document.getElementById('editQuestionOverlay').classList.add('open');
   }
 
-  function closeEditModal(e) {
-    if (e && e.target !== document.getElementById('editOverlay')) return;
-    document.getElementById('editOverlay').classList.remove('open');
-  }
+  function closeEditQuestion() { document.getElementById('editQuestionOverlay').classList.remove('open'); }
 
   async function saveQuestion() {
-    const rowIndex = parseInt(document.getElementById('editRowIndex').value);
-    const sessionNumber = document.getElementById('editSessionNum').value.trim();
-    const questionText = document.getElementById('editQuestionText').value.trim();
-    const modelAnswer = document.getElementById('editModelAnswer').value.trim();
-    const imageUrl = document.getElementById('editImageUrl').value.trim();
-    const errEl = document.getElementById('editError');
+    const rowIndex = parseInt(document.getElementById('editQRowIndex').value);
+    const sessionNumber = document.getElementById('editQSession').value.trim();
+    const questionText = document.getElementById('editQText').value.trim();
+    const modelAnswer = document.getElementById('editQAnswer').value.trim();
+    const imageUrl = document.getElementById('editQImageUrl').value.trim();
+    const errEl = document.getElementById('editQError');
     errEl.style.display = 'none';
     if (!sessionNumber || !questionText || !modelAnswer) { showErr(errEl, '授業回数・問題文・模範解答は必須です'); return; }
-
     const body = JSON.stringify({ action: 'qbSaveQuestion', subjectName: currentSubject, token: authToken, rowIndex, sessionNumber, questionText, modelAnswer, imageUrl });
-    const res = await fetch(GAS_URL, { method: 'POST', body }).then(r => r.json()).catch(() => ({ error: 'network' }));
-    if (!res.success) { showErr(errEl, res.error === 'unauthorized' ? 'セッション切れです。ログインし直してください' : '保存に失敗しました'); return; }
-
-    document.getElementById('editOverlay').classList.remove('open');
+    const r = await fetch(GAS_URL, { method: 'POST', body }).then(r => r.json()).catch(() => ({ error: 'network' }));
+    if (!r.success) { showErr(errEl, r.error === 'unauthorized' ? 'セッション切れです' : '保存に失敗しました'); return; }
+    closeEditQuestion();
     showToast(rowIndex ? '更新しました' : '追加しました');
-    await loadQuestionsAndShow();
+    await loadPrepareData(); renderPrepareTab();
   }
 
-  // ===== 削除 =====
   async function deleteQuestion(rowIndex) {
     if (!confirm('この問題を削除しますか？')) return;
-    const res = await fetch(`${GAS_URL}?action=qbDeleteQuestion&subjectName=${enc(currentSubject)}&token=${enc(authToken)}&rowIndex=${rowIndex}`).then(r => r.json()).catch(() => ({ error: 'network' }));
-    if (!res.success) { showToast('削除に失敗しました'); return; }
+    const r = await api('qbDeleteQuestion', { rowIndex });
+    if (!r.success) { showToast('削除に失敗しました'); return; }
     showToast('削除しました');
-    await loadQuestionsAndShow();
+    await loadPrepareData(); renderPrepareTab();
   }
 
-  // ===== パスワード変更（設定画面） =====
+  // ===== 小テスト =====
+  function renderQuizList() {
+    const el = document.getElementById('quizList');
+    if (!quizzes.length) { el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">登録中の小テストはありません</div>'; return; }
+    el.innerHTML = quizzes.map(q => `
+      <div class="quiz-card">
+        <div class="quiz-info">
+          <div class="quiz-name">${esc(q.quizName || q.subjectName)}</div>
+          <div class="quiz-meta">${q.examDate}${q.scope ? '　範囲: ' + esc(q.scope) : ''}</div>
+        </div>
+        <div class="quiz-btns">
+          <button class="chip-btn" onclick="openEditQuiz('${q.quizId}')">✏️</button>
+          <button class="chip-btn" style="color:var(--danger);border-color:rgba(192,57,43,.3)" onclick="deleteQuiz('${q.quizId}')">🗑️</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function openEditQuiz(quizId) {
+    const q = quizId ? quizzes.find(q => q.quizId === quizId) : null;
+    document.getElementById('editQuizTitle').textContent = q ? '小テストを編集' : '小テストを追加';
+    document.getElementById('editQuizId').value = quizId || '';
+    document.getElementById('editQuizName').value = q ? q.quizName : '';
+    document.getElementById('editQuizScope').value = q ? q.scope : '';
+    document.getElementById('editQuizDate').value = q ? q.examDate : '';
+    document.getElementById('editQuizError').style.display = 'none';
+    document.getElementById('editQuizOverlay').classList.add('open');
+  }
+
+  function closeEditQuiz() { document.getElementById('editQuizOverlay').classList.remove('open'); }
+
+  async function saveQuiz() {
+    const quizId = document.getElementById('editQuizId').value;
+    const quizName = document.getElementById('editQuizName').value.trim();
+    const scope = document.getElementById('editQuizScope').value.trim();
+    const examDate = document.getElementById('editQuizDate').value;
+    const errEl = document.getElementById('editQuizError');
+    errEl.style.display = 'none';
+    if (!examDate) { showErr(errEl, '日程は必須です'); return; }
+    const body = JSON.stringify({ action: 'teacherSaveQuiz', subjectName: currentSubject, token: authToken, quizId, quizName, scope, examDate });
+    const r = await fetch(GAS_URL, { method: 'POST', body }).then(r => r.json()).catch(() => ({ error: 'network' }));
+    if (!r.success) { showErr(errEl, '保存に失敗しました'); return; }
+    closeEditQuiz();
+    showToast(quizId ? '更新しました' : '追加して学生に通知しました');
+    await loadPrepareData(); renderPrepareTab();
+  }
+
+  async function deleteQuiz(quizId) {
+    if (!confirm('この小テストを削除しますか？')) return;
+    const r = await api('teacherDeleteQuiz', { quizId });
+    if (!r.success) { showToast('削除に失敗しました'); return; }
+    showToast('削除しました');
+    await loadPrepareData(); renderPrepareTab();
+  }
+
+  // ===== パスワード変更 =====
   async function doChangePw() {
     const curPw = document.getElementById('curPw').value;
     const p1 = document.getElementById('setPw1').value;
@@ -376,38 +733,36 @@
     if (!curPw || !p1 || !p2) { showErr(errEl, '全て入力してください'); return; }
     if (p1.length < 4) { showErr(errEl, '4文字以上で設定してください'); return; }
     if (p1 !== p2) { showErr(errEl, 'パスワードが一致しません'); return; }
-
-    // 現パスワード確認のため再ログイン
-    const loginRes = await fetch(`${GAS_URL}?action=qbLogin&subjectName=${enc(currentSubject)}&password=${enc(curPw)}`).then(r => r.json()).catch(() => ({ success: false }));
-    if (!loginRes.success) { showErr(errEl, '現在のパスワードが違います'); return; }
-
-    // 新パスワードを設定（新トークン使用）
-    authToken = loginRes.token;
-    sessionStorage.setItem(STORAGE_KEY, authToken);
-    const res = await fetch(`${GAS_URL}?action=qbChangePassword&subjectName=${enc(currentSubject)}&token=${enc(authToken)}&newPassword=${enc(p1)}`).then(r => r.json()).catch(() => ({ error: 'network' }));
-    if (res.error) { showErr(errEl, '変更に失敗しました'); return; }
-
-    document.getElementById('curPw').value = '';
-    document.getElementById('setPw1').value = '';
-    document.getElementById('setPw2').value = '';
+    const loginR = await fetch(`${GAS_URL}?action=qbLogin&subjectName=${enc(currentSubject)}&password=${enc(curPw)}`).then(r => r.json()).catch(() => ({ success: false }));
+    if (!loginR.success) { showErr(errEl, '現在のパスワードが違います'); return; }
+    authToken = loginR.token;
+    sessionStorage.setItem(SK_TOKEN, authToken);
+    const r = await fetch(`${GAS_URL}?action=qbChangePassword&subjectName=${enc(currentSubject)}&token=${enc(authToken)}&newPassword=${enc(p1)}`).then(r => r.json()).catch(() => ({ error: 'network' }));
+    if (r.error) { showErr(errEl, '変更に失敗しました'); return; }
+    ['curPw','setPw1','setPw2'].forEach(id => document.getElementById(id).value = '');
     showToast('パスワードを変更しました');
   }
 
   // ===== ユーティリティ =====
+  async function api(action, params = {}) {
+    const qs = Object.entries({ action, subjectName: currentSubject, token: authToken, ...params }).map(([k,v]) => `${k}=${enc(String(v))}`).join('&');
+    try { return await fetch(`${GAS_URL}?${qs}`).then(r => r.json()); }
+    catch(e) { return { error: 'network' }; }
+  }
+
   function showView(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(id).classList.add('active');
   }
   function enc(s) { return encodeURIComponent(s); }
-  function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
-  let toastTimer;
+  let _toastTimer;
   function showToast(msg) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
   }
 
   init();
