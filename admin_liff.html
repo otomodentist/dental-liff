@@ -2393,8 +2393,79 @@ function startQuestionCooldown(endTime) {
                   <div style="padding:8px 16px 14px">
                       <button onclick="openSubAdminPicker()" style="width:100%;padding:9px;background:var(--surface2);border:1.5px dashed var(--border);border-radius:8px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:700;color:var(--ink2);cursor:pointer">＋ 追加</button>
                   </div>
+              </details>
+              <details style="${sectionStyle}">
+                  <summary style="${summaryStyle}" onclick="if(!qbSubjectList)loadQbSubjectList()">
+                      <span>🗂️ 問題バンク パスワード管理</span>
+                      <span style="font-size:10px" class="chev">▶</span>
+                  </summary>
+                  <div style="padding:10px 16px 14px">
+                      <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;line-height:1.6">
+                        教員ごとに初期パスワードを設定します。教員は初回ログイン時にパスワードを変更します。<br>
+                        管理ページ：<code style="font-size:10px;background:var(--surface2);padding:1px 4px;border-radius:3px">question_bank.html?cohort=${activeBillingCohort}</code>
+                      </div>
+                      <div id="qbSubjectListEl"><div style="color:var(--ink3);font-size:13px">▼ を開くと読み込まれます</div></div>
+                  </div>
               </details>`;
       }
+
+      // ===== 問題バンク パスワード管理 =====
+      let qbSubjectList = null;
+
+      async function loadQbSubjectList() {
+        if (qbSubjectList) { renderQbSubjectList(); return; }
+        const el = document.getElementById('qbSubjectListEl');
+        if (!el) return;
+        el.innerHTML = '<div style="color:var(--ink3);font-size:13px">読み込み中...</div>';
+        try {
+          const url = getBillingGasUrl(activeBillingCohort);
+          const res = await fetch(`${url}?action=adminGetQbSubjects&adminSecret=${enc(adminSecret)}`);
+          qbSubjectList = await res.json();
+          renderQbSubjectList();
+        } catch(e) {
+          if (el) el.innerHTML = '<div style="color:var(--danger);font-size:13px">読み込み失敗</div>';
+        }
+      }
+
+      function renderQbSubjectList() {
+        const el = document.getElementById('qbSubjectListEl');
+        if (!el || !qbSubjectList) return;
+        if (qbSubjectList.error) { el.innerHTML = '<div style="color:var(--danger);font-size:13px">認証エラー</div>'; return; }
+        if (qbSubjectList.length === 0) { el.innerHTML = '<div style="color:var(--ink3);font-size:13px">問題バンクが作成されていません（setupQuestionBankSpreadsheet()を実行してください）</div>'; return; }
+        el.innerHTML = qbSubjectList.map(s => `
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+            <div style="flex:1;font-size:13px;color:var(--ink)">${s.name}</div>
+            <div style="font-size:11px;${s.hasPassword ? (s.initialized ? 'color:var(--accent)' : 'color:#e87040') : 'color:var(--ink3)'}">
+              ${s.hasPassword ? (s.initialized ? '✓ 設定済' : '⚠ 初回未変更') : '未設定'}
+            </div>
+            <button onclick="openQbSetPassword('${s.name}')" style="border:1px solid var(--border);background:none;border-radius:6px;font-size:11px;padding:3px 8px;cursor:pointer;color:var(--ink2);font-family:'Noto Sans JP',sans-serif">
+              ${s.hasPassword ? 'リセット' : '設定'}
+            </button>
+          </div>`).join('');
+      }
+
+      function openQbSetPassword(subjectName) {
+        const pw = prompt(`「${subjectName}」の初期パスワードを入力\n（教員の初回ログイン後に変更させてください）`);
+        if (!pw || pw.length < 4) { if (pw !== null) showToast('4文字以上で入力してください'); return; }
+        setQbPassword(subjectName, pw);
+      }
+
+      async function setQbPassword(subjectName, password) {
+        const url = getBillingGasUrl(activeBillingCohort);
+        try {
+          const res = await fetch(`${url}?action=adminSetQbPassword&subjectName=${enc(subjectName)}&password=${enc(password)}&adminSecret=${enc(adminSecret)}`);
+          const data = await res.json();
+          if (data.success) {
+            showToast('パスワードを設定しました');
+            qbSubjectList = null;
+            loadQbSubjectList();
+          } else {
+            showToast('設定失敗: ' + (data.error || ''));
+          }
+        } catch(e) { showToast('通信エラー'); }
+      }
+
+      function enc(s) { return encodeURIComponent(s); }
 
       function saveBroadcastDraft() {
           const input = document.getElementById('broadcastMsgInput');
