@@ -911,6 +911,25 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
         return item.displayName + (item.nickname ? ` <span style="font-size:11px;font-weight:400;color:var(--ink3)">(${item.nickname})</span>` : '');
       }
 
+      function formatModelAnswer(raw) {
+        if (!raw) return raw;
+        const items = raw.split(/[,、]/);
+        if (items.length === 1) {
+          const parts = raw.split('/');
+          if (parts.length <= 1) return raw;
+          if (parts.length === 2) return `${parts[0]}または${parts[1]}`;
+          return `${parts.join('・')}のいずれか`;
+        }
+        return items.map(item => {
+          const trimmed = item.trim();
+          const parts = trimmed.split('/');
+          if (parts.length <= 1) return trimmed;
+          const primary = parts[0];
+          const alts = parts.slice(1).join('・');
+          return `${primary}（${alts}でも可）`;
+        }).join('・');
+      }
+
       function buildAdminRankRowHTML(item) {
         const unanswered = item.answered === false;
         const isHidden = !!item.hideAnswer;
@@ -1007,7 +1026,7 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
               <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">出題中の問題</div>
               <div style="font-size:13px;line-height:1.5;margin-bottom:6px">${adminCurrentQuestionText}</div>
               ${adminCurrentImageUrl ? `<img src="${adminCurrentImageUrl}" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:8px;display:block" />` : ''}
-              ${adminCurrentModelAnswer ? `<div style="font-size:10px;color:var(--ink3);margin-bottom:2px">模範解答</div><div style="display:flex;align-items:flex-start;gap:8px"><div style="font-size:12px;color:var(--ink2);line-height:1.4;flex:1">${adminCurrentModelAnswer}</div><button onclick="openRankingRescoreModal()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink2);font-size:10px;padding:2px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0">修正</button></div>` : ''}
+              ${adminCurrentModelAnswer ? `<div style="font-size:10px;color:var(--ink3);margin-bottom:2px">模範解答</div><div style="display:flex;align-items:flex-start;gap:8px"><div style="font-size:12px;color:var(--ink2);line-height:1.4;flex:1">${formatModelAnswer(adminCurrentModelAnswer)}</div><button onclick="openRankingRescoreModal()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink2);font-size:10px;padding:2px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0">修正</button></div>` : ''}
             </div>` : '';
           el.innerHTML = qHtml + (rows.length > 0
             ? rows.map(item => buildAdminRankRowHTML(item)).join('')
@@ -1708,7 +1727,7 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
               <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${a.questionText || '（データなし）'}</div>
               ${a.imageUrl ? `<img src="${a.imageUrl}" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:12px;display:block" />` : ''}
               <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">模範解答</div>
-              <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${a.modelAnswer || '（データなし）'}</div>
+              <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${formatModelAnswer(a.modelAnswer) || '（データなし）'}</div>
               <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">学生の回答</div>
               <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${a.answerText || '（データなし）'}</div>
               <div class="popup-row">
@@ -2136,7 +2155,7 @@ function startQuestionCooldown(endTime) {
                           <div style="font-size:13px;line-height:1.5;margin-bottom:6px">${question}</div>
                           ${_imgUrl ? `<img src="${_imgUrl}" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:6px;display:block" />` : ''}
                           <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">模範解答</div>
-                          <div style="font-size:12px;color:var(--ink2);line-height:1.4">${modelAnswer}</div>
+                          <div style="font-size:12px;color:var(--ink2);line-height:1.4">${formatModelAnswer(modelAnswer)}</div>
                         </div>
                         <div style="padding:14px;font-size:13px;color:var(--ink3);text-align:center">まだ誰も回答していません</div>`;
                       pollAdminRanking();
