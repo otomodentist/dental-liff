@@ -233,6 +233,13 @@
     .mypage-selector-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;align-items:flex-end; }
     .mypage-selector-overlay.open { display:flex; }
     .mypage-selector-sheet { background:var(--surface);border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:80vh;overflow-y:auto; }
+
+    /* 問題バンクモーダル */
+    .qbank-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:flex-end; }
+    .qbank-overlay.open { display:flex; }
+    .qbank-sheet { background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column; }
+    .qbank-header { padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0; }
+    .qbank-list { overflow-y:auto;flex:1; }
     .mypage-selector-title { font-family:'Kaisei Tokumin',serif;font-size:16px;font-weight:700;margin-bottom:14px; }
     .mypage-student-row { display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer; }
     .mypage-student-row:active { background:var(--surface2); }
@@ -381,6 +388,25 @@
         </div>
       </div>
     </div>
+
+<div id="questionBankOverlay" class="qbank-overlay" onclick="closeQuestionBankModal(event)">
+  <div class="qbank-sheet" onclick="event.stopPropagation()">
+    <div class="qbank-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:16px;font-weight:700;color:var(--ink)">📋 問題バンクから選択</div>
+        <button onclick="closeQuestionBankModal()" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer">✕</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="qbSubjectLabel" style="font-size:12px;color:var(--ink3);flex:1"></div>
+        <label style="font-size:12px;color:var(--ink3)">第
+          <input id="qbSessionFilter" type="number" min="1" max="30" style="width:48px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;font-family:inherit;background:var(--surface2)" onchange="onQbSessionFilterChange()" />
+        回のみ表示</label>
+        <button onclick="onQbShowAll()" style="background:none;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--ink3);padding:3px 8px;cursor:pointer">全表示</button>
+      </div>
+    </div>
+    <div id="qbList" class="qbank-list"></div>
+  </div>
+</div>
 
 <div id="subAdminPickerOverlay" class="mypage-selector-overlay" onclick="closeSubAdminPicker(event)">
       <div class="mypage-selector-sheet" onclick="event.stopPropagation()">
@@ -800,6 +826,7 @@
       <span style="font-size:12px;color:var(--ink3)">問題文</span>
       <div style="display:flex;gap:6px;align-items:center">
         <button id="pastQuestionBtn" onclick="togglePastQuestion()" style="border-radius:20px;border:none;font-size:11px;font-weight:700;cursor:pointer;padding:2px 10px;line-height:1.6;font-family:'Noto Sans JP',sans-serif;${isPastQuestion ? 'background:var(--accent);color:white' : 'background:var(--border);color:var(--ink3)'}">📚 過去問</button>
+        <button onclick="openQuestionBankModal()" style="border-radius:20px;border:none;font-size:11px;font-weight:700;cursor:pointer;padding:2px 10px;line-height:1.6;font-family:'Noto Sans JP',sans-serif;background:var(--border);color:var(--ink3)">📋 バンク</button>
         <button onclick="document.getElementById('questionText').value='画像の問題に回答せよ'" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink3);font-size:11px;padding:2px 8px;cursor:pointer;line-height:1.4">🖼️ 画像</button>
         <button onclick="document.getElementById('questionText').value=''" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink3);font-size:11px;padding:2px 8px;cursor:pointer;line-height:1.4">クリア</button>
       </div>
@@ -2508,6 +2535,73 @@ function startQuestionCooldown(endTime) {
       function closeSubAdminPicker(e) {
           if (e && e.target !== document.getElementById('subAdminPickerOverlay')) return;
           document.getElementById('subAdminPickerOverlay').classList.remove('open');
+      }
+
+      // ===== 問題バンク =====
+      let _qbQuestions = [];
+
+      function openQuestionBankModal() {
+        if (!isSessionActive || !activeSessionInfo) { showToast('授業セッション外では使用できません'); return; }
+        const subject = activeSessionInfo.subject;
+        const sessionNum = activeSessionInfo.sessionNumber;
+        document.getElementById('qbSubjectLabel').textContent = subject;
+        document.getElementById('qbSessionFilter').value = sessionNum;
+        document.getElementById('questionBankOverlay').classList.add('open');
+        loadQuestionBank(subject, sessionNum);
+      }
+
+      function closeQuestionBankModal(e) {
+        if (e && e.target !== document.getElementById('questionBankOverlay')) return;
+        document.getElementById('questionBankOverlay').classList.remove('open');
+      }
+
+      async function loadQuestionBank(subject, sessionNum) {
+        const listEl = document.getElementById('qbList');
+        listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px">読み込み中...</div>';
+        try {
+          const url = `${GAS_URL}?action=getQuestionBank&subjectName=${encodeURIComponent(subject)}&sessionNumber=${sessionNum || ''}`;
+          const res = await fetch(url);
+          const questions = await res.json();
+          _qbQuestions = Array.isArray(questions) ? questions : [];
+          if (_qbQuestions.length === 0) {
+            listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--ink3);font-size:13px">登録された問題がありません</div>';
+            return;
+          }
+          listEl.innerHTML = _qbQuestions.map((q, i) => `
+            <div onclick="selectBankQuestion(${i})" style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer" ontouchstart="this.style.background='var(--surface2)'" ontouchend="this.style.background=''" onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background=''">
+              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px">第${q.sessionNumber}回</div>
+              <div style="font-size:13px;font-weight:600;color:var(--ink);line-height:1.4;margin-bottom:3px">${q.questionText}</div>
+              <div style="font-size:11px;color:var(--ink3);line-height:1.4">模範: ${q.modelAnswer}</div>
+              ${q.imageUrl ? '<div style="font-size:10px;color:var(--accent);margin-top:2px">🖼️ 画像あり</div>' : ''}
+            </div>`).join('');
+        } catch(err) {
+          listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--danger);font-size:13px">読み込みに失敗しました</div>';
+        }
+      }
+
+      function onQbSessionFilterChange() {
+        if (!activeSessionInfo) return;
+        const sessionNum = document.getElementById('qbSessionFilter').value;
+        loadQuestionBank(activeSessionInfo.subject, sessionNum);
+      }
+
+      function onQbShowAll() {
+        document.getElementById('qbSessionFilter').value = '';
+        if (activeSessionInfo) loadQuestionBank(activeSessionInfo.subject, '');
+      }
+
+      function selectBankQuestion(idx) {
+        const q = _qbQuestions[idx];
+        if (!q) return;
+        document.getElementById('questionText').value = q.questionText;
+        document.getElementById('modelAnswer').value = q.modelAnswer;
+        if (q.imageUrl) {
+          pendingImageUrl = q.imageUrl;
+          pendingImagePreviewUrl = q.imageUrl;
+          pendingImageUploading = false;
+          renderSessionTab();
+        }
+        document.getElementById('questionBankOverlay').classList.remove('open');
       }
 
       async function grantSubAdminAccess(userId) {
