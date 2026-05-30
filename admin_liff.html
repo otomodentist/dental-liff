@@ -813,12 +813,11 @@
       <button onclick="document.getElementById('modelAnswer').value=''" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink3);font-size:11px;padding:2px 8px;cursor:pointer;line-height:1.4">クリア</button>
     </div>
     <textarea class="form-textarea" id="modelAnswer" rows="3" placeholder="模範解答を入力..."></textarea>
-    <div style="font-size:10px;color:var(--ink3);margin-top:6px;line-height:1.7">
+    <div style="font-size:10px;color:var(--ink3);margin-top:6px;line-height:1.8">
       模範解答は最低限の記載にとどめて！採点が厳しくなります！<br>
-      <b>複数項目（全部必要）</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A B C</code>　や　<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A、B、C</code><br>
-      <b>どれか一つでOK</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A/B/C</code><br>
-      <b>括弧内だけでも正解</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">好中球（マクロファージ）</code><br>
-      <b>複数必須＋一部は別解OK</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A,B/C/D,E</code>　→ A・(BかCかD)・E が全部あれば100点
+      <b>複数必須</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A,B,C</code>　すべて答えると100点<br>
+      <b>どれでもOK</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A/B/C</code>　いずれか一つで100点<br>
+      <b>複数必須＋一部は別解あり</b>：<code style="background:var(--surface2);padding:1px 4px;border-radius:3px">A,B/C/D,E</code>　A・(BかCかD)・E がそろうと100点
     </div>
   </div>
   <div style="height:1px;background:var(--border);margin:12px 0"></div>
