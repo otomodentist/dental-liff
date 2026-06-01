@@ -324,6 +324,7 @@
     <button class="latest-popup-close" onclick="closeUserGraphPopup()">✕</button>
     <div id="userGraphTitle" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;margin-bottom:16px"></div>
     <div id="userGraphContent" style="position:relative;height:220px"></div>
+    <div id="userGraphDetail" style="margin-top:8px"></div>
   </div>
 </div>
 
@@ -1996,6 +1997,12 @@ const CHART_DEFAULTS = {
   maintainAspectRatio: false,
 };
 
+function toWebImageUrl(url) {
+  if (!url) return '';
+  const m = url.match(/[?&]id=([^&]+)/);
+  return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1200` : url;
+}
+
 function formatModelAnswer(raw) {
   if (!raw) return raw;
   const items = raw.split(/[,、]/);
@@ -2051,7 +2058,7 @@ function drawTimelineChart(canvasId, timeline, instanceKey) {
     infoEl.innerHTML = `
       <div style="font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:4px">問${idx + 1}（${pt.x}分経過）</div>
       ${pt.questionText ? `<div style="color:var(--ink);font-size:13px;margin-bottom:4px;line-height:1.4">${pt.questionText}</div>` : ''}
-      ${pt.imageUrl ? `<img src="${pt.imageUrl}" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:6px;display:block" />` : ''}
+      ${pt.imageUrl ? `<img src="${toWebImageUrl(pt.imageUrl)}" loading="lazy" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:6px;display:block" />` : ''}
       ${pt.modelAnswer ? `<div style="color:var(--ink3);font-size:11px;margin-bottom:3px"><span style="font-weight:700">模範解答：</span>${formatModelAnswer(pt.modelAnswer)}</div>` : ''}
       <div style="color:var(--ink2);font-size:11px;margin-bottom:6px"><span style="font-weight:700">あなたの回答：</span>${pt.answerText || '未回答'}</div>
       ${(() => {
@@ -2220,10 +2227,12 @@ async function openUserGraph(targetUserId) {
   const popup = document.getElementById('userGraphPopup');
   const titleEl = document.getElementById('userGraphTitle');
   const content = document.getElementById('userGraphContent');
+  const detailEl = document.getElementById('userGraphDetail');
   const rankItem = (currentRankingData || []).find(i => i.userId === targetUserId);
   const name = rankItem ? (rankItem.nickname || rankItem.displayName) : '学生';
   titleEl.textContent = `${name} の集中度グラフ`;
   content.innerHTML = '<canvas id="userGraphCanvas"></canvas>';
+  if (detailEl) detailEl.innerHTML = '';
   popup.classList.add('open');
   try {
     const r = await fetch(`${GAS_URL}?action=getUserSessionGraph&sessionId=${encodeURIComponent(currentRankingSessionId)}&targetUserId=${encodeURIComponent(targetUserId)}`);
@@ -2235,6 +2244,31 @@ async function openUserGraph(targetUserId) {
       return;
     }
     const chartData = [{x: 0, y: null}, ...answers.map(a => ({x: a.minutesElapsed, y: a.concentrationScore}))];
+
+    function showUserGraphDetail(idx) {
+      if (!detailEl) return;
+      const a = answers[idx];
+      if (!a) { detailEl.innerHTML = ''; return; }
+      const scoreColor = a.concentrationScore >= 70 ? 'var(--accent)' : a.concentrationScore >= 40 ? '#d97706' : '#c0392b';
+      detailEl.innerHTML = `
+        <div class="chart-point-info" style="display:block;margin-top:6px">
+          <div style="font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:4px">問${idx + 1}（${a.minutesElapsed}分経過）</div>
+          ${a.questionText ? `<div style="color:var(--ink);font-size:13px;margin-bottom:4px;line-height:1.4">${a.questionText}</div>` : ''}
+          ${a.imageUrl ? `<img src="${toWebImageUrl(a.imageUrl)}" loading="lazy" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:6px;display:block" />` : ''}
+          ${a.modelAnswer ? `<div style="color:var(--ink3);font-size:11px;margin-bottom:3px"><span style="font-weight:700">模範解答：</span>${formatModelAnswer(a.modelAnswer)}</div>` : ''}
+          <div style="color:var(--ink2);font-size:11px;margin-bottom:6px"><span style="font-weight:700">回答：</span>${a.answerText || '未回答'}</div>
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+            <span style="background:var(--accent-light);color:var(--accent);font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px">集中度 ${a.concentrationScore}</span>
+            <span style="background:var(--surface);border:1px solid var(--border);font-size:11px;color:var(--ink3);padding:2px 8px;border-radius:4px">正確性 ${a.accuracyScore}</span>
+            ${a.responseTimeSec != null ? `<span style="background:var(--surface);border:1px solid var(--border);font-size:11px;color:var(--ink3);padding:2px 8px;border-radius:4px">${a.responseTimeSec}秒</span>` : ''}
+          </div>
+        </div>`;
+      if (userGraphChart) {
+        userGraphChart.data.datasets[0].pointBackgroundColor = chartData.map((_, i) => i === idx + 1 ? '#e65c00' : '#2d5a3d');
+        userGraphChart.update('none');
+      }
+    }
+
     userGraphChart = new Chart(document.getElementById('userGraphCanvas'), {
       type: 'line',
       data: {
@@ -2253,6 +2287,11 @@ async function openUserGraph(targetUserId) {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        onClick: (evt, items) => {
+          if (!items.length) return;
+          const idx = items[0].dataIndex - 1;
+          if (idx >= 0) showUserGraphDetail(idx);
+        },
         plugins: {
           legend: { display: false },
           tooltip: {
