@@ -386,7 +386,7 @@
     }
     if (!sessionInfo.isActive) {
       if (sessionInfo.otherActive) {
-        el.innerHTML = `<div class="no-session" style="background:var(--warning-light);border-color:rgba(184,134,11,.3)">⚠️ 現在他の講義の授業が進行中です<br><span style="font-size:11px">その授業が終了すると開始できます</span><br><button onclick="refreshSessionInfo()" style="margin-top:10px;border:1px solid var(--border);background:none;border-radius:8px;padding:6px 16px;font-size:12px;color:var(--ink2);cursor:pointer;font-family:inherit">↻ 更新</button></div>`;
+        el.innerHTML = `<div class="no-session" style="background:var(--warning-light);border-color:rgba(184,134,11,.3)">⚠️ 現在「${esc(sessionInfo.otherSubject)}」の授業が進行中です<br><span style="font-size:11px">その授業が終了すると開始できます</span><br><button onclick="refreshSessionInfo()" style="margin-top:10px;border:1px solid var(--border);background:none;border-radius:8px;padding:6px 16px;font-size:12px;color:var(--ink2);cursor:pointer;font-family:inherit">↻ 更新</button></div>`;
       } else {
         el.innerHTML = `
           <div class="form-card" style="margin-top:14px">
