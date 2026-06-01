@@ -938,6 +938,12 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
         return item.displayName + (item.nickname ? ` <span style="font-size:11px;font-weight:400;color:var(--ink3)">(${item.nickname})</span>` : '');
       }
 
+      function toWebImageUrl(url) {
+        if (!url) return '';
+        const m = url.match(/[?&]id=([^&]+)/);
+        return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1200` : url;
+      }
+
       function formatModelAnswer(raw) {
         if (!raw) return raw;
         const items = raw.split(/[,、]/);
@@ -1052,7 +1058,7 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
             <div style="padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
               <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">出題中の問題</div>
               <div style="font-size:13px;line-height:1.5;margin-bottom:6px">${adminCurrentQuestionText}</div>
-              ${adminCurrentImageUrl ? `<img src="${adminCurrentImageUrl}" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:8px;display:block" />` : ''}
+              ${adminCurrentImageUrl ? `<img src="${toWebImageUrl(adminCurrentImageUrl)}" loading="lazy" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:8px;display:block" />` : ''}
               ${adminCurrentModelAnswer ? `<div style="font-size:10px;color:var(--ink3);margin-bottom:2px">模範解答</div><div style="display:flex;align-items:flex-start;gap:8px"><div style="font-size:12px;color:var(--ink2);line-height:1.4;flex:1">${formatModelAnswer(adminCurrentModelAnswer)}</div><button onclick="openRankingRescoreModal()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--ink2);font-size:10px;padding:2px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0">修正</button></div>` : ''}
             </div>` : '';
           el.innerHTML = qHtml + (rows.length > 0
@@ -1752,7 +1758,7 @@ ${isSessionActive && !isNoDeliveryDeclared ? `<button onclick="declareNoDelivery
           document.getElementById('pointDetailContent').innerHTML = `
               <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">問題文</div>
               <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${a.questionText || '（データなし）'}</div>
-              ${a.imageUrl ? `<img src="${a.imageUrl}" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:12px;display:block" />` : ''}
+              ${a.imageUrl ? `<img src="${toWebImageUrl(a.imageUrl)}" loading="lazy" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:12px;display:block" />` : ''}
               <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">模範解答</div>
               <div style="font-size:13px;margin-bottom:12px;line-height:1.5">${formatModelAnswer(a.modelAnswer) || '（データなし）'}</div>
               <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">学生の回答</div>
@@ -2180,7 +2186,7 @@ function startQuestionCooldown(endTime) {
                         `<div style="padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
                           <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">出題中の問題</div>
                           <div style="font-size:13px;line-height:1.5;margin-bottom:6px">${question}</div>
-                          ${_imgUrl ? `<img src="${_imgUrl}" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:6px;display:block" />` : ''}
+                          ${_imgUrl ? `<img src="${toWebImageUrl(_imgUrl)}" loading="lazy" style="width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:6px;display:block" />` : ''}
                           <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">模範解答</div>
                           <div style="font-size:12px;color:var(--ink2);line-height:1.4">${formatModelAnswer(modelAnswer)}</div>
                         </div>
@@ -2858,7 +2864,7 @@ function startQuestionCooldown(endTime) {
                  </div>`;
 
           const quizListHTML = (adminQuizList || []).length === 0
-              ? '<div style="padding:12px 16px;font-size:13px;color:var(--ink3)">登録中の小テストはありません</div>'
+              ? '<div style="padding:12px 16px;font-size:13px;color:var(--ink3)">登録中の授業期間内試験はありません</div>'
               : (adminQuizList || []).map(q => {
                   if (editingQuizId === q.quizId) {
                       return `
@@ -2904,7 +2910,7 @@ function startQuestionCooldown(endTime) {
               }).join('');
 
           const subTabBtn = (id, label) => `<button onclick="examSubTab='${id}';renderApp()" style="flex:1;padding:8px 0;font-size:13px;font-weight:600;border:none;cursor:pointer;border-radius:8px;font-family:inherit;transition:background 0.15s;background:${examSubTab===id?'var(--accent)':'transparent'};color:${examSubTab===id?'white':'var(--ink3)'}">${label}</button>`;
-          const subTabsHTML = IS_SUB_ADMIN ? '' : `<div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:16px">${subTabBtn('regular','定期試験')}${subTabBtn('quiz','小テスト')}</div>`;
+          const subTabsHTML = IS_SUB_ADMIN ? '' : `<div style="display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:16px">${subTabBtn('regular','定期試験')}${subTabBtn('quiz','授業期間内試験')}</div>`;
 
           const regularHTML = `
               <div style="background:var(--bg-sub);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:18px">
@@ -2941,7 +2947,7 @@ function startQuestionCooldown(endTime) {
                   </div>
                   <button onclick="addQuiz()" class="action-btn btn-start" style="width:100%">登録・学生に通知</button>
               </div>
-              <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:10px;color:var(--ink)">登録中の小テスト（${(adminQuizList||[]).length}件）</div>
+              <div style="font-family:'Kaisei Tokumin',serif;font-size:15px;font-weight:700;margin-bottom:10px;color:var(--ink)">登録中の授業期間内試験（${(adminQuizList||[]).length}件）</div>
               <div class="card" style="padding:0;overflow:hidden">${quizListHTML}</div>`;
 
           return `
@@ -2965,7 +2971,7 @@ function startQuestionCooldown(endTime) {
                   if (result.success) {
                       adminQuizList = null;
                       await switchTab('exam');
-                      showToast('✅ 小テストを登録し学生に通知しました');
+                      showToast('✅ 授業期間内試験を登録し学生に通知しました');
                   } else {
                       showToast('❌ エラー: ' + result.error);
                   }
@@ -3003,7 +3009,7 @@ function startQuestionCooldown(endTime) {
       }
 
       async function deleteQuiz(quizId) {
-          if (!confirm('この小テストを削除しますか？')) return;
+          if (!confirm('この授業期間内試験を削除しますか？')) return;
           await guardedAction('deleteQuiz', async () => {
               try {
                   const res = await fetch(`${GAS_URL}?action=deleteQuiz&quizId=${encodeURIComponent(quizId)}`);
