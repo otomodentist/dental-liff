@@ -353,6 +353,7 @@ const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/
 
 let userId = null;
 let isPreviewMode = false;
+let previewUserHideAnswer = false;
 let profileData = null;
 let dashboardData = null;
 let activeSubjectIndex = 0;
@@ -477,6 +478,7 @@ async function init() {
       activeSessionState = d.activeSession || { isActive: false };
       myNickname = d.nickname || ''; myBillingStatus = d.billingStatus || ''; myAvatarUrl = d.avatarUrl || '';
       todayStudyItems = d.todayItems || []; tomorrowStudyItems = d.tomorrowItems || [];
+      previewUserHideAnswer = !!d.hideAnswerInRanking;
     } catch (e) {}
     renderApp();
     if (!activeSessionState?.isActive) { await fetchLatestRanking(); renderApp(); }
@@ -987,7 +989,7 @@ function buildLiveRankingCardHTML() {
     rowsHTML = `<div style="padding:16px;text-align:center;line-height:1.7">
         <div style="font-size:13px;font-weight:700;color:var(--ink)">ユーザーネーム/アイコンが不適切なため管理者によって表示を制限されています</div>
       </div>`;
-  } else if (isPreviewMode ? (questionRankingData?.ranking?.find(i => i.userId === userId)?.hideAnswer ?? false) : hideAnswerInRanking) {
+  } else if (isPreviewMode ? previewUserHideAnswer : hideAnswerInRanking) {
     rowsHTML = `<div style="padding:16px;text-align:center;line-height:1.7">
         <div style="font-size:13px;font-weight:700;color:var(--ink)">ランキングは非表示設定中です</div>
         <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">設定から自分のランキング表示を許可すると見られます</div>
@@ -1174,7 +1176,7 @@ function renderApp() {
     ? `<div style="padding:16px;text-align:center;line-height:1.7">
         <div style="font-size:13px;font-weight:700;color:var(--ink)">ユーザーネーム/アイコンが不適切なため管理者によって表示を制限されています</div>
       </div>`
-    : (isPreviewMode ? (latestSessionRanking.find(i => i.userId === userId)?.hideAnswer ?? false) : hideAnswerInRanking)
+    : (isPreviewMode ? previewUserHideAnswer : hideAnswerInRanking)
     ? `<div style="padding:16px;text-align:center;line-height:1.7">
         <div style="font-size:13px;font-weight:700;color:var(--ink)">ランキングは非表示設定中です</div>
         <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">設定から自分のランキング表示を許可すると見られます</div>
