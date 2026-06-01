@@ -171,9 +171,9 @@
     </div>
     <!-- 小テスト -->
     <div class="section-wrap" style="margin-top:20px">
-      <div class="section-title">授業期間内試験（小テストを含む）</div>
+      <div class="section-title">テスト</div>
       <div id="quizList"></div>
-      <button class="add-btn" onclick="openEditQuiz(null)">＋ 授業期間内試験を追加</button>
+      <button class="add-btn" onclick="openEditQuiz(null)">＋ テストを追加</button>
     </div>
   </div>
 </div>
@@ -716,7 +716,7 @@
   // ===== 小テスト =====
   function renderQuizList() {
     const el = document.getElementById('quizList');
-    if (!quizzes.length) { el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">登録中の授業期間内試験はありません</div>'; return; }
+    if (!quizzes.length) { el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--ink3);font-size:13px">登録中のテストはありません</div>'; return; }
     el.innerHTML = quizzes.map(q => `
       <div class="quiz-card">
         <div class="quiz-info">
@@ -732,7 +732,7 @@
 
   function openEditQuiz(quizId) {
     const q = quizId ? quizzes.find(q => q.quizId === quizId) : null;
-    document.getElementById('editQuizTitle').textContent = q ? '授業期間内試験を編集' : '授業期間内試験を追加';
+    document.getElementById('editQuizTitle').textContent = q ? 'テストを編集' : 'テストを追加';
     document.getElementById('editQuizId').value = quizId || '';
     document.getElementById('editQuizName').value = q ? q.quizName : '';
     document.getElementById('editQuizScope').value = q ? q.scope : '';
@@ -760,7 +760,7 @@
   }
 
   async function deleteQuiz(quizId) {
-    if (!confirm('この授業期間内試験を削除しますか？')) return;
+    if (!confirm('このテストを削除しますか？')) return;
     const r = await api('teacherDeleteQuiz', { quizId });
     if (!r.success) { showToast('削除に失敗しました'); return; }
     showToast('削除しました');
