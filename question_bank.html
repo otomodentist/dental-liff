@@ -276,6 +276,7 @@
   let rankingPollInterval = null, rankingPollCount = 0;
   let cooldownTimer = null, questionCooldownEnd = 0;
   let pendingImageUrl = '', pendingImagePreview = '', pendingImageUploading = false;
+  let pendingSessionNumber = '';
 
   const SK_TOKEN   = 'qb_token_'   + COHORT;
   const SK_SUBJECT = 'qb_subject_' + COHORT;
@@ -380,11 +381,21 @@
   function renderSessionArea() {
     const el = document.getElementById('sessionArea');
     if (!sessionInfo || sessionInfo.error) {
-      el.innerHTML = `<div class="no-session">このページを開いた後に管理者が授業を開始すると表示されます<br><button onclick="refreshSessionInfo()" style="margin-top:10px;border:1px solid var(--border);background:none;border-radius:8px;padding:6px 16px;font-size:12px;color:var(--ink2);cursor:pointer;font-family:inherit">↻ 更新</button></div>`;
+      el.innerHTML = `<div class="no-session">読み込めませんでした<br><button onclick="refreshSessionInfo()" style="margin-top:10px;border:1px solid var(--border);background:none;border-radius:8px;padding:6px 16px;font-size:12px;color:var(--ink2);cursor:pointer;font-family:inherit">↻ 更新</button></div>`;
       return;
     }
     if (!sessionInfo.isActive) {
-      el.innerHTML = `<div class="no-session">現在「${currentSubject}」の授業セッションはありません<br><button onclick="refreshSessionInfo()" style="margin-top:10px;border:1px solid var(--border);background:none;border-radius:8px;padding:6px 16px;font-size:12px;color:var(--ink2);cursor:pointer;font-family:inherit">↻ 更新</button></div>`;
+      if (sessionInfo.otherActive) {
+        el.innerHTML = `<div class="no-session" style="background:var(--warning-light);border-color:rgba(184,134,11,.3)">⚠️ 現在他の講義の授業が進行中です<br><span style="font-size:11px">その授業が終了すると開始できます</span><br><button onclick="refreshSessionInfo()" style="margin-top:10px;border:1px solid var(--border);background:none;border-radius:8px;padding:6px 16px;font-size:12px;color:var(--ink2);cursor:pointer;font-family:inherit">↻ 更新</button></div>`;
+      } else {
+        el.innerHTML = `
+          <div class="form-card" style="margin-top:14px">
+            <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px">授業を開始する</div>
+            <label class="form-label">授業回数</label>
+            <input id="startSessionNum" class="form-input" type="number" min="1" max="30" placeholder="例: 5" value="${esc(pendingSessionNumber)}" oninput="pendingSessionNumber=this.value">
+            <button class="btn-primary" onclick="doStartSession()">📢 授業開始（学生にLINE通知）</button>
+          </div>`;
+      }
       return;
     }
     el.innerHTML = `
@@ -396,6 +407,9 @@
         </div>
         ${sessionInfo.questionText ? `<div style="padding:8px 14px;font-size:12px;color:var(--ink2);background:var(--surface2);border-bottom:1px solid var(--border)"><span style="font-size:10px;color:var(--ink3);font-weight:700">出題中　</span>${esc(sessionInfo.questionText)}</div>` : ''}
         ${sessionInfo.deliveryPaused ? `<div style="padding:8px 14px;font-size:12px;color:var(--warning);font-weight:700;background:var(--warning-light)">⚠️ 配信停止中</div>` : ''}
+        <div style="padding:10px 14px;border-top:1px solid var(--border)">
+          <button onclick="doEndSession()" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(192,57,43,.4);background:var(--danger-light);color:var(--danger);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">■ 授業終了</button>
+        </div>
       </div>`;
   }
 
@@ -481,6 +495,35 @@
 
   function stopRankingPoll() {
     if (rankingPollInterval) { clearInterval(rankingPollInterval); rankingPollInterval = null; }
+  }
+
+  // ===== 授業開始・終了 =====
+  async function doStartSession() {
+    const num = document.getElementById('startSessionNum') && document.getElementById('startSessionNum').value.trim();
+    if (!num || isNaN(num) || parseInt(num) < 1) { showToast('⚠️ 授業回数を入力してください'); return; }
+    const btn = document.querySelector('#sessionArea .btn-primary');
+    if (btn) { btn.disabled = true; btn.textContent = '開始中...'; }
+    const r = await api('teacherStartSession', { sessionNumber: parseInt(num) });
+    if (!r.success) {
+      showToast('⚠️ ' + (r.error || '開始に失敗しました'));
+      renderSessionArea();
+      return;
+    }
+    showToast('授業を開始しました！');
+    pendingSessionNumber = '';
+    sessionInfo = await api('teacherGetSessionInfo');
+    renderBroadcastTab();
+  }
+
+  async function doEndSession() {
+    if (!confirm('授業を終了しますか？\n学生にスコアがLINEで通知されます。')) return;
+    const r = await api('teacherEndSession');
+    if (!r.success) { showToast('⚠️ ' + (r.error || '終了に失敗しました')); return; }
+    showToast('授業を終了しました');
+    stopRankingPoll(); stopCooldown();
+    questionCooldownEnd = 0;
+    sessionInfo = await api('teacherGetSessionInfo');
+    renderBroadcastTab();
   }
 
   // ===== 出題配信 =====
