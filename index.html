@@ -1444,8 +1444,8 @@ function renderSettingsView() {
           <div style="font-size:14px;color:var(--ink2)">ランキングに自分を表示</div>
           <div style="font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.5">非表示にすると他の方のランキングも見えません</div>
         </div>
-        <button onclick="toggleHideAnswer()" ${_hideAnswerSaving ? 'disabled' : ''} style="min-width:52px;padding:6px 12px;border-radius:20px;border:none;font-size:13px;font-weight:700;cursor:${_hideAnswerSaving ? 'not-allowed' : 'pointer'};font-family:inherit;${_hideAnswerSaving ? 'background:var(--border);color:var(--ink3)' : hideAnswerInRanking ? 'background:var(--border);color:var(--ink3)' : 'background:var(--accent);color:white'}">
-          ${_hideAnswerSaving ? '保存中…' : hideAnswerInRanking ? '非表示' : '表示'}
+        <button onclick="toggleHideAnswer()" ${_hideAnswerSaving ? 'disabled' : ''} style="min-width:80px;padding:6px 12px;border-radius:20px;border:none;font-size:12px;font-weight:700;cursor:${_hideAnswerSaving ? 'not-allowed' : 'pointer'};font-family:inherit;${_hideAnswerSaving ? 'background:var(--border);color:var(--ink3)' : hideAnswerInRanking ? 'background:var(--accent);color:white' : 'background:var(--border);color:var(--ink3)'}">
+          ${_hideAnswerSaving ? '保存中…' : hideAnswerInRanking ? '表示に戻す' : '非表示にする'}
         </button>
       </div>`}
     </div>
