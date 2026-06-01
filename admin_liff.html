@@ -360,18 +360,6 @@
       </div>
     </div>
 
-    <div id="pauseModal" class="modal-overlay">
-        <div class="modal">
-            <div class="modal-title" style="color:var(--warning)">授業に集中させる</div>
-            <div style="font-size:14px;line-height:1.6;color:var(--ink2);margin-bottom:20px">
-                このサービスを使っている余裕がないので、問題配信はしません。授業に集中させます。
-            </div>
-            <div class="modal-btns">
-                <button class="modal-btn-cancel" onclick="closePauseModal()">キャンセル</button>
-                <button class="modal-btn-save" style="background:var(--warning)" onclick="confirmPause()">確認</button>
-            </div>
-        </div>
-    </div>
 
     <div id="reviewMinModal" class="modal-overlay">
       <div class="modal">
@@ -456,7 +444,6 @@
       let selectedSession = null;
       let isSessionActive  = false;
       let activeSessionInfo = null;
-      let isDeliveryPaused = false;
       let isNoDeliveryDeclared = false;
       let isPastQuestion = false;
       function togglePastQuestion() {
@@ -600,7 +587,7 @@
                 const session     = data.activeSession || {};
                 isSessionActive   = session.isActive || false;
                 activeSessionInfo = session.session || null;
-                isDeliveryPaused  = session.isPaused || false;
+
                 adminCurrentQuestionId = (activeSessionInfo && activeSessionInfo.currentQuestionId) || null;
                 if (activeSessionInfo && activeSessionInfo.sessionId) adminCurrentSessionId = activeSessionInfo.sessionId;
 
@@ -656,7 +643,6 @@
               const session     = data.activeSession || {};
               isSessionActive   = session.isActive || false;
               activeSessionInfo = session.session || null;
-              isDeliveryPaused  = session.isPaused || false;
               adminCurrentQuestionId = (activeSessionInfo && activeSessionInfo.currentQuestionId) || null;
               if (activeSessionInfo && activeSessionInfo.sessionId) adminCurrentSessionId = activeSessionInfo.sessionId;
               if (!isSessionActive) {
@@ -869,14 +855,13 @@
 <div style="margin-top:10px">
   ${(() => {
     const isCooldown = questionCooldownEnd && Date.now() < questionCooldownEnd;
-    const btnDisabled = isDeliveryPaused || isCooldown;
-    const btnLabel = isDeliveryPaused ? '⚠️ 配信停止中' : isCooldown ? `📝 出題待機中 (${Math.ceil((questionCooldownEnd - Date.now()) / 1000)}秒後に出題可能)` : '📢 全学生に出題する';
+    const btnDisabled = isNoDeliveryDeclared || isCooldown;
+    const btnLabel = isCooldown ? `📝 出題待機中 (${Math.ceil((questionCooldownEnd - Date.now()) / 1000)}秒後に出題可能)` : '📢 全学生に出題する';
     return `<button class="action-btn btn-question" onclick="broadcastQuestion()" ${btnDisabled ? 'disabled style="background:var(--border);color:var(--ink3);cursor:not-allowed"' : ''}>${btnLabel}</button>`;
   })()}
   ${isSessionActive ? (isNoDeliveryDeclared
     ? `<button disabled style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#e53935;color:white;font-size:13px;font-weight:700;cursor:not-allowed;font-family:'Noto Sans JP',sans-serif;letter-spacing:0.02em;opacity:0.7">📵 配信なし宣言済み</button>`
-    : isDeliveryPaused ? ''
-      : `<button onclick="declareNoDelivery()" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#e53935;color:white;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;letter-spacing:0.02em">📵 問題配信停止</button>`) : ''}
+    : `<button onclick="declareNoDelivery()" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#e53935;color:white;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;letter-spacing:0.02em">📵 問題配信停止</button>`) : ''}
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       </div>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           </div>
             ${isSessionActive || lastEndedSessionId ? `
@@ -2042,7 +2027,6 @@
                       pendingReviewMinSessionId = lastEndedSessionId;
                       isSessionActive = false;
                       activeSessionInfo = null;
-                      isDeliveryPaused = false;
                       adminCurrentQuestionId = null;
                       stopAdminRankingPoll();
                       if (lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
@@ -2068,7 +2052,7 @@ function startQuestionCooldown(endTime) {
                   questionCooldownInterval = null;
                   questionCooldownEnd = null;
                   const btn = document.querySelector('.btn-question');
-                  if (btn && !isDeliveryPaused) {
+                  if (btn && !isNoDeliveryDeclared) {
                       btn.disabled = false;
                       btn.style.background = '';
                       btn.style.color = '';
@@ -2213,31 +2197,6 @@ function startQuestionCooldown(endTime) {
           });
       }
 
-      function openPauseModal() {
-          document.getElementById('pauseModal').classList.add('open');
-      }
-      function closePauseModal() {
-          document.getElementById('pauseModal').classList.remove('open');
-      }
-      async function confirmPause() {
-          closePauseModal();
-          await guardedAction('confirmPause', async () => {
-              try {
-                  const sessionId = activeSessionInfo ? activeSessionInfo.sessionId : '';
-                  const res = await fetch(`${GAS_URL}?action=pauseQuestionDelivery&sessionId=${encodeURIComponent(sessionId)}&adminSecret=${encodeURIComponent(adminSecret)}`);
-                  const result = await res.json();
-                  if (result.success) {
-                      isDeliveryPaused = true;
-                      showToast('⚠️ 配信停止しました。学生にLINEを送信しました。');
-                      renderApp();
-                  } else {
-                      showToast('❌ エラー: ' + result.error);
-                  }
-              } catch (err) {
-                  showToast('❌ 通信エラー');
-              }
-          });
-      }
       async function declareNoDelivery() {
           await guardedAction('declareNoDelivery', async () => {
               if (!confirm('配信なし宣言を行いますか？\n学生に「問題配信は行いません」というメッセージが送信されます。')) return;
@@ -2246,7 +2205,6 @@ function startQuestionCooldown(endTime) {
                   const result = await res.json();
                   if (result.success) {
                       isNoDeliveryDeclared = true;
-                      isDeliveryPaused = true;
                       showToast('📵 配信なし宣言を送信しました');
                       renderApp();
                   } else {
@@ -2258,24 +2216,6 @@ function startQuestionCooldown(endTime) {
           });
       }
 
-      async function resumeDelivery() {
-          await guardedAction('resumeDelivery', async () => {
-              try {
-                  const sessionId = activeSessionInfo ? activeSessionInfo.sessionId : '';
-                  const res = await fetch(`${GAS_URL}?action=resumeQuestionDelivery&sessionId=${encodeURIComponent(sessionId)}&adminSecret=${encodeURIComponent(adminSecret)}`);
-                  const result = await res.json();
-                  if (result.success) {
-                      isDeliveryPaused = false;
-                      showToast('✅ 配信を再開しました');
-                      renderApp();
-                  } else {
-                      showToast('❌ エラー: ' + result.error);
-                  }
-              } catch (err) {
-                  showToast('❌ 通信エラー');
-              }
-          });
-      }
 
       function renderBillingHTML() {
           const cohortBar = `
