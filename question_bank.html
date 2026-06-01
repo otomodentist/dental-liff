@@ -506,7 +506,8 @@
     const r = await api('teacherStartSession', { sessionNumber: parseInt(num) });
     if (!r.success) {
       showToast('⚠️ ' + (r.error || '開始に失敗しました'));
-      renderSessionArea();
+      sessionInfo = await api('teacherGetSessionInfo');
+      renderBroadcastTab();
       return;
     }
     showToast('授業を開始しました！');
