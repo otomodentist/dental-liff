@@ -1444,8 +1444,8 @@ function renderSettingsView() {
           <div style="font-size:14px;color:var(--ink2)">ランキングに自分を表示</div>
           <div style="font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.5">非表示にすると他の方のランキングも見えません</div>
         </div>
-        <button onclick="toggleHideAnswer()" ${_hideAnswerSaving ? 'disabled' : ''} style="min-width:80px;padding:6px 12px;border-radius:20px;border:none;font-size:12px;font-weight:700;cursor:${_hideAnswerSaving ? 'not-allowed' : 'pointer'};font-family:inherit;${_hideAnswerSaving ? 'background:var(--border);color:var(--ink3)' : hideAnswerInRanking ? 'background:var(--accent);color:white' : 'background:var(--border);color:var(--ink3)'}">
-          ${_hideAnswerSaving ? '保存中…' : hideAnswerInRanking ? '表示に戻す' : '非表示にする'}
+        <button onclick="${_hideAnswerSaving ? '' : 'toggleHideAnswer()'}" style="position:relative;width:50px;height:28px;border-radius:14px;border:none;cursor:${_hideAnswerSaving ? 'not-allowed' : 'pointer'};background:${_hideAnswerSaving ? 'var(--border)' : hideAnswerInRanking ? 'var(--border)' : 'var(--accent)'};transition:background .2s;flex-shrink:0;padding:0">
+          <span style="position:absolute;top:3px;left:${hideAnswerInRanking ? '3px' : '23px'};width:22px;height:22px;border-radius:50%;background:white;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .2s"></span>
         </button>
       </div>`}
     </div>
