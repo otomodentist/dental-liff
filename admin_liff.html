@@ -2242,7 +2242,7 @@ function startQuestionCooldown(endTime) {
                   </div>
                   <div class="student-info">
                       <div class="student-name">${s.displayName || '名前なし'}${s.nickname ? `<span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:5px">(${s.nickname})</span>` : ''}</div>
-                      <div class="student-meta">${s.billingStatus}</div>
+                      <div class="student-meta">${s.billingStatus === '契約中' ? '登録中' : s.billingStatus}</div>
                   </div>
                   <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
                       <button onclick="toggleStudentGuardian('${s.userId}',${s.guardianFeatureOn})"
@@ -2543,7 +2543,7 @@ function startQuestionCooldown(endTime) {
                           </div>
                           <div style="flex:1;min-width:0">
                               <div style="font-size:13px;font-weight:600;color:var(--ink)">${s.displayName || '名前なし'}${s.nickname ? `<span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:5px">(${s.nickname})</span>` : ''}</div>
-                              <div style="font-size:11px;color:var(--ink3);margin-top:1px">${s.billingStatus || '未登録'}</div>
+                              <div style="font-size:11px;color:var(--ink3);margin-top:1px">${(s.billingStatus === '契約中' ? '登録中' : s.billingStatus) || '未登録'}</div>
                           </div>
                       </div>`).join('');
           }
