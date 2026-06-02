@@ -2015,7 +2015,7 @@ function formatModelAnswer(raw) {
     const parts = trimmed.split('/');
     if (parts.length <= 1) return trimmed;
     return `${parts[0]}（${parts.slice(1).join('、')}）`;
-  }).join('・');
+  }).join('<br>');
 }
 
 function drawTimelineChart(canvasId, timeline, instanceKey) {
