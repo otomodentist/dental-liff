@@ -2010,19 +2010,11 @@ function toWebImageUrl(url) {
 function formatModelAnswer(raw) {
   if (!raw) return raw;
   const items = raw.split(/[,、]/);
-  if (items.length === 1) {
-    const parts = raw.split('/');
-    if (parts.length <= 1) return raw;
-    if (parts.length === 2) return `${parts[0]}または${parts[1]}`;
-    return `${parts.join('・')}のいずれか`;
-  }
   return items.map(item => {
     const trimmed = item.trim();
     const parts = trimmed.split('/');
     if (parts.length <= 1) return trimmed;
-    const primary = parts[0];
-    const alts = parts.slice(1).join('・');
-    return `${primary}（${alts}でも可）`;
+    return `${parts[0]}（${parts.slice(1).join('、')}）`;
   }).join('・');
 }
 
