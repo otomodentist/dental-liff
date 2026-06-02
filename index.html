@@ -930,24 +930,28 @@ function buildRankRowHTML(item, highlightUserId) {
 }
 
 function toggleLiveRank(btn) {
-  const el = document.getElementById('liveRankRest');
-  if (!el) return;
-  const isHidden = el.style.display === 'none';
-  el.style.display = isHidden ? '' : 'none';
+  const rest = document.getElementById('liveRankRest');
+  const pulled = document.getElementById('liveRankPulled');
+  if (!rest) return;
+  const isHidden = rest.style.display === 'none';
+  rest.style.display = isHidden ? '' : 'none';
+  if (pulled) pulled.style.display = isHidden ? 'none' : '';
   const rows = questionRankingData?.ranking || [];
   const visible = rows.filter(item => !item.restricted && !item.hideAnswer);
-  const rest = visible.slice(3).filter(item => item.userId !== userId);
-  btn.textContent = isHidden ? '閉じる ▲' : `残り${rest.length}名を表示 ▼`;
+  const restCount = visible.slice(3).filter(item => item.userId !== userId).length;
+  btn.textContent = isHidden ? '閉じる ▲' : `残り${restCount}名を表示 ▼`;
 }
 
 function toggleSessionRank(btn) {
-  const el = document.getElementById('sessionRankRest');
-  if (!el) return;
-  const isHidden = el.style.display === 'none';
-  el.style.display = isHidden ? '' : 'none';
+  const rest = document.getElementById('sessionRankRest');
+  const pulled = document.getElementById('sessionRankPulled');
+  if (!rest) return;
+  const isHidden = rest.style.display === 'none';
+  rest.style.display = isHidden ? '' : 'none';
+  if (pulled) pulled.style.display = isHidden ? 'none' : '';
   const visible = latestSessionRanking.filter(item => !item.restricted && !item.hideAnswer);
-  const rest = visible.slice(3).filter(item => item.userId !== userId);
-  btn.textContent = isHidden ? '閉じる ▲' : `残り${rest.length}名を表示 ▼`;
+  const restCount = visible.slice(3).filter(item => item.userId !== userId).length;
+  btn.textContent = isHidden ? '閉じる ▲' : `残り${restCount}名を表示 ▼`;
 }
 
 function buildSessionRankRowHTML(item, highlightUserId) {
@@ -1016,8 +1020,8 @@ function buildLiveRankingCardHTML() {
         ? `<div onclick="toggleLiveRank(this)" style="text-align:center;padding:10px;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer;border-top:1px solid var(--border)">残り${restExcludeMe.length}名を表示 ▼</div>`
         : '';
       rowsHTML = top3.map(item => buildRankRowHTML(item, userId)).join('')
-        + (myItem ? buildRankRowHTML(myItem, userId) : '')
-        + `<div id="liveRankRest" style="display:none">${restExcludeMe.map(item => buildRankRowHTML(item, userId)).join('')}</div>`
+        + (myItem ? `<div id="liveRankPulled">${buildRankRowHTML(myItem, userId)}</div>` : '')
+        + `<div id="liveRankRest" style="display:none">${rest.map(item => buildRankRowHTML(item, userId)).join('')}</div>`
         + expandBtn;
     }
   }
@@ -1191,8 +1195,8 @@ function renderApp() {
         const myItem = rest.find(item => item.userId === userId);
         const restExcludeMe = rest.filter(item => item.userId !== userId);
         const top3HTML = top3.map(item => buildSessionRankRowHTML(item, userId)).join('');
-        const myItemHTML = myItem ? buildSessionRankRowHTML(myItem, userId) : '';
-        const restHTML = restExcludeMe.map(item => buildSessionRankRowHTML(item, userId)).join('');
+        const myItemHTML = myItem ? `<div id="sessionRankPulled">${buildSessionRankRowHTML(myItem, userId)}</div>` : '';
+        const restHTML = rest.map(item => buildSessionRankRowHTML(item, userId)).join('');
         const expandBtn = restExcludeMe.length > 0
           ? `<div onclick="toggleSessionRank(this)" style="text-align:center;padding:10px;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer;border-top:1px solid var(--border)">残り${restExcludeMe.length}名を表示 ▼</div>`
           : '';
