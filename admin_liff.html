@@ -939,8 +939,7 @@
           if (parts.length <= 1) return trimmed;
           return `${parts[0]}（${parts.slice(1).join('、')}）`;
         });
-        if (mapped.length > 1) return mapped.join('<br>') + '<br><span style="font-size:0.9em;opacity:0.7">（順不同）</span>';
-        return mapped[0];
+        return mapped.join('<br>');
       }
 
       function buildAdminRankRowHTML(item) {
