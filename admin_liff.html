@@ -922,6 +922,7 @@
       function adminRankNumClass(r) { return r===1?'gold':r===2?'silver':r===3?'bronze':''; }
 
       function adminRankLabel(item) {
+        if (IS_SUB_ADMIN) return item.nickname || '（未設定）';
         return item.displayName + (item.nickname ? ` <span style="font-size:11px;font-weight:400;color:var(--ink3)">(${item.nickname})</span>` : '');
       }
 
@@ -962,9 +963,9 @@
           isHidden ? '<span style="font-size:9px;background:#e0e0e0;color:#555;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">非表示</span>' : '',
           unanswered ? '<span style="font-size:9px;background:#fff0e0;color:#c05000;border:1px solid #f0c080;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">未回答</span>' : '',
         ].join('');
-        return `<div class="admin-rank-row" style="${rowStyle}" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')">
+        return `<div class="admin-rank-row" style="${rowStyle}" ${IS_SUB_ADMIN ? '' : `onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')"`}>
           <div class="admin-rank-num ${cls}">${unanswered ? '—' : item.rank}</div>
-          <img class="admin-rank-avatar" src="${item.avatarUrl || DEFAULT_AVATAR}" onerror="this.src=DEFAULT_AVATAR" />
+          ${IS_SUB_ADMIN ? '<div class="admin-rank-avatar" style="display:flex;align-items:center;justify-content:center;background:var(--surface2);font-size:16px">👤</div>' : `<img class="admin-rank-avatar" src="${item.avatarUrl || DEFAULT_AVATAR}" onerror="this.src=DEFAULT_AVATAR" />`}
           <div class="admin-rank-info">
             <div class="admin-rank-name">${adminRankLabel(item)}${badges}</div>
             <div class="admin-rank-answer">${unanswered ? '' : (item.answerText || '')}</div>
@@ -973,7 +974,7 @@
             <div class="admin-rank-main" style="color:${unanswered ? 'var(--ink3)' : scoreColor}">${unanswered ? '—' : item.concentrationScore}</div>
             <div class="admin-rank-sub">${unanswered ? '' : `正${item.accuracyScore} · ${item.responseTimeSec}秒`}</div>
           </div>
-          ${!unanswered && item.answerId ? `<button onclick="openScoreEditFromRank(event,'${item.answerId}',${item.accuracyScore})" style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:6px;font-size:12px;padding:3px 7px;cursor:pointer;color:var(--ink3)">✏️</button>` : ''}
+          ${!unanswered && item.answerId && !IS_SUB_ADMIN ? `<button onclick="openScoreEditFromRank(event,'${item.answerId}',${item.accuracyScore})" style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:6px;font-size:12px;padding:3px 7px;cursor:pointer;color:var(--ink3)">✏️</button>` : ''}
         </div>`;
       }
 
@@ -996,9 +997,9 @@
           isHidden ? '<span style="font-size:9px;background:#e0e0e0;color:#555;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">非表示</span>' : '',
           unanswered ? '<span style="font-size:9px;background:#fff0e0;color:#c05000;border:1px solid #f0c080;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">未回答</span>' : '',
         ].join('');
-        return `<div class="admin-rank-row" style="${rowStyle}" onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')">
+        return `<div class="admin-rank-row" style="${rowStyle}" ${IS_SUB_ADMIN ? '' : `onclick="openStudentDetailPanel('${item.userId}','${sid}','${name}','${nick}')"`}>
           <div class="admin-rank-num ${cls}">${unanswered ? '—' : item.rank}</div>
-          <img class="admin-rank-avatar" src="${item.avatarUrl || DEFAULT_AVATAR}" onerror="this.src=DEFAULT_AVATAR" />
+          ${IS_SUB_ADMIN ? '<div class="admin-rank-avatar" style="display:flex;align-items:center;justify-content:center;background:var(--surface2);font-size:16px">👤</div>' : `<img class="admin-rank-avatar" src="${item.avatarUrl || DEFAULT_AVATAR}" onerror="this.src=DEFAULT_AVATAR" />`}
           <div class="admin-rank-info">
             <div class="admin-rank-name">${adminRankLabel(item)}${badges}</div>
             <div class="admin-rank-answer">${unanswered ? '' : `${item.answerCount}問回答`}</div>

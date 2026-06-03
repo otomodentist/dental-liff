@@ -473,13 +473,13 @@
     el.innerHTML = answered.map((item, i) => `
       <div class="rank-row">
         <div class="rank-num">${i + 1}</div>
-        <div class="rank-name">${esc(item.nickname || item.displayName || '')}</div>
+        <div class="rank-name">${esc(item.nickname || '（未設定）')}</div>
         <div class="rank-score">${item.score}</div>
       </div>`).join('') +
       unanswered.map(item => `
       <div class="rank-row" style="opacity:.4">
         <div class="rank-num">—</div>
-        <div class="rank-name">${esc(item.nickname || item.displayName || '')}</div>
+        <div class="rank-name">${esc(item.nickname || '（未設定）')}</div>
         <div class="rank-score" style="color:var(--ink3)">未回答</div>
       </div>`).join('');
   }
