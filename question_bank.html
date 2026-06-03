@@ -88,6 +88,15 @@
   .quiz-meta{font-size:11px;color:var(--ink3);margin-top:2px}
   .quiz-btns{display:flex;gap:6px;flex-shrink:0}
 
+  /* ===== STATS ===== */
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+  .stat-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .stat-count{font-size:11px;color:var(--ink3);font-weight:700}
+  .stat-metrics{display:flex;gap:12px;padding-top:8px;border-top:1px solid var(--border)}
+  .stat-metric{flex:1;text-align:center}
+  .stat-metric-val{font-size:18px;font-weight:700;line-height:1.2}
+  .stat-metric-label{font-size:10px;color:var(--ink3);margin-top:2px}
+
   /* ===== SETTINGS ===== */
   .settings-card{margin:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
   .settings-hdr{padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.05em}
@@ -151,6 +160,7 @@
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-broadcast" onclick="switchTab('broadcast')">問題配信</button>
     <button class="tab-btn" id="tab-prepare" onclick="switchTab('prepare')">問題準備</button>
+    <button class="tab-btn" id="tab-stats" onclick="switchTab('stats')">統計</button>
   </div>
 
   <!-- 問題配信 -->
@@ -174,6 +184,15 @@
       <div class="section-title">テスト</div>
       <div id="quizList"></div>
       <button class="add-btn" onclick="openEditQuiz(null)">＋ テストを追加</button>
+    </div>
+  </div>
+
+  <!-- 統計 -->
+  <div id="tabStats" class="tab-content">
+    <div class="section-wrap" style="margin-top:16px">
+      <div class="section-title">出題統計</div>
+      <div id="statsFilterBar" class="filter-bar"></div>
+      <div id="statsList"></div>
     </div>
   </div>
 </div>
@@ -273,6 +292,7 @@
   let sessionInfo = null;
   let questions = [], quizzes = [];
   let qbFilter = null;
+  let statsData = [], statsFilter = null, statsLoaded = false;
   let rankingPollInterval = null, rankingPollCount = 0;
   let cooldownTimer = null, questionCooldownEnd = 0;
   let pendingImageUrl = '', pendingImagePreview = '', pendingImageUploading = false;
@@ -364,6 +384,7 @@
     document.getElementById('tab-' + tab).classList.add('active');
     document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
     if (tab === 'broadcast') refreshSessionInfo();
+    if (tab === 'stats' && !statsLoaded) loadStatsData();
   }
 
   // ===== 問題配信タブ =====
@@ -765,6 +786,61 @@
     if (!r.success) { showToast('削除に失敗しました'); return; }
     showToast('削除しました');
     await loadPrepareData(); renderPrepareTab();
+  }
+
+  // ===== 統計タブ =====
+  async function loadStatsData() {
+    statsLoaded = true;
+    document.getElementById('statsList').innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink3);font-size:13px">読み込み中...</div>';
+    const r = await api('teacherGetQuestionStats');
+    statsData = (r && r.stats) ? r.stats : [];
+    renderStatsTab();
+  }
+
+  function renderStatsTab() {
+    renderStatsFilterBar();
+    renderStatsList();
+  }
+
+  function renderStatsFilterBar() {
+    const sessions = [...new Set(statsData.map(s => s.sessionNumber))].sort((a, b) => a - b);
+    document.getElementById('statsFilterBar').innerHTML =
+      `<button class="chip-btn ${statsFilter === null ? 'accent' : ''}" onclick="setStatsFilter(null)">全て</button>` +
+      sessions.map(n => `<button class="chip-btn ${statsFilter == n ? 'accent' : ''}" onclick="setStatsFilter(${n})">第${n}回</button>`).join('');
+  }
+
+  function setStatsFilter(n) { statsFilter = n; renderStatsFilterBar(); renderStatsList(); }
+
+  function renderStatsList() {
+    const filtered = statsFilter === null ? statsData : statsData.filter(s => s.sessionNumber == statsFilter);
+    const el = document.getElementById('statsList');
+    if (!filtered.length) {
+      el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink3);font-size:13px">統計データがありません<br><span style="font-size:11px">終了済みの授業の問題が表示されます</span></div>';
+      return;
+    }
+    el.innerHTML = filtered.map(s => {
+      const avgColor = s.avgAccuracy === null ? 'var(--ink3)' : s.avgAccuracy >= 70 ? 'var(--accent)' : s.avgAccuracy >= 40 ? 'var(--warning)' : 'var(--danger)';
+      const rateColor = s.highScoreRate === null ? 'var(--ink3)' : s.highScoreRate >= 60 ? 'var(--accent)' : s.highScoreRate >= 30 ? 'var(--warning)' : 'var(--danger)';
+      return `
+        <div class="stat-card">
+          <div class="stat-card-head">
+            <span class="q-sess">第${s.sessionNumber}回・${s.minutesElapsed}分</span>
+            <span class="stat-count">${s.answerCount}件の回答</span>
+          </div>
+          <div class="q-text" style="margin-bottom:3px">${esc(s.questionText)}</div>
+          <div class="q-ans" style="margin-bottom:8px">模範: ${esc(s.modelAnswer)}</div>
+          <div class="stat-metrics">
+            <div class="stat-metric">
+              <div class="stat-metric-val" style="color:${avgColor}">${s.avgAccuracy !== null ? s.avgAccuracy : '—'}</div>
+              <div class="stat-metric-label">平均点</div>
+            </div>
+            <div class="stat-metric">
+              <div class="stat-metric-val" style="color:${rateColor}">${s.highScoreRate !== null ? s.highScoreRate + '%' : '—'}</div>
+              <div class="stat-metric-label">正答率（70点↑）</div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
   }
 
   // ===== パスワード変更 =====
