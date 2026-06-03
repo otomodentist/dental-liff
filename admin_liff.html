@@ -442,6 +442,7 @@
       let selectedDay     = null;
       let selectedSubject = null;
       let selectedSession = null;
+      let completedSessionNums = [];
       let isSessionActive  = false;
       let activeSessionInfo = null;
       let isNoDeliveryDeclared = false;
@@ -770,7 +771,7 @@
                                                                                                                                                                                                                                                                                                           </div>
                                                                                                                                                                                                                                                                                                                 <div class="card">
                                                                                                                                                                                                                                                                                                                         <div class="subject-grid">
-                                                                                                                                                                                                                                                                                                                                  ${selectedDay ? SUBJECTS.filter(s => s.day === selectedDay).map(s => `
+                                                                                                                                                                                                                                                                                                                                  ${selectedDay ? SUBJECTS.filter(s => s.day === selectedDay && !s.name.includes('実習')).map(s => `
                                                                                                                                                                                                                                                                                                                                               <button class="subject-btn ${s.name === selectedSubject ? 'selected' : ''}"
                                                                                                                                                                                                                                                                                                                                                             onclick="selectSubject('${s.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${s.name}</button>
                                                                                                                                                                                                                                                                                                                                                                       `).join('') : ''}
@@ -786,7 +787,7 @@
                                                                                                                                                                                                                                                                                                                                                                                                                                     <div class="card">
                                                                                                                                                                                                                                                                                                                                                                                                                                             <div class="session-grid">
                                                                                                                                                                                                                                                                                                                                                                                                                                                       ${Array.from({length: 15}, (_, i) => i + 1).map(n => `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <button class="session-btn ${n === selectedSession ? 'selected' : ''}"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                  <button class="session-btn ${n === selectedSession ? 'selected' : ''} ${completedSessionNums.includes(n) ? 'done' : ''}" style="${completedSessionNums.includes(n) ? 'opacity:0.4;color:var(--ink3)' : ''}"
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 onclick="selectSession(${n})">${n}</button>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           `).join('')}
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   </div>
@@ -1939,10 +1940,17 @@
           selectedSession = null;
           renderApp();
       }
-      function selectSubject(subject) {
+      async function selectSubject(subject) {
           selectedSubject = subject;
           selectedSession = null;
+          completedSessionNums = [];
           renderApp();
+          try {
+            const r = await fetch(`${GAS_URL}?action=getCompletedSessionNums&subject=${encodeURIComponent(subject)}`);
+            const d = await r.json();
+            completedSessionNums = d.completedNums || [];
+            renderApp();
+          } catch(e) {}
       }
       function selectSession(num) {
           selectedSession = num;
