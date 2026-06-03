@@ -2087,7 +2087,7 @@ function drawTimelineChart(canvasId, timeline, instanceKey) {
         pointBackgroundColor: points.map(() => '#2d5a3d'),
         pointRadius: 8,
         pointHoverRadius: 10,
-        pointHitRadius: 20,
+        pointHitRadius: 10,
         borderWidth: 2,
         fill: true,
         tension: 0.3,
@@ -2097,8 +2097,16 @@ function drawTimelineChart(canvasId, timeline, instanceKey) {
       ...CHART_DEFAULTS,
       plugins: { legend: { display: false }, tooltip: { enabled: false } },
       onClick(event, elements) {
-        if (!elements.length) return;
-        showPointInfo(elements[0].index);
+        const chart = chartInstances[key];
+        if (!chart) return;
+        const meta = chart.getDatasetMeta(0);
+        let nearestIdx = -1, nearestDist = Infinity;
+        meta.data.forEach((pt, i) => {
+          const dx = pt.x - event.x, dy = pt.y - event.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < nearestDist) { nearestDist = dist; nearestIdx = i; }
+        });
+        if (nearestIdx >= 0 && nearestDist < 40) showPointInfo(nearestIdx);
       },
       scales: {
         x: {
@@ -2275,7 +2283,7 @@ async function openUserGraph(targetUserId) {
           backgroundColor: 'rgba(45,90,61,0.08)',
           pointBackgroundColor: '#2d5a3d',
           pointRadius: 8,
-          hitRadius: 20,
+          hitRadius: 10,
           borderWidth: 2,
           fill: true,
           tension: 0.3,
@@ -2284,10 +2292,19 @@ async function openUserGraph(targetUserId) {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        onClick: (evt, items) => {
-          if (!items.length) return;
-          const idx = items[0].dataIndex - 1;
-          if (idx >= 0) showUserGraphDetail(idx);
+        onClick: (evt) => {
+          if (!userGraphChart) return;
+          const meta = userGraphChart.getDatasetMeta(0);
+          let nearestIdx = -1, nearestDist = Infinity;
+          meta.data.forEach((pt, i) => {
+            const dx = pt.x - evt.x, dy = pt.y - evt.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < nearestDist) { nearestDist = dist; nearestIdx = i; }
+          });
+          if (nearestIdx >= 0 && nearestDist < 40) {
+            const idx = nearestIdx - 1;
+            if (idx >= 0) showUserGraphDetail(idx);
+          }
         },
         plugins: {
           legend: { display: false },
