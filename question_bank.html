@@ -157,6 +157,7 @@
     <button class="header-btn" onclick="showView('settingsView')">⚙️</button>
     <button class="header-btn" onclick="doLogout()">ログアウト</button>
   </div>
+  <div id="subjectSwitcher" style="display:none;padding:6px 16px 0;display:flex;gap:6px;flex-wrap:wrap"></div>
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-broadcast" onclick="switchTab('broadcast')">問題配信</button>
     <button class="tab-btn" id="tab-prepare" onclick="switchTab('prepare')">問題準備</button>
@@ -288,7 +289,8 @@
   const COHORT = new URLSearchParams(location.search).get('cohort') || '23';
   const GAS_URL = (COHORT_CONFIG[COHORT] || COHORT_CONFIG['23']).gasUrl;
 
-  let currentSubject = '', authToken = '';
+  let currentSubject = '', authToken = '', baseSubject = '';
+  let allSubjectNames = [];
   let sessionInfo = null;
   let questions = [], quizzes = [];
   let qbFilter = null;
@@ -308,6 +310,7 @@
     const savedSubject = sessionStorage.getItem(SK_SUBJECT);
     if (savedToken && savedSubject) {
       authToken = savedToken; currentSubject = savedSubject;
+      baseSubject = savedSubject.startsWith('実習：') ? savedSubject.slice(3) : savedSubject;
       const r = await api('teacherGetSessionInfo');
       if (!r.error) { sessionInfo = r; await loadPrepareData(); showMain(); return; }
     }
@@ -316,10 +319,14 @@
 
   async function loadSubjectList() {
     try {
-      const subjects = await fetch(`${GAS_URL}?action=qbGetSubjectList`).then(r => r.json());
+      const [qbSubjects, allSubjects] = await Promise.all([
+        fetch(`${GAS_URL}?action=qbGetSubjectList`).then(r => r.json()),
+        fetch(`${GAS_URL}?action=getSubjectMaster`).then(r => r.json()).then(r => (r.subjects || []).map(s => s.name)),
+      ]);
+      allSubjectNames = allSubjects;
       const sel = document.getElementById('subjectSelect');
-      sel.innerHTML = (subjects && subjects.length)
-        ? subjects.map(s => `<option value="${s}">${s}</option>`).join('')
+      sel.innerHTML = (qbSubjects && qbSubjects.length)
+        ? qbSubjects.map(s => `<option value="${s}">${s}</option>`).join('')
         : '<option value="">（設定済みの講義がありません）</option>';
     } catch(e) {
       document.getElementById('subjectSelect').innerHTML = '<option value="">（読み込み失敗）</option>';
@@ -338,7 +345,7 @@
       showErr(errEl, { invalid:'パスワードが違います', not_configured:'この講義はまだ設定されていません', network:'通信エラー' }[r.error] || 'ログイン失敗');
       return;
     }
-    currentSubject = subject; authToken = r.token;
+    currentSubject = subject; baseSubject = subject; authToken = r.token;
     sessionStorage.setItem(SK_TOKEN, authToken);
     sessionStorage.setItem(SK_SUBJECT, currentSubject);
     if (r.isFirstLogin) { showView('changePwView'); return; }
@@ -373,9 +380,36 @@
   // ===== MAIN =====
   function showMain() {
     document.getElementById('headerSubject').textContent = currentSubject;
+    renderSubjectSwitcher();
     renderBroadcastTab();
     renderPrepareTab();
     showView('mainView');
+  }
+
+  function renderSubjectSwitcher() {
+    const base = baseSubject || currentSubject;
+    const linked = allSubjectNames.filter(n => n === base || n === '実習：' + base);
+    const sw = document.getElementById('subjectSwitcher');
+    if (linked.length <= 1) { sw.style.display = 'none'; return; }
+    sw.style.display = 'flex';
+    sw.innerHTML = linked.map(n =>
+      `<button class="chip-btn ${n === currentSubject ? 'accent' : ''}" onclick="switchSubject('${n.replace(/'/g,"\\'")}')">
+        ${n === base ? n : '実習'}
+      </button>`
+    ).join('');
+  }
+
+  async function switchSubject(name) {
+    if (name === currentSubject) return;
+    currentSubject = name;
+    sessionStorage.setItem(SK_SUBJECT, currentSubject);
+    document.getElementById('headerSubject').textContent = currentSubject;
+    renderSubjectSwitcher();
+    statsLoaded = false;
+    sessionInfo = await api('teacherGetSessionInfo');
+    await loadPrepareData();
+    renderBroadcastTab();
+    renderPrepareTab();
   }
 
   function switchTab(tab) {
