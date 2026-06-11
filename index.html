@@ -118,6 +118,18 @@
   .cancel-btn { display: inline-block; background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--ink2); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; padding: 5px 10px; }
   .cancel-btn:active { opacity: 0.6; }
 
+  /* 同意モーダル */
+  .consent-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 300; align-items: flex-end; justify-content: center; }
+  .consent-modal.open { display: flex; }
+  .consent-modal-sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 28px 20px max(44px,env(safe-area-inset-bottom)); width: 100%; max-width: 480px; }
+  .consent-modal-title { font-family: 'Kaisei Tokumin', serif; font-size: 20px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+  .consent-modal-desc { font-size: 13px; color: var(--ink2); line-height: 1.7; margin-bottom: 20px; }
+  .consent-modal-links { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+  .consent-modal-link { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; }
+  .consent-modal-link span { font-size: 16px; }
+  .consent-agree-btn { width: 100%; padding: 15px; background: var(--accent); border: none; border-radius: 12px; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .consent-agree-btn:active { opacity: 0.8; }
+
   /* 解約確認モーダル */
   .cancel-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; }
   .cancel-modal.open { display: flex; }
@@ -260,6 +272,18 @@
   <div style="display:flex;gap:16px;margin-top:28px">
     <button onclick="cancelAvatarCrop()" style="padding:11px 28px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.4);background:transparent;color:#fff;font-size:14px;font-weight:600;cursor:pointer">キャンセル</button>
     <button onclick="confirmAvatarCrop()" style="padding:11px 28px;border-radius:10px;border:none;background:#fff;color:#1a3a6b;font-size:14px;font-weight:700;cursor:pointer">確定</button>
+  </div>
+</div>
+
+<div id="consentModal" class="consent-modal">
+  <div class="consent-modal-sheet">
+    <div class="consent-modal-title">授業のOtomo へようこそ</div>
+    <div class="consent-modal-desc">ご利用前に利用規約とプライバシーポリシーをご確認ください。「同意して登録する」を押すことで、これらに同意したものとみなします。</div>
+    <div class="consent-modal-links">
+      <a href="./terms.html" target="_blank" class="consent-modal-link"><span>📄</span>利用規約</a>
+      <a href="./privacy.html" target="_blank" class="consent-modal-link"><span>🔒</span>プライバシーポリシー</a>
+    </div>
+    <button class="consent-agree-btn" onclick="agreeAndRegister()">同意して登録する</button>
   </div>
 </div>
 
@@ -565,16 +589,7 @@ async function init() {
 
     const isPaid = myBillingStatus === '契約中' || myBillingStatus === '管理者承認';
     if (!isPaid) {
-      // 未登録ユーザーを自動登録（FREE_SEMESTER_MODE）
-      fetch(`${GAS_URL}?action=registerFreeSemester&userId=${encodeURIComponent(userId)}`)
-        .then(r => r.json())
-        .then(d => {
-          if (d.success) {
-            myBillingStatus = '契約中';
-            renderApp();
-            if (!myNickname) openNicknameModal();
-          }
-        }).catch(() => {});
+      document.getElementById('consentModal').classList.add('open');
     } else {
       if (!myNickname) openNicknameModal();
       // リッチメニューをセッションごとに1回だけ自動修正（切り替え漏れを自己修復）
@@ -597,6 +612,19 @@ async function fetchNickname(uid) {
     myAvatarUrl = d.avatarUrl || '';
     myAdminRestricted = d.adminRestricted || false;
   } catch (e) { myNickname = ''; myBillingStatus = ''; myAvatarUrl = ''; }
+}
+
+function agreeAndRegister() {
+  document.getElementById('consentModal').classList.remove('open');
+  fetch(`${GAS_URL}?action=registerFreeSemester&userId=${encodeURIComponent(userId)}`)
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        myBillingStatus = '契約中';
+        renderApp();
+        if (!myNickname) openNicknameModal();
+      }
+    }).catch(() => {});
 }
 
 function openNicknameModal() {
