@@ -491,7 +491,7 @@
       }
 
       // ダッシュボード用
-      let activeTab = 'session';
+      let activeTab = IS_SUB_ADMIN ? 'ranking' : 'session';
       let studentListData = null;
       let selectedStudentId = null;
       let selectedSessionId = null;
@@ -690,13 +690,15 @@
                 </div>
               </div>
               <div class="tab-nav">
-                <button class="tab-btn ${activeTab === 'session' ? 'active' : ''}" onclick="switchTab('session')">問題配信</button>
+                ${IS_SUB_ADMIN
+                  ? `<button class="tab-btn ${activeTab === 'ranking' ? 'active' : ''}" onclick="switchTab('ranking')">回答状況</button>`
+                  : `<button class="tab-btn ${activeTab === 'session' ? 'active' : ''}" onclick="switchTab('session')">問題配信</button>`}
                 ${!IS_SUB_ADMIN ? `<button class="tab-btn ${activeTab === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">ダッシュボード</button>` : ''}
                 ${!IS_SUB_ADMIN ? `<button class="tab-btn ${activeTab === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">登録管理</button>` : ''}
                 <button class="tab-btn ${activeTab === 'exam' ? 'active' : ''}" onclick="switchTab('exam')">学習計画</button>
               </div>
             </div>
-            ${activeTab === 'billing' ? renderBillingHTML() : activeTab === 'dashboard' ? renderDashboardHTML() : activeTab === 'exam' ? renderExamHTML() : renderSessionHTML()}
+            ${activeTab === 'billing' ? renderBillingHTML() : activeTab === 'dashboard' ? renderDashboardHTML() : activeTab === 'exam' ? renderExamHTML() : activeTab === 'ranking' ? renderRankingTabHTML() : renderSessionHTML()}
           `;
       }
 
@@ -725,6 +727,23 @@
                   </div>
               </div>
           `;
+      }
+
+      function renderRankingTabHTML() {
+        const sessionBanner = isSessionActive && activeSessionInfo
+          ? `<div class="status-bar active-session"><strong>${activeSessionInfo.subject} 第${activeSessionInfo.sessionNumber}回</strong> 授業進行中</div>`
+          : `<div class="status-bar">現在、進行中の授業はありません</div>`;
+        const rankTitle = isSessionActive
+          ? (adminCurrentQuestionId ? '出題中 — リアルタイム回答状況' : '問題の出題を待っています')
+          : '直近授業 — 最終ランキング';
+        const rankBody = isSessionActive || lastEndedSessionId ? `
+          <div class="card" style="overflow:hidden;margin:0 16px 16px">
+            <div style="padding:10px 14px;font-size:12px;font-weight:700;color:var(--ink3);border-bottom:1px solid var(--border)">${rankTitle}</div>
+            <div id="adminRankingSection">
+              <div style="padding:20px;font-size:13px;color:var(--ink3);text-align:center">読み込み中...</div>
+            </div>
+          </div>` : `<div style="padding:48px 20px;text-align:center;color:var(--ink3);font-size:13px">進行中の授業がありません</div>`;
+        return `<div style="display:flex;flex-direction:column;gap:0">${sessionBanner}${rankBody}</div>`;
       }
 
       function renderSessionHTML() {
@@ -900,7 +919,9 @@
                 </div>
               </div>
               <div class="tab-nav">
-                <button class="tab-btn ${activeTabName === 'session' ? 'active' : ''}" onclick="switchTab('session')">問題配信</button>
+                ${IS_SUB_ADMIN
+                  ? `<button class="tab-btn ${activeTabName === 'ranking' ? 'active' : ''}" onclick="switchTab('ranking')">回答状況</button>`
+                  : `<button class="tab-btn ${activeTabName === 'session' ? 'active' : ''}" onclick="switchTab('session')">問題配信</button>`}
                 ${!IS_SUB_ADMIN ? `<button class="tab-btn ${activeTabName === 'dashboard' ? 'active' : ''}" onclick="switchTab('dashboard')">ダッシュボード</button>` : ''}
                 ${!IS_SUB_ADMIN ? `<button class="tab-btn ${activeTabName === 'billing' ? 'active' : ''}" onclick="switchTab('billing')">登録管理</button>` : ''}
                 <button class="tab-btn ${activeTabName === 'exam' ? 'active' : ''}" onclick="switchTab('exam')">学習計画</button>
@@ -1229,13 +1250,13 @@
       }
 
       async function switchTab(tab) {
-          if (IS_SUB_ADMIN && (tab === 'dashboard' || tab === 'billing')) return;
+          if (IS_SUB_ADMIN && (tab === 'dashboard' || tab === 'billing' || tab === 'session')) return;
           activeTab = tab;
           document.getElementById('pointDetailPopup').classList.remove('open');
-          if (tab === 'session' && isSessionActive) {
+          if ((tab === 'session' || tab === 'ranking') && isSessionActive) {
               startAdminRankingPoll();
               if (adminCurrentQuestionId) pollAdminRanking();
-          } else if (tab === 'session' && lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
+          } else if ((tab === 'session' || tab === 'ranking') && lastEndedSessionId) fetchAndShowSessionRanking(lastEndedSessionId);
           else stopAdminRankingPoll();
           if (tab === 'exam') {
               if (!examListData || !adminQuizList) {
